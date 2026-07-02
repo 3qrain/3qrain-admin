@@ -131,6 +131,8 @@ function scheduleAutoSave() {
 function onKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault()
+    // 暂时调整为，当前什么状态，保存后还为什么状态
+    // 草稿行为，等未来加文章版本控制了再做
     doSave(status.value)
   }
 }

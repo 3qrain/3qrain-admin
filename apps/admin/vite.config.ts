@@ -16,6 +16,9 @@ export default defineConfig(({ command }) => ({
           proxy.on('proxyReq', (proxyReq, req) => {
             proxyReq.setHeader('X-Forwarded-For', req.socket.remoteAddress || '127.0.0.1')
           })
+          proxy.on('proxyReqWs', (proxyReq, req) => { 
+            proxyReq.setHeader('X-Forwarded-For', req.socket.remoteAddress || '127.0.0.1')
+          })
         }
       },
       '/storage/': 'http://localhost:3010'

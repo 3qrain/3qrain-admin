@@ -4,6 +4,7 @@ import { fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { SESSION_ADMIN_PREFIX, sessionValueSchema } from '~/constants/session'
+import { getClientIp } from '~/utils/getClientIp'
 
 const TOKEN_TTL = Number(process.env.TOKEN_TTL) || 86400
 
@@ -36,6 +37,8 @@ export const authGuard = createMiddleware(async (c, next) => {
   }
 
   result.data.lastActiveAt = Date.now()
+  result.data.loginIp = getClientIp(c)
+  
   await redis.setex(`${SESSION_ADMIN_PREFIX}${token}`, TOKEN_TTL, JSON.stringify(result.data))
 
   c.set('admin', true)
