@@ -13,7 +13,7 @@ const querySchema = z.object({
   contentId: z.string(),
 })
 
-const DEDUP_TTL = 1800
+const VIEW_TTL = 1800
 
 function getPostCount(contentId: number) {
   return db.select({ id: posts.id, viewCount: posts.viewCount })
@@ -35,16 +35,17 @@ export async function record(c: Context) {
     return c.json(fail(ErrorCode.POST_NOT_FOUND, '文章不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  const dedupKey = `3qrain:view:${contentType}:${contentId}:${visitorId}`
-  const exists = await redis.exists(dedupKey)
+  const viewKey = `3qrain:view:${contentType}:${contentId}:${visitorId}`
+  const exists = await redis.exists(viewKey)
   if (!exists) {
     const newCount = (post.viewCount || 0) + 1
     db.update(posts).set({ viewCount: newCount }).where(eq(posts.id, contentId)).run()
-    await redis.setex(dedupKey, DEDUP_TTL, '1')
-    return c.json(ok({ viewCount: newCount }, '已记录'))
+    await redis.setex(viewKey, VIEW_TTL, '1')
+    return c.json(ok({ viewCount: newCount }, '已记录浏览会话'), HttpStatusCodes.OK)
   }
 
-  return c.json(ok({ viewCount: post.viewCount }, ''))
+  await redis.setex(viewKey, VIEW_TTL, '1')
+  return c.json(ok({ viewCount: post.viewCount }, '已刷新浏览会话'), HttpStatusCodes.OK)
 }
 
 export async function count(c: Context) {
@@ -59,5 +60,5 @@ export async function count(c: Context) {
     return c.json(fail(ErrorCode.POST_NOT_FOUND, '文章不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  return c.json(ok({ viewCount: post.viewCount || 0 }, '获取成功'))
+  return c.json(ok({ viewCount: post.viewCount || 0 }, '获取成功'), HttpStatusCodes.OK)
 }

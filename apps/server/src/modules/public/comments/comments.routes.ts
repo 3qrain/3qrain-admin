@@ -1,36 +1,36 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { successResponseSchema, errorResponseSchema } from '~/utils/response'
+import { authGuardPublic } from '~/middleware/auth-guard-public'
 
-const userSchema = z.object({
+export const createCommentSchema = z.object({
+  targetType: z.enum(['post', 'note']),
+  targetId: z.number().int().positive(),
+  content: z.string().min(1).max(500),
+  parentId: z.number().int().positive().optional(),
+  replyToId: z.number().int().positive().optional(),
+  replyToUserId: z.number().int().positive().optional(),
+})
+
+const commentUserSchema = z.object({
   id: z.number(),
   username: z.string(),
   avatarUrl: z.string(),
 })
 
-const commentItemSchema: any = z.lazy(() =>
-  z.object({
-    id: z.number(),
-    targetType: z.string(),
-    targetId: z.number(),
-    userId: z.number(),
-    user: userSchema,
-    parentId: z.number().nullable(),
-    replyToId: z.number().nullable(),
-    replyToUserId: z.number().nullable(),
-    replyToUser: userSchema.nullable(),
-    content: z.string(),
-    isPinned: z.boolean(),
-    createdAt: z.string(),
-    replies: z.array(commentItemSchema).optional(),
-  }),
-)
-
-const commentListSchema = z.object({
-  list: z.array(commentItemSchema),
-  total: z.number(),
-  page: z.number(),
-  pageSize: z.number(),
+const commentSchema = z.object({
+  id: z.number(),
+  targetType: z.string(),
+  targetId: z.number(),
+  userId: z.number(),
+  user: commentUserSchema,
+  parentId: z.number().nullable(),
+  replyToId: z.number().nullable(),
+  replyToUserId: z.number().nullable(),
+  replyToUser: commentUserSchema.nullable(),
+  content: z.string(),
+  isPinned: z.union([z.boolean(), z.number()]),
+  createdAt: z.string().nullable(),
 })
 
 export const listCommentsRoute = createRoute({
@@ -40,7 +40,7 @@ export const listCommentsRoute = createRoute({
   path: '/comments',
   request: {
     query: z.object({
-      targetType: z.enum(['post', 'note']),
+      targetType: z.string(),
       targetId: z.string(),
       page: z.string().optional(),
       pageSize: z.string().optional(),
@@ -49,19 +49,15 @@ export const listCommentsRoute = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: {
-      content: { 'application/json': { schema: successResponseSchema(commentListSchema) } },
-      description: '评论列表',
+      content: { 'application/json': { schema: successResponseSchema(z.object({
+        list: z.array(commentSchema),
+        total: z.number(),
+        parentTotal: z.number(),
+        pageSize: z.number(),
+      })) } },
+      description: '获取成功',
     },
   },
-})
-
-export const createCommentSchema = z.object({
-  targetType: z.enum(['post', 'note']),
-  targetId: z.number().int().positive(),
-  content: z.string().min(1).max(500, '内容过长'),
-  parentId: z.number().int().positive().optional(),
-  replyToId: z.number().int().positive().optional(),
-  replyToUserId: z.number().int().positive().optional(),
 })
 
 export const createCommentRoute = createRoute({
@@ -69,17 +65,14 @@ export const createCommentRoute = createRoute({
   summary: '发表评论',
   method: 'post',
   path: '/comments',
+  middleware: [authGuardPublic],
   request: {
     body: { content: { 'application/json': { schema: createCommentSchema } } },
   },
   responses: {
     [HttpStatusCodes.CREATED]: {
-      content: { 'application/json': { schema: successResponseSchema(commentItemSchema) } },
+      content: { 'application/json': { schema: successResponseSchema(commentSchema) } },
       description: '评论成功',
-    },
-    [HttpStatusCodes.UNAUTHORIZED]: {
-      content: { 'application/json': { schema: errorResponseSchema } },
-      description: '未登录',
     },
     [HttpStatusCodes.BAD_REQUEST]: {
       content: { 'application/json': { schema: errorResponseSchema } },

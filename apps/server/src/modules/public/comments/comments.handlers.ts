@@ -1,26 +1,13 @@
 import type { Context } from 'hono'
 import { eq, and, asc, desc, isNull, count, inArray, lt } from 'drizzle-orm'
-import { db, redis } from '~/db'
+import { db } from '~/db'
 import { comments, users, posts, notes } from '~/db/schema'
 import { notify } from '~/services/notify'
 import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
-import { SESSION_USER_PREFIX, userSessionValueSchema } from '~/constants/session'
 import { createCommentSchema } from './comments.routes'
 import { getClientIp } from '~/utils/getClientIp'
-
-async function resolveUserSession(c: Context) {
-  const cookie = c.req.header('cookie') || ''
-  const match = cookie.match(/3qrain_user_token=([^;]+)/)
-  if (!match) return null
-  const raw = await redis.get(`${SESSION_USER_PREFIX}${match[1]}`)
-  if (!raw) return null
-  const parsed = userSessionValueSchema.safeParse(JSON.parse(raw))
-  if (!parsed.success) return null
-  const user = db.select().from(users).where(eq(users.id, parsed.data.userId)).get()
-  return user || null
-}
 
 function enrichComments(rows: any[]) {
   if (rows.length === 0) return []
@@ -125,13 +112,7 @@ export async function list(c: Context) {
 }
 
 export async function create(c: Context) {
-  const user = await resolveUserSession(c)
-  if (!user) {
-    return c.json(fail(ErrorCode.UNAUTHORIZED, '请先登录'), HttpStatusCodes.UNAUTHORIZED)
-  }
-  if (user.isBanned) {
-    return c.json(fail(ErrorCode.UNAUTHORIZED, '账号已被封禁'), HttpStatusCodes.FORBIDDEN)
-  }
+  const user = c.get('user')
 
   const parsed = createCommentSchema.safeParse(await c.req.json())
   if (!parsed.success) {

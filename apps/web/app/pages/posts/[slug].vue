@@ -14,18 +14,23 @@ const { data: res, error } = await useAsyncData(`post-${slug}`, () => postApi.ge
 if (error.value || !res.value?.success) {
   throw createError({
     statusCode: 404,
-    statusMessage: '文章不存在',
+    statusMessage: '文章不存在'
   })
 }
 
-const post = computed(() => res.value!.data)
+const post = ref(res.value!.data)
 
 useHead({
-  title: computed(() => `${post.value.title} - 3qrain`),
+  title: computed(() => `${post.value.title} - 3qrain`)
 })
 
-onMounted(() => {
-  viewApi.record(post.value.id, 'post', appStore.genVisitorId()).catch(() => {})
+onMounted(async () => {
+  try {
+    const { data } = await viewApi.record(post.value.id, 'post', appStore.genVisitorId())
+    post.value.viewCount = data.viewCount
+  } catch {
+    // ignore
+  }
 })
 </script>
 
@@ -49,11 +54,7 @@ onMounted(() => {
       <img :src="post.cover" :alt="post.title" />
     </div>
 
-    <div
-      v-if="post.contentHtml"
-      class="prose"
-      v-html="post.contentHtml"
-    />
+    <div v-if="post.contentHtml" class="prose" v-html="post.contentHtml" />
 
     <div v-else class="empty">暂无内容。</div>
 
@@ -75,7 +76,9 @@ onMounted(() => {
   opacity: 0.35;
   transition: opacity 0.2s;
 
-  &:hover { opacity: 0.7; }
+  &:hover {
+    opacity: 0.7;
+  }
 }
 
 .article-header {
@@ -137,12 +140,30 @@ onMounted(() => {
   line-height: 1.8;
   word-break: break-word;
 
-  :deep(h1) { font-size: 1.75rem; font-weight: 700; margin: 2.5rem 0 1rem; }
-  :deep(h2) { font-size: 1.375rem; font-weight: 600; margin: 2rem 0 0.75rem; }
-  :deep(h3) { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.625rem; }
-  :deep(h4) { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+  :deep(h1) {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 2.5rem 0 1rem;
+  }
+  :deep(h2) {
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 2rem 0 0.75rem;
+  }
+  :deep(h3) {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.625rem;
+  }
+  :deep(h4) {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem;
+  }
 
-  :deep(p) { margin: 0.75rem 0; }
+  :deep(p) {
+    margin: 0.75rem 0;
+  }
 
   :deep(a) {
     color: var(--color-primary);
@@ -150,7 +171,9 @@ onMounted(() => {
     text-underline-offset: 0.15em;
   }
 
-  :deep(strong) { font-weight: 600; }
+  :deep(strong) {
+    font-weight: 600;
+  }
 
   :deep(blockquote) {
     margin: 1rem 0;
@@ -186,7 +209,9 @@ onMounted(() => {
     padding-left: 1.5rem;
   }
 
-  :deep(li) { margin: 0.25rem 0; }
+  :deep(li) {
+    margin: 0.25rem 0;
+  }
 
   :deep(hr) {
     border: none;
@@ -220,8 +245,14 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .page { padding: 0 1.25rem 3rem; }
-  .article-title { font-size: 1.5rem; }
-  .views { display: none; }
+  .page {
+    padding: 0 1.25rem 3rem;
+  }
+  .article-title {
+    font-size: 1.5rem;
+  }
+  .views {
+    display: none;
+  }
 }
 </style>

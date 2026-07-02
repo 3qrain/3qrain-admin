@@ -1,6 +1,7 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { successResponseSchema, errorResponseSchema } from '~/utils/response'
+import { authGuardPublic } from '~/middleware/auth-guard-public'
 
 const userSchema = z.object({
   id: z.number(),
@@ -15,10 +16,11 @@ export const meRoute = createRoute({
   summary: '获取当前用户',
   method: 'get',
   path: '/user/me',
+  middleware: [authGuardPublic],
   responses: {
     [HttpStatusCodes.OK]: {
-      content: { 'application/json': { schema: successResponseSchema(userSchema.nullable()) } },
-      description: '返回用户信息或 null',
+      content: { 'application/json': { schema: successResponseSchema(userSchema) } },
+      description: '获取成功',
     },
   },
 })
@@ -32,6 +34,7 @@ export const updateMeRoute = createRoute({
   summary: '更新当前用户信息',
   method: 'patch',
   path: '/user/me',
+  middleware: [authGuardPublic] ,
   request: {
     body: { content: { 'application/json': { schema: updateMeSchema } } },
   },
@@ -44,10 +47,6 @@ export const updateMeRoute = createRoute({
       content: { 'application/json': { schema: errorResponseSchema } },
       description: '参数校验失败',
     },
-    [HttpStatusCodes.UNAUTHORIZED]: {
-      content: { 'application/json': { schema: errorResponseSchema } },
-      description: '未登录',
-    },
   },
 })
 
@@ -56,6 +55,7 @@ export const logoutRoute = createRoute({
   summary: '退出登录',
   method: 'post',
   path: '/user/logout',
+  middleware: [authGuardPublic] ,
   responses: {
     [HttpStatusCodes.OK]: {
       content: { 'application/json': { schema: successResponseSchema(z.object({})) } },
