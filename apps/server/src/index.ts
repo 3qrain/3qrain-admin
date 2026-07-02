@@ -7,10 +7,11 @@ import authRouter from '~/modules/auth/auth.index'
 import adminRouter from '~/modules/admin/admin.index'
 import publicRouter from '~/modules/public/public.index'
 import { cron_cleanUpExpiredUploads } from '~/modules/admin/upload/tus'
+import { config } from '~/env'
 
 const app = createApp()
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || []
+const allowedOrigins = config.ALLOWED_ORIGINS || []
 if (allowedOrigins.length === 0) {
   throw new Error('ALLOWED_ORIGINS is not defined')
 }

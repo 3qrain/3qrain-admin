@@ -1,9 +1,12 @@
 import { googleAuth } from '@hono/oauth-providers/google'
 import { upsertOAuthUser, createUserSession, OAUTH_CALLBACK_HTML } from './oauth-helpers'
+import { config } from '~/env'
 
-const WEB_URL = process.env.WEB_URL
+const WEB_URL = config.WEB_URL
 
 export const googleMiddleware = googleAuth({
+  client_id: config.GOOGLE_ID,
+  client_secret: config.GOOGLE_SECRET,
   scope: ['openid', 'profile', 'email'],
   redirect_uri: `${WEB_URL}/api/auth/google`,
 })

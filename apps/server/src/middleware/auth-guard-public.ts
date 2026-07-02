@@ -7,8 +7,9 @@ import { fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { SESSION_USER_PREFIX, userSessionValueSchema } from '~/constants/session'
+import { config } from '~/env'
 
-const TOKEN_TTL = Number(process.env.TOKEN_TTL) || 86400
+const TOKEN_TTL = Number(config.TOKEN_TTL) || 86400
 
 /** 内联校验 — 返回 user 或 null（用于不能挂中间件的场景） */
 export async function resolveUserSession(c: Context) {

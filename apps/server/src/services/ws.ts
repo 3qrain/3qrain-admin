@@ -2,7 +2,7 @@ import type { Context } from 'hono'
 import type { WSContext } from 'hono/ws'
 import Redis from 'ioredis'
 import type { WsChannelMessage, WsConnected, WsNotification, WsPing, WsPong } from '@3qrain/shared'
-
+import { config } from '~/env'
 /* ------------------------------------------------------------------ */
 /* 连接管理                                                            */
 /* ------------------------------------------------------------------ */
@@ -34,7 +34,7 @@ export function getVisitorCount(): number {
 /* ------------------------------------------------------------------ */
 
 export const CHANNEL = '3qrain:notifications'
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379'
+const REDIS_URL = config.REDIS_URL || 'redis://localhost:6379'
 const subscriber = new Redis(REDIS_URL, { lazyConnect: true })
 
 async function startSubscriber() {

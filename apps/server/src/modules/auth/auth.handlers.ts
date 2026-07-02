@@ -9,7 +9,9 @@ import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { SESSION_ADMIN_PREFIX, type SessionValue } from '~/constants/session'
 import { initConfigs } from '~/modules/admin/config/configs.default'
 import { getClientIp } from '~/utils/getClientIp'
-const TOKEN_TTL = Number(process.env.TOKEN_TTL) || 86400
+import { config } from '~/env'
+
+const TOKEN_TTL = Number(config.TOKEN_TTL) || 86400
 
 function buildSessionValue(c: Context): SessionValue {
   return {

@@ -4,6 +4,7 @@ import { Database } from 'bun:sqlite'
 import Redis from 'ioredis'
 import * as schema from '~/db/schema'
 import { mkdirSync } from 'fs'
+import { config } from '~/env'
 
 // --- SQLite ---
 
@@ -18,7 +19,7 @@ migrate(db, { migrationsFolder: './drizzle' })
 
 // --- Redis ---
 
-export const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+export const redis = new Redis(config.REDIS_URL || "redis://localhost:6379");
 
 redis.on("connect", () => {
   console.log("[Redis] connected");

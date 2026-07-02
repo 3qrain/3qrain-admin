@@ -4,8 +4,9 @@ import { users } from '~/db/schema'
 import { generateToken } from '~/utils/crypto'
 import { SESSION_USER_PREFIX } from '~/constants/session'
 import { setCookie } from 'hono/cookie'
+import { config } from '~/env'
 
-const TOKEN_TTL = Number(process.env.TOKEN_TTL)
+const TOKEN_TTL = Number(config.TOKEN_TTL)
 
 export function upsertOAuthUser(
   provider: 'github' | 'google',

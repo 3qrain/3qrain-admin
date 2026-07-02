@@ -5,8 +5,9 @@ import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { SESSION_ADMIN_PREFIX, sessionValueSchema } from '~/constants/session'
 import { getClientIp } from '~/utils/getClientIp'
+import { config } from '~/env'
 
-const TOKEN_TTL = Number(process.env.TOKEN_TTL) || 86400
+const TOKEN_TTL = Number(config.TOKEN_TTL) || 86400
 
 export const authGuard = createMiddleware(async (c, next) => {
   // cookie 校验
