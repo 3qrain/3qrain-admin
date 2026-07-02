@@ -16,8 +16,8 @@ withDefaults(
     icon: false,
     loading: false,
     disabled: false,
-    active: false,
-  },
+    active: false
+  }
 )
 </script>
 
@@ -42,17 +42,18 @@ withDefaults(
   justify-content: center;
   cursor: pointer;
   font-weight: 500;
-  border-radius: .25rem;
+  line-height: 1.3;
   white-space: nowrap;
   font-family: inherit;
   outline: none;
   border: 0.0625rem solid transparent;
+  border-radius: 0.25rem;
 
   transition:
-    background 0.15s,
-    opacity 0.15s,
+    background 0.2s,
+    opacity 0.2s,
     scale 0.12s,
-    box-shadow 0.15s;
+    box-shadow 0.2s;
 
   &:disabled {
     opacity: 0.4;
@@ -95,16 +96,20 @@ withDefaults(
 }
 
 .icon {
-  &.sm { padding: 0.3125rem; }
-  &.md { padding: 0.4375rem; }
+  &.sm {
+    padding: 0.3125rem;
+  }
+  &.md {
+    padding: 0.4375rem;
+  }
 }
 
 /* variants */
 .primary {
-  background: color-mix(in oklch, var(--color-primary) 70%, transparent 30%);
+  background: var(--color-primary);
   color: var(--color-primary-content);
   border-color: var(--color-primary);
-
+  box-shadow: 0 0.125rem 0.1875rem -0.125rem var(--color-primary);
   &:hover:not(:disabled) {
     opacity: 0.88;
   }
@@ -114,7 +119,7 @@ withDefaults(
   background: var(--color-base-200);
   color: var(--color-base-content);
   border-color: var(--color-border);
-
+  box-shadow: 0 0.125rem 0.1875rem -0.125rem var(--color-base-200);
   &:hover:not(:disabled) {
     background: var(--color-base-300);
   }
@@ -127,12 +132,14 @@ withDefaults(
 
   &:hover:not(:disabled) {
     opacity: 0.8;
-    background: var(--color-base-200);
+    background: var(--color-base-300);
+    box-shadow: 0 0.125rem 0.1875rem -0.125rem var(--color-base-300);
   }
 
   &.active {
     opacity: 1;
     background: var(--color-base-300);
+    box-shadow: 0 0.125rem 0.1875rem -0.125rem var(--color-base-300);
   }
 }
 
@@ -140,7 +147,7 @@ withDefaults(
   background: var(--color-neutral);
   color: var(--color-neutral-content);
   border-color: var(--color-border);
-
+  box-shadow: 0 0.125rem 0.1875rem -0.125rem var(--color-neutral);
   &:hover:not(:disabled) {
     opacity: 0.88;
   }
@@ -150,6 +157,7 @@ withDefaults(
   background: color-mix(in oklab, var(--color-error) 10%, transparent);
   color: var(--color-error);
   border-color: color-mix(in oklab, var(--color-error) 20%, transparent);
+  box-shadow: 0 .0625rem 0.1875rem -0.125rem var(--color-error);
 
   &:hover:not(:disabled) {
     background: color-mix(in oklab, var(--color-error) 18%, transparent);
@@ -161,6 +169,7 @@ withDefaults(
   background: var(--color-success);
   color: var(--color-success-content);
   border-color: var(--color-success);
+  box-shadow: 0 0.125rem 0.1875rem -0.125rem var(--color-success);
 
   &:hover:not(:disabled) {
     opacity: 0.88;
@@ -171,6 +180,8 @@ withDefaults(
   animation: spin 1s linear infinite;
 }
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
