@@ -252,13 +252,13 @@ onMounted(() => load(true))
 }
 
 .list-body {
-  animation: list-enter 0.35s cubic-bezier(0.28, 1.2, 0.4, 1);
+  animation: list-enter 0.3s ease-in-out;
 }
 
 @keyframes list-enter {
   from {
     opacity: 0;
-    transform: translateY(-0.75rem);
+    transform: translateY(-0.25rem);
   }
 
   to {
