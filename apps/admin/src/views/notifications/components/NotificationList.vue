@@ -21,7 +21,7 @@ const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 20
 const activeCategory = ref('')
-const activeFilter = ref<'all' | 'unread'>('all')
+const activeFilter = ref<'all' | 'unread'>('unread')
 const selectedId = ref<number | null>(null)
 
 const categoryTypeMap: Record<string, string[]> = {
@@ -38,8 +38,8 @@ const categories = [
 ]
 
 const filters = [
-  { value: 'all', label: '全部' },
-  { value: 'unread', label: '未读' }
+  { value: 'unread', label: '未读' },
+  { value: 'all', label: '全部' }
 ]
 
 function typeIcon(type: string) {
@@ -132,30 +132,39 @@ onMounted(() => load(true))
       <p>暂无通知</p>
     </div>
 
-    <div v-else :id="listBodyId" class="list-body">
-      <div
-        v-for="item in list"
-        :key="item.id"
-        class="list-item"
-        :class="{ unread: !item.isRead, selected: selectedId === item.id }"
-        @click="handleSelect(item)"
-      >
-        <span class="item-dot" />
-        <div class="item-icon">
-          <component :is="typeIcon(item.type)" style="width: 1rem; height: 1rem" />
-        </div>
-        <div class="item-main">
-          <div class="item-title">{{ item.title }}</div>
-          <div v-if="item.content" class="item-preview">{{ item.content }}</div>
-          <div class="item-meta">
-            <span class="item-time">{{ formatDate(item.createdAt) }}</span>
+    <div v-else :id="listBodyId" class="list-body-wrapper">
+      <div class="list-body">
+        <div
+          v-for="item in list"
+          :key="item.id"
+          class="list-item"
+          :class="{ unread: !item.isRead, selected: selectedId === item.id }"
+          @click="handleSelect(item)"
+        >
+          <span class="item-dot" />
+          <div class="item-icon">
+            <component :is="typeIcon(item.type)" style="width: 1rem; height: 1rem" />
           </div>
+          <div class="item-main">
+            <div class="item-title">{{ item.title }}</div>
+            <div v-if="item.content" class="item-preview">{{ item.content }}</div>
+            <div class="item-meta">
+              <span class="item-time">{{ formatDate(item.createdAt) }}</span>
+            </div>
+          </div>
+          <button class="item-trash" title="删除" @click.stop="handleDelete(item)">
+            <Trash2 :size="13" :stroke-width="1.5" />
+          </button>
         </div>
-        <button class="item-trash" title="删除" @click.stop="handleDelete(item)">
-          <Trash2 :size="13" :stroke-width="1.5" />
-        </button>
+        <Pagination
+          :current-page="page"
+          :total-pages="totalPages"
+          :loading="loading"
+          :mode="'scroll'"
+          @change="goPage"
+          :rootId="listBodyId"
+        />
       </div>
-      <Pagination :current-page="page" :total-pages="totalPages" :loading="loading" :mode="'scroll'" @change="goPage" :rootId="listBodyId" />
     </div>
   </div>
 </template>
@@ -237,9 +246,25 @@ onMounted(() => load(true))
   }
 }
 
-.list-body {
+.list-body-wrapper {
   flex: 1;
   overflow-y: auto;
+}
+
+.list-body {
+  animation: list-enter 0.35s cubic-bezier(0.28, 1.2, 0.4, 1);
+}
+
+@keyframes list-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .list-item {
@@ -290,9 +315,8 @@ onMounted(() => load(true))
   flex-shrink: 0;
   width: 0.1875rem;
   height: 2rem;
-  border-radius: 62.4375rem;
   background: var(--color-base-content);
-  border-radius: 2rem;
+  border-radius: 2rem 2rem 0 0;
   opacity: 0;
   transform: scaleY(0.4);
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -305,8 +329,8 @@ onMounted(() => load(true))
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #3b82f6, var(--color-info));
-  // background: linear-gradient(135deg, var(--color-success), var(--color-neutral), var(--color-info));
+  // background: linear-gradient(135deg, #3b82f6, var(--color-info));
+  background: linear-gradient(135deg, #3b82f6, var(--color-base-100));
   opacity: 0;
   transition: opacity 0.6s;
 }
