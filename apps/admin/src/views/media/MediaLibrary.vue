@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, toRaw } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, toRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { Plus, Trash2, Copy, Search, ShieldAlert } from '@lucide/vue'
@@ -13,6 +13,7 @@ import { useGlobalStore } from '~/stores/global'
 import { useUppyStore } from '~/stores/uppy'
 import { storeToRefs } from 'pinia'
 import { withMinDuration } from '~/utils/async'
+import { formatDateWithWeek } from '~/utils/date'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,6 +36,32 @@ const loading = ref(true)
 const previewOpen = ref(false)
 const previewIndex = ref(0)
 const { mediaPaginationMode: paginationMode } = storeToRefs(appStore)
+
+type FilesGroupsByDate = {
+  date: string
+  files: fileItem[]
+}
+
+const filesGroupsByDate = computed<FilesGroupsByDate[]>(() => {
+  const groups: FilesGroupsByDate[] = []
+
+  for (const file of files.value) {
+    const date = formatDateWithWeek(file.createdAt)
+
+    const lastIndex = groups.length - 1
+
+    if (lastIndex >= 0 && groups[lastIndex].date === date) {
+      groups[lastIndex].files.push(file)
+    } else {
+      groups.push({
+        date,
+        files: [file]
+      })
+    }
+  }
+
+  return groups
+})
 
 function openPreview(item: fileItem) {
   previewIndex.value = files.value.indexOf(item)
@@ -196,45 +223,51 @@ onUnmounted(() => {
 
     <!-- Grid -->
     <div v-if="!loading && files.length === 0" class="dim">暂无文件</div>
-    <div v-else-if="files.length > 0" class="grid">
-      <div v-for="item in files" :key="item.id" class="card">
-        <div
-          class="thumb"
-          :class="{ loaded: item._loaded }"
-          :style="item.placeholder ? { '--placeholder': `url(${item.placeholder})` } : {}"
-          @click="openPreview(item)"
-        >
-          <img
-            v-if="item.thumbnailUrl"
-            :src="item.thumbnailUrl"
-            :alt="item.filename"
-            loading="lazy"
-            @load="item._loaded = true"
-          />
-          <img
-            v-else-if="isImg(item.type)"
-            :src="item.url"
-            :alt="item.filename"
-            loading="lazy"
-            @load="item._loaded = true"
-          />
-          <div v-else class="file-type">{{ item.ext?.replace('.', '')?.toUpperCase() || item.type }}</div>
-        </div>
-        <div class="card-overlay">
-          <div class="meta">
-            <div class="name" :title="item.filename">{{ item.filename }}</div>
-            <div class="info-row">
-              <span>{{ formatBytes(item.size) }}</span>
-              <span v-if="item.width">{{ item.width }}×{{ item.height }}</span>
+
+    <template v-else-if="files.length > 0">
+      <div class="group" v-for="group in filesGroupsByDate">
+        <div class="group-date">{{ group.date }}</div>
+        <div class="grid">
+          <div v-for="item in group.files" :key="item.id" class="card">
+            <div
+              class="thumb"
+              :class="{ loaded: item._loaded }"
+              :style="item.placeholder ? { '--placeholder': `url(${item.placeholder})` } : {}"
+              @click="openPreview(item)"
+            >
+              <img
+                v-if="item.thumbnailUrl"
+                :src="item.thumbnailUrl"
+                :alt="item.filename"
+                loading="lazy"
+                @load="item._loaded = true"
+              />
+              <img
+                v-else-if="isImg(item.type)"
+                :src="item.url"
+                :alt="item.filename"
+                loading="lazy"
+                @load="item._loaded = true"
+              />
+              <div v-else class="file-type">{{ item.ext?.replace('.', '')?.toUpperCase() || item.type }}</div>
             </div>
-          </div>
-          <div class="card-act" @click.stop>
-            <button title="复制链接" @click="copyUrl(item.url)"><Copy :size="13" /></button>
-            <button title="删除" class="del" @click="onDelete(item)"><Trash2 :size="13" /></button>
+            <div class="card-overlay">
+              <div class="meta">
+                <div class="name" :title="item.filename">{{ item.filename }}</div>
+                <div class="info-row">
+                  <span>{{ formatBytes(item.size) }}</span>
+                  <span v-if="item.width">{{ item.width }}×{{ item.height }}</span>
+                </div>
+              </div>
+              <div class="card-act" @click.stop>
+                <button title="复制链接" @click="copyUrl(item.url)"><Copy :size="13" /></button>
+                <button title="删除" class="del" @click="onDelete(item)"><Trash2 :size="13" /></button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
 
     <div class="media-pagination">
       <Pagination
@@ -262,7 +295,7 @@ onUnmounted(() => {
   align-items: flex-end;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 h1 {
   font-size: 1.25rem;
@@ -341,12 +374,32 @@ h1 {
   }
 }
 
-/* Grid */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-  gap: 0.75rem;
+.group {
+  --gap: 0.75rem;
+  position: relative;
+  // padding-top: calc(var(--gap));
+  .group-date {
+    position: sticky;
+    z-index: 9;
+    top: 0;
+    display: flex;
+    align-items: center;
+    // justify-content: center;
+    height: 2.5rem;
+    font-size: 1.125rem;
+    font-style: italic;
+    font-weight: 600;
+    color: var(--color-base-content);
+    text-shadow: 0 1px 2px color-mix(in oklab, var(--color-base-100) 40%, transparent);
+    opacity: 0.7;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: var(--gap);
+  }
 }
+
 // @media (min-width: 40rem) {
 //   .grid { grid-template-columns: repeat(2, 1fr); }
 //   .page { padding: 1rem; }
