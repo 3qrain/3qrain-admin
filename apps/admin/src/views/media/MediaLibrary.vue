@@ -29,7 +29,7 @@ interface fileItem extends MediaItem {
 const files = ref<fileItem[]>([])
 const total = ref(0)
 const page = ref(1)
-const pageSize = ref(24)
+const pageSize = ref(36)
 const totalPages = ref(1)
 const keyword = ref('')
 const loading = ref(true)
@@ -82,7 +82,7 @@ async function load(append = false) {
       params.page = page.value
     }
     if (keyword.value) params.keyword = keyword.value
-    const result = await withMinDuration(() => getMedia(params), 100)
+    const result = await withMinDuration(() => getMedia(params), 0)
     files.value = append ? [...files.value, ...(result.list as any)] : (result.list as any)
     total.value = result.total
     totalPages.value = Math.ceil(result.total / result.pageSize)

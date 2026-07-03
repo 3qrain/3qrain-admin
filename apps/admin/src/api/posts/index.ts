@@ -1,8 +1,8 @@
 import { apiClient } from "~/lib/axios";
 import type { Post, PostListResult, PostListQuery, CreatePostBody, UpdatePostBody } from "./types";
 
-export async function getPosts(query: PostListQuery = {}) {
-  const { data } = await apiClient.get<{ data: PostListResult }>("/admin/posts", { params: query });
+export async function getPosts(query: PostListQuery = {}, signal?: AbortSignal) {
+  const { data } = await apiClient.get<{ data: PostListResult }>("/admin/posts", { params: query, signal });
   return data.data;
 }
 

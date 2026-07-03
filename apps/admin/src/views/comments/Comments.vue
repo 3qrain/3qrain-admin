@@ -198,6 +198,7 @@ onMounted(load)
           :title="showDeleted ? '返回评论' : '回收站'"
           @click="
             () => {
+              if (loading) return
               showDeleted = !showDeleted
               page = 1
             }

@@ -25,6 +25,7 @@ const posts = ref<Post[]>([])
 const categories = ref<Category[]>([])
 const total = ref(0)
 const loading = ref(true)
+let controller: AbortController | null = null
 
 const query = ref({
   keyword: '',
@@ -39,7 +40,10 @@ const { postsPaginationMode: paginationMode } = storeToRefs(useAppStore())
 const showDeleted = ref(false)
 const categoryOptions = ref([{ label: '全部分类', value: 0 }])
 
-async function load(append = false) {
+async function load(append = false) {  
+  controller?.abort()
+  controller = new AbortController()
+
   loading.value = true
   try {
     !append && (posts.value = [])
@@ -54,11 +58,13 @@ async function load(append = false) {
     if (query.value.categoryId) params.categoryId = query.value.categoryId
     if (showDeleted.value) params.deleted = true
 
-    const result = await withMinDuration(() => getPosts(params))
+    const result = await withMinDuration(() => getPosts(params, controller?.signal))
+    
     posts.value = append ? [...posts.value, ...result.list] : result.list
     total.value = result.total
     totalPages.value = Math.ceil(result.total / result.pageSize)
-  } catch {
+  } catch(e: any) {
+    if (e.code === 'ERR_CANCELED') return
     toast.error('加载文章失败')
   } finally {
     loading.value = false
@@ -139,6 +145,7 @@ async function handleDestroy(post: Post) {
 }
 
 function toggleDeleted() {
+  if (loading.value) return
   showDeleted.value = !showDeleted.value
   query.value.page = 1
   router.replace({ query: {} })

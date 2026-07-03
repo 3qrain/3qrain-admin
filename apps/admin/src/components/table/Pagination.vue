@@ -48,7 +48,7 @@ function setupObserver() {
     },
     {
       root: scrollRoot,
-      rootMargin: '0px 0px 200px 0px',
+      rootMargin: '0px 0px 500px 0px',
     }
   )
   observer.observe(sentinel.value)

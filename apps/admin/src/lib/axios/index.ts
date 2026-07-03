@@ -1,6 +1,5 @@
 import axios from 'axios'
 import router from '~/router'
-import { toast } from 'vue-sonner';
 import { useAppStore } from '~/stores/app'
 
 export const apiClient = axios.create({

@@ -157,6 +157,7 @@ async function handleDestroy(note: Note) {
 }
 
 function toggleDeleted() {
+  if (loading.value) return
   showDeleted.value = !showDeleted.value
   page.value = 1
   router.replace({ query: {} })

@@ -1,5 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { LayoutDashboard, PenLine, MessageCircle, MessagesSquare, FolderTree, Tags, Image, Users, Settings, Bell } from '@lucide/vue'
+import { LayoutDashboard, PenLine, MessageCircle, MessagesSquare, FolderTree, Tags, Folder, Users, Settings, Bell } from '@lucide/vue'
 import AppLayout from '~/layouts/AppLayout.vue'
 
 export const menuRoutes: RouteRecordRaw[] = [
@@ -79,20 +79,6 @@ export const menuRoutes: RouteRecordRaw[] = [
     ]
   },
   {
-    path: '/media',
-    meta: {
-      title: '媒体库',
-      icon: Image
-    },
-    children: [
-      {
-        path: '',
-        name: 'media',
-        component: () => import('~/views/media/MediaLibrary.vue')
-      }
-    ]
-  },
-  {
     path: '/visitors',
     meta: {
       title: '访客',
@@ -128,6 +114,20 @@ export const menuRoutes: RouteRecordRaw[] = [
       title: '通知',
       icon: Bell
     }
+  },
+  {
+    path: '/media',
+    meta: {
+      title: '文件',
+      icon: Folder,
+    },
+    children: [
+      {
+        path: '',
+        name: 'media',
+        component: () => import('~/views/media/MediaLibrary.vue')
+      }
+    ]
   },
   {
     path: '/settings',
