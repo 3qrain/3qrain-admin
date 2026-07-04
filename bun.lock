@@ -56,6 +56,7 @@
         "drizzle-orm": "^0.45.2",
         "hono": "^4.12.16",
         "ioredis": "^5.10.1",
+        "nodemailer": "^9.0.3",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -1464,6 +1465,8 @@
     "node-mock-http": ["node-mock-http@1.0.4", "https://registry.npmmirror.com/node-mock-http/-/node-mock-http-1.0.4.tgz", {}, "sha512-8DY+kFsDkNXy1sJglUfuODx1/opAGJGyrTuFqEoN90oRc2Vk0ZbD4K2qmKXBBEhZQzdKHIVfEJpDU8Ak2NJEvQ=="],
 
     "node-releases": ["node-releases@2.0.48", "https://registry.npmmirror.com/node-releases/-/node-releases-2.0.48.tgz", {}, "sha512-1uz8041X6LoI6ZSdZacM9lVY28vuzDlSKitnpbSNK0RfKoIJkX29NBPVEFXhnuSuEOA9Ww0xnPJ+ILWbGAv8DA=="],
+
+    "nodemailer": ["nodemailer@9.0.3", "https://registry.npmmirror.com/nodemailer/-/nodemailer-9.0.3.tgz", {}, "sha512-n+YP+NKwR5zRWa60k3GiQ6Q3B4KXCoAw40dAKeCtYn020iNN74aWK2liXIC3ZEATeGql7we3tE3t8QwhY0eskw=="],
 
     "nopt": ["nopt@8.1.0", "https://registry.npmmirror.com/nopt/-/nopt-8.1.0.tgz", { "dependencies": { "abbrev": "^3.0.0" }, "bin": { "nopt": "bin/nopt.js" } }, "sha512-ieGu42u/Qsa4TFktmaKEwM6MQH0pOWnaB3htzh0JRtx84+Mebc0cbZYN5bC+6WTZ4+77xrL9Pn5m7CV6VIkV7A=="],
 
