@@ -5,6 +5,7 @@ import { notes, noteTags, noteMedia, tags, media } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
+import { broadcast } from '~/services/notify'
 
 function toUrl(p: string | null) {
   return p ? `/storage${p}` : null
@@ -109,6 +110,15 @@ export async function create(c: Context) {
     for (let i = 0; i < ordered.length; i++) {
       db.insert(noteMedia).values({ noteId: note.id, mediaId: ordered[i], sort: i }).run()
     }
+  }
+
+  if (body.isPublished) {
+    broadcast({
+      type: 'new_note',
+      title: '一条说说到来~',
+      content: body.content.slice(0, 50),
+      meta: JSON.stringify({ noteId: note.id }),
+    }).catch(() => {})
   }
 
   return c.json(ok(note, '发布成功'), HttpStatusCodes.CREATED)

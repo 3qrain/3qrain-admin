@@ -1,3 +1,4 @@
+import { toast } from 'vue-sonner'
 import type { WsServerMessage } from '@3qrain/shared'
 
 export function useWebSocket() {
@@ -17,7 +18,21 @@ export function useWebSocket() {
       try {
         const msg: WsServerMessage = JSON.parse(e.data)
         if (msg.type === 'notification') {
-          console.log('[ws] notification:', msg.data)
+          toast(msg.data.title, {
+            description: msg.data.content,
+            action: {
+              label: '查看',
+              onClick: () => {
+                if (msg.data.meta) {
+                  try {
+                    const meta = JSON.parse(msg.data.meta)
+                    if (meta.slug) navigateTo(`/posts/${meta.slug}`)
+                    else if (meta.noteId) navigateTo('/notes')
+                  } catch { navigateTo('/notes') }
+                }
+              },
+            },
+          })
         }
       } catch { /* ignore */ }
     }

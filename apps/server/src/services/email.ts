@@ -66,6 +66,29 @@ export async function testEmailConnection(config: EmailConfig): Promise<{ ok: bo
     const result = await transport.verify()
     transport.close()
     return { ok: result as boolean }
+  } catch (e: any) {    
+    return { ok: false, error: e.message }
+  }
+}
+
+export async function sendEmail(options: {
+  to: string
+  subject: string
+  html: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const config = getEmailConfig()
+  if (!config.enabled) return { ok: false, error: '邮件服务未启用' }
+
+  try {
+    const transport = createTransport(config)
+    await transport.sendMail({
+      from: config.user,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+    })
+    transport.close()
+    return { ok: true }
   } catch (e: any) {
     return { ok: false, error: e.message }
   }
@@ -77,8 +100,8 @@ export async function sendTestEmail(config: EmailConfig, to: string, siteName: s
     await transport.sendMail({
       from: config.user,
       to,
-      subject: `[${siteName}] 邮件连通性测试`,
-      text: '如果你收到这封邮件，说明 SMTP 配置正确，邮件服务可以正常使用。',
+      subject: `[${siteName}] 测试邮件`,
+      html: '<p>如果你收到这封邮件，说明 SMTP 配置正确，邮件服务可以正常使用。</p>',
     })
     transport.close()
     return { ok: true }

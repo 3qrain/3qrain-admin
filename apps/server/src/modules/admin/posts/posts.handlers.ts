@@ -6,6 +6,7 @@ import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { createPostSchema, updatePostSchema } from './posts.routes'
+import { broadcast } from '~/services/notify'
 
 function buildPostFilters(query: Record<string, string | undefined>) {
   const conditions = []
@@ -202,10 +203,20 @@ export async function create(c: Context) {
       .returning()
       .get()
   )
-  
+
   await syncPostTags(result.id, tagIds)
 
   const post = await getPostWithRelations(result.id)
+
+  if (body.status === 'published') {
+    broadcast({
+      type: 'new_post',
+      title: `飘来一篇文章「${body.title}」`,
+      // content: body.summary || '',
+      meta: JSON.stringify({ slug: body.slug })
+    }).catch(() => {})
+  }
+
   return c.json(ok(post as any, '创建成功'), HttpStatusCodes.CREATED)
 }
 
@@ -266,6 +277,16 @@ export async function update(c: Context) {
   }
 
   const post = await getPostWithRelations(id)
+
+  if (body.status === 'published') {
+    broadcast({
+      type: 'new_post',
+      title: `飘来一篇文章「${body.title}」`,
+      // content: body.summary || '',
+      meta: JSON.stringify({ slug: body.slug })
+    }).catch(() => {})
+  }
+
   return c.json(ok(post as any, '更新成功'), HttpStatusCodes.OK)
 }
 

@@ -28,3 +28,18 @@ export async function notify(input: NotifyInput) {
 
   return record
 }
+
+/** 纯实时广播 — 不写 DB，只推 WS */
+export async function broadcast(input: Omit<NotifyInput, 'scope'>) {
+  const payload: NotificationPayload = {
+    id: 0,
+    type: input.type,
+    title: input.title,
+    content: input.content ?? undefined,
+    meta: input.meta ?? undefined,
+    createdAt: new Date().toISOString(),
+  }
+
+  const msg: WsChannelMessage = { scope: 'public', payload }
+  await redis.publish(CHANNEL, JSON.stringify(msg))
+}
