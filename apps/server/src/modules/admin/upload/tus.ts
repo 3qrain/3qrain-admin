@@ -2,6 +2,7 @@ import type { Context } from 'hono'
 import { Server } from '@tus/server'
 import { FileStore } from '@tus/file-store'
 import { Upload } from '@tus/server'
+import sharp from 'sharp'
 import { mkdir, rename } from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
@@ -85,40 +86,43 @@ const tusServer = new Server({
         'image/jpeg',
         'image/png',
         'image/webp',
-        'image/gif'
+        'image/gif',
         // 'image/bmp',
         // 'image/tiff',
-        // 'image/heic', 需要编码器
+        // 'image/heic', 
         // 'image/avif'  需要编码器
       ]
       // image 图片
       if (mimeType.startsWith('image/') && bunImageList.includes(mimeType)) {
         type = 'image'
-        const img = new Bun.Image(tmpPath)
-        const meta = await img.metadata()
+        const meta = await sharp(tmpPath).metadata()
         width = meta.width
         height = meta.height
+        const isGif = meta.format === 'gif'
 
         thumbnailPath = `${dir}/${id}-thumbnail.webp`
         previewPath = `${dir}/${id}-preview.webp`
 
-        await img
-          .resize(512, 512, {
+        // 缩略图，如果是gif的话，压狠一点
+        let thumbSize = isGif ? 320 : 512
+        let thumbQuality = isGif ?  50 : 75
+        await sharp(tmpPath, { animated: true })
+          .resize(thumbSize, thumbSize, {
             fit: 'inside',
             withoutEnlargement: true
           })
-          .webp({ quality: 75 })
-          .write(thumbnailPath)
+          .webp({ quality: thumbQuality })
+          .toFile(thumbnailPath)
 
-        await img
+        await sharp(tmpPath, { animated: true })
           .resize(1280, 1280, {
             fit: 'inside',
             withoutEnlargement: true
           })
           .webp({ quality: 80 })
-          .write(previewPath)
+          .toFile(previewPath)
 
-        placeholder = await img.placeholder()
+        placeholder = await new Bun.Image(tmpPath).placeholder()
       }
 
       // svg 图片
@@ -154,19 +158,23 @@ const tusServer = new Server({
         throw new Error('Failed to delete tus json file')
       }
 
-      const record = db.insert(media).values({
-        mimeType,
-        type,
-        size,
-        ext,
-        originalPath: originalPath.replace(root_dir, ''),
-        thumbnailPath: thumbnailPath?.replace(root_dir, ''),
-        previewPath: previewPath?.replace(root_dir, ''),
-        placeholder,
-        width,
-        height,
-        filename: originalName,
-      }).returning().get()
+      const record = db
+        .insert(media)
+        .values({
+          mimeType,
+          type,
+          size,
+          ext,
+          originalPath: originalPath.replace(root_dir, ''),
+          thumbnailPath: thumbnailPath?.replace(root_dir, ''),
+          previewPath: previewPath?.replace(root_dir, ''),
+          placeholder,
+          width,
+          height,
+          filename: originalName
+        })
+        .returning()
+        .get()
 
       return {
         headers: {
@@ -175,9 +183,9 @@ const tusServer = new Server({
             url: `/storage${record.originalPath}`,
             thumbnailUrl: record.thumbnailPath ? `/storage${record.thumbnailPath}` : null,
             width: record.width,
-            height: record.height,
-          }),
-        },
+            height: record.height
+          })
+        }
       }
     } catch (e) {
       const time = dayjs().format('YY-MM-DD HH:mm:ss')

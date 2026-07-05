@@ -118,7 +118,7 @@ export const menuRoutes: RouteRecordRaw[] = [
   {
     path: '/media',
     meta: {
-      title: '文件',
+      title: '媒体库',
       icon: Folder,
     },
     children: [

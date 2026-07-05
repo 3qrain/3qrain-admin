@@ -149,6 +149,7 @@ function search() {
 }
 
 function onUploadsComplete() {
+  router.replace({ query: {} })
   page.value = 1
   load()
   checkHealth()
