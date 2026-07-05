@@ -9,7 +9,7 @@ withDefaults(defineProps<{
   type: "text",
 });
 
-const model = defineModel<string>({ default: "" });
+const model = defineModel<string | number>({ default: '' })
 </script>
 
 <template>

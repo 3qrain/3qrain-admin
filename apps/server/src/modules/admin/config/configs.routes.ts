@@ -59,3 +59,80 @@ export const updateConfigRoute = createRoute({
     },
   },
 });
+
+// ---- Email Config ----
+
+export const getEmailConfigRoute = createRoute({
+  tags: ['Admin/Config'],
+  summary: '获取邮件配置',
+  method: 'get',
+  path: '/email-config',
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.object({
+        enabled: z.boolean(),
+        host: z.string(),
+        port: z.number(),
+        user: z.string(),
+        pass: z.string(),
+      })) } },
+      description: '邮件配置',
+    },
+  },
+})
+
+export const saveEmailConfigRoute = createRoute({
+  tags: ['Admin/Config'],
+  summary: '保存邮件配置',
+  method: 'put',
+  path: '/email-config',
+  request: {
+    body: { content: { 'application/json': { schema: z.object({
+      enabled: z.boolean(),
+      host: z.string(),
+      port: z.number().int(),
+      user: z.string(),
+      pass: z.string(),
+    }) } } },
+  },
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.object({})) } },
+      description: '保存成功',
+    },
+  },
+})
+
+export const testEmailRoute = createRoute({
+  tags: ['Admin/Config'],
+  summary: '测试邮件连通性',
+  method: 'post',
+  path: '/email-config/test',
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.object({})) } },
+      description: '连接成功',
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      content: { 'application/json': { schema: errorResponseSchema } },
+      description: '配置缺失或连接失败',
+    },
+  },
+})
+
+export const sendTestEmailRoute = createRoute({
+  tags: ['Admin/Config'],
+  summary: '发送测试邮件',
+  method: 'post',
+  path: '/email-config/test-send',
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.object({})) } },
+      description: '发送成功',
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      content: { 'application/json': { schema: errorResponseSchema } },
+      description: '配置缺失、邮箱格式错误或发送失败',
+    },
+  },
+})

@@ -70,5 +70,5 @@ cron_cleanUpExpiredUploads()
 export default {
   fetch: app.fetch,
   websocket,
-  idleTimeout: 15,
+  idleTimeout: 10,
 }

@@ -44,6 +44,8 @@ export const ErrorCode = {
 
   /** 文件不存在 */
   FILE_NOT_FOUND: "FILE_NOT_FOUND",
+  /** 邮件配置或发送失败 */
+  EMAIL_ERROR: "EMAIL_ERROR",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
