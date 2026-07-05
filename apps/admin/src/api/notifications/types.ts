@@ -1,3 +1,5 @@
+import type { EmailStatus } from '@3qrain/shared'
+
 export interface NotificationItem {
   id: number
   type: string
@@ -5,6 +7,9 @@ export interface NotificationItem {
   content: string | null
   meta: string | null
   isRead: number
+  emailStatus: EmailStatus
+  emailError: string | null
+  emailSentAt: string | null
   createdAt: string
   updatedAt: string | null
 }

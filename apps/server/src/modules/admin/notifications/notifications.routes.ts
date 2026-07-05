@@ -11,8 +11,11 @@ const notificationSchema = z.object({
   content: z.string().nullable(),
   meta: z.string().nullable(),
   isRead: z.number(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  emailStatus: z.string(),
+  emailError: z.string().nullable(),
+  emailSentAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 })
 
 const notificationListSchema = z.object({

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { Check, Pin, PinOff, Trash2, RotateCcw, Search, ChevronDown, ChevronRight, Trash } from '@lucide/vue'
 import ToggleGroup from '~/components/base/ToggleGroup.vue'
@@ -35,6 +36,8 @@ const { commentsPaginationMode: paginationMode } = storeToRefs(useAppStore())
 const comments = ref<Comment[]>([])
 const total = ref(0)
 const loading = ref(true)
+const router = useRouter()
+const route = useRoute()
 const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 10
@@ -75,6 +78,7 @@ function typeLabel(c: Comment) {
 
 async function load(append = false) {
   loading.value = true
+  !append && (comments.value = [])
   try {
     const params: any = {
       pageSize,
@@ -169,6 +173,9 @@ async function emptyTrash() {
 
 function goPage(p: number) {
   page.value = p
+  if (paginationMode.value === 'button') {
+    router.replace({ query: { ...route.query, page: String(p) } })
+  }
   load(paginationMode.value === 'scroll')
 }
 
@@ -177,11 +184,18 @@ watch([tab, showDeleted], () => {
   comments.value = []
   load()
 })
-watch(paginationMode, () => {
+watch(paginationMode, (val) => {
   page.value = 1
+  if (val === 'scroll') router.replace({ query: {} })
   load()
 })
-onMounted(load)
+onMounted(() => {
+  if (paginationMode.value === 'button') {
+    const urlPage = Number(route.query.page)
+    if (urlPage > 0) page.value = urlPage
+  }
+  load(paginationMode.value === 'scroll')
+})
 </script>
 
 <template>

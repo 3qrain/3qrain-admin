@@ -6,8 +6,8 @@ const noteSchema = z.object({
   id: z.number(),
   content: z.string(),
   isPublished: z.boolean(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 })
 
 const createNoteSchema = z.object({
