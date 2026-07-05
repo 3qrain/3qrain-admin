@@ -32,7 +32,7 @@ const query = ref({
   status: '',
   categoryId: 0,
   page: 1,
-  pageSize: 10,
+  pageSize: 10
 })
 
 const totalPages = ref(1)
@@ -40,7 +40,7 @@ const { postsPaginationMode: paginationMode } = storeToRefs(useAppStore())
 const showDeleted = ref(false)
 const categoryOptions = ref([{ label: '全部分类', value: 0 }])
 
-async function load(append = false) {  
+async function load(append = false) {
   controller?.abort()
   controller = new AbortController()
 
@@ -59,11 +59,11 @@ async function load(append = false) {
     if (showDeleted.value) params.deleted = true
 
     const result = await withMinDuration(() => getPosts(params, controller?.signal))
-    
+
     posts.value = append ? [...posts.value, ...result.list] : result.list
     total.value = result.total
     totalPages.value = Math.ceil(result.total / result.pageSize)
-  } catch(e: any) {
+  } catch (e: any) {
     if (e.code === 'ERR_CANCELED') return
     toast.error('加载文章失败')
   } finally {
@@ -75,7 +75,9 @@ async function loadCategories() {
   try {
     categories.value = await getCategories()
     categoryOptions.value.push(...categories.value.map(c => ({ label: c.name, value: c.id })))
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function search() {
@@ -154,13 +156,24 @@ function toggleDeleted() {
 
 async function handleEmptyTrash() {
   if (!confirm('确定清空回收站？所有文章将被永久删除。')) return
-  try { await emptyTrash(); load(); toast.success('回收站已清空') }
-  catch (e: any) { toast.error(e?.message || '操作失败') }
+  try {
+    await emptyTrash()
+    load()
+    toast.success('回收站已清空')
+  } catch (e: any) {
+    toast.error(e?.message || '操作失败')
+  }
 }
 
-watch(() => query.value.status, () => search())
-watch(() => query.value.categoryId, () => search())
-watch(paginationMode, (val) => {
+watch(
+  () => query.value.status,
+  () => search()
+)
+watch(
+  () => query.value.categoryId,
+  () => search()
+)
+watch(paginationMode, val => {
   query.value.page = 1
   if (val === 'scroll') {
     router.replace({ query: {} })
@@ -187,14 +200,18 @@ onMounted(() => {
       </div>
       <div class="head-right">
         <Button v-if="showDeleted" variant="danger" size="sm" @click="handleEmptyTrash">清空回收站</Button>
-        <button :class="['trash-toggle', showDeleted && 'active']" :title="showDeleted ? '返回文章' : '回收站'" @click="toggleDeleted">
-          <Trash style="width: 1rem; height: 1rem;" />
+        <button
+          :class="['trash-toggle', showDeleted && 'active']"
+          :title="showDeleted ? '返回文章' : '回收站'"
+          @click="toggleDeleted"
+        >
+          <Trash style="width: 1rem; height: 1rem" />
         </button>
         <ToggleGroup
           v-model="paginationMode"
           :options="[
             { label: '滚动', value: 'scroll' },
-            { label: '分页', value: 'button' },
+            { label: '分页', value: 'button' }
           ]"
           size="sm"
         />
@@ -203,7 +220,7 @@ onMounted(() => {
 
     <div v-if="!showDeleted" class="toolbar">
       <div class="search">
-        <Search style="width: 0.875rem; height: 0.875rem;" />
+        <Search style="width: 0.875rem; height: 0.875rem" />
         <input v-model="query.keyword" placeholder="搜索标题..." @keyup.enter="search" />
       </div>
       <Select
@@ -212,16 +229,16 @@ onMounted(() => {
           { label: '全部状态', value: '' },
           { label: '草稿', value: 'draft' },
           { label: '已发布', value: 'published' },
-          { label: '已归档', value: 'archived' },
+          { label: '已归档', value: 'archived' }
         ]"
       />
       <Select v-model="query.categoryId" :options="categoryOptions" />
-      <Button size="md" @click="create">
-        <Plus style="width: 1rem; height: 1rem;" /> 写文章
-      </Button>
+      <Button size="md" @click="create"> <Plus style="width: 1rem; height: 1rem" /> 写文章 </Button>
     </div>
 
-    <div v-if="!loading && posts.length === 0" class="empty">{{ showDeleted ? '回收站为空' : '暂无文章，点击「写文章」开始创作' }}</div>
+    <div v-if="!loading && posts.length === 0" class="empty">
+      {{ showDeleted ? '回收站为空' : '暂无文章，点击「写文章」开始创作' }}
+    </div>
 
     <div v-else class="list">
       <article v-for="post in posts" :key="post.id" class="row" @click="!showDeleted && edit(post)">
@@ -229,45 +246,67 @@ onMounted(() => {
           <h2 class="row-title">{{ post.title || '新文章' }}</h2>
           <p v-if="post.summary" class="row-summary">{{ post.summary }}</p>
           <div class="row-meta">
-            <Badge :variant="post.status === 'published' ? 'success' : post.status === 'archived' ? 'neutral' : 'warning'">
+            <Badge
+              :variant="post.status === 'published' ? 'success' : post.status === 'archived' ? 'neutral' : 'warning'"
+            >
               {{ post.status === 'published' ? '已发布' : post.status === 'archived' ? '已归档' : '草稿' }}
             </Badge>
             <Badge v-if="post.category" variant="info">{{ post.category.name }}</Badge>
-            <span class="meta-text"><Eye style="width: 0.75rem; height: 0.75rem;" /> {{ post.viewCount }}</span>
+            <span class="meta-text"><Eye style="width: 0.75rem; height: 0.75rem" /> {{ post.viewCount }}</span>
             <span class="meta-text">{{ formatDate(post.createdAt) }}</span>
           </div>
         </div>
         <div class="row-actions" @click.stop>
           <template v-if="showDeleted">
             <Button variant="ghost" size="sm" icon title="恢复" @click="handleRestore(post)">
-              <RotateCcw style="width: 0.875rem; height: 0.875rem;" />
+              <RotateCcw style="width: 0.875rem; height: 0.875rem" />
             </Button>
             <Popover>
               <Button variant="danger" size="sm" icon title="永久删除">
-                <Trash2 style="width: 0.875rem; height: 0.875rem;" />
+                <Trash2 style="width: 0.875rem; height: 0.875rem" />
               </Button>
               <template #content="{ close }">
                 <p class="confirm-text">永久删除？此操作不可恢复</p>
                 <div class="confirm-actions">
                   <Button variant="ghost" size="sm" @click="close()">取消</Button>
-                  <Button variant="danger" size="sm" @click="() => { handleDestroy(post); close() }">确定</Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    @click="
+                      () => {
+                        handleDestroy(post)
+                        close()
+                      }
+                    "
+                    >确定</Button
+                  >
                 </div>
               </template>
             </Popover>
           </template>
           <template v-else>
             <Button variant="ghost" size="sm" icon title="编辑" @click="edit(post)">
-              <Pencil style="width: 0.875rem; height: 0.875rem;" />
+              <Pencil style="width: 0.875rem; height: 0.875rem" />
             </Button>
             <Popover>
               <Button variant="danger" size="sm" icon title="删除">
-                <Trash2 style="width: 0.875rem; height: 0.875rem;" />
+                <Trash2 style="width: 0.875rem; height: 0.875rem" />
               </Button>
               <template #content="{ close }">
                 <p class="confirm-text">确定删除「{{ post.title || '新文章' }}」？</p>
                 <div class="confirm-actions">
                   <Button variant="ghost" size="sm" @click="close()">取消</Button>
-                  <Button variant="danger" size="sm" @click="() => { remove(post); close() }">确定</Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    @click="
+                      () => {
+                        remove(post)
+                        close()
+                      }
+                    "
+                    >确定</Button
+                  >
                 </div>
               </template>
             </Popover>
@@ -277,6 +316,7 @@ onMounted(() => {
     </div>
 
     <Pagination
+      class="pagination"
       :current-page="query.page"
       :total-pages="totalPages"
       :loading="loading"
@@ -297,7 +337,11 @@ onMounted(() => {
   align-items: flex-start;
   margin-bottom: 1.25rem;
 
-  h1 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+  }
 }
 
 .head-right {
@@ -320,8 +364,13 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.12s;
 
-  &:hover { opacity: 0.6; }
-  &.active { opacity: 1; color: var(--color-error); }
+  &:hover {
+    opacity: 0.6;
+  }
+  &.active {
+    opacity: 1;
+    color: var(--color-error);
+  }
 }
 
 .confirm-text {
@@ -365,7 +414,10 @@ onMounted(() => {
   min-width: 8rem;
   max-width: 14rem;
 
-  svg { opacity: 0.3; flex-shrink: 0; }
+  svg {
+    opacity: 0.3;
+    flex-shrink: 0;
+  }
 
   input {
     border: none;
@@ -377,7 +429,9 @@ onMounted(() => {
     font-family: inherit;
   }
 
-  &:focus-within { border-color: var(--color-primary); }
+  &:focus-within {
+    border-color: var(--color-primary);
+  }
 }
 
 /* ---- List ---- */
@@ -395,7 +449,9 @@ onMounted(() => {
   cursor: pointer;
   transition: background 0.1s;
 
-  &:hover { background: var(--color-base-200); }
+  &:hover {
+    background: var(--color-base-200);
+  }
 }
 
 .row-main {
@@ -443,7 +499,9 @@ onMounted(() => {
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.1s;
-  .row:hover & { opacity: 1; }
+  .row:hover & {
+    opacity: 1;
+  }
 }
 
 .empty {
@@ -453,14 +511,26 @@ onMounted(() => {
   opacity: 0.3;
 }
 
+.pagination {
+  margin-top: 1.5rem;
+}
+
 @media (max-width: 48rem) {
-  .toolbar { gap: 0.375rem; }
+  .toolbar {
+    gap: 0.375rem;
+  }
 
-  .search { max-width: none; }
+  .search {
+    max-width: none;
+  }
 
-  .row-summary { display: none; }
+  .row-summary {
+    display: none;
+  }
 
-  .row-actions { opacity: 1; }
+  .row-actions {
+    opacity: 1;
+  }
 }
 
 .row:has([data-popover-open]) .row-actions {
