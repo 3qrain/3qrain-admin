@@ -3,6 +3,8 @@ import { eq, and, asc, desc, isNull, count, inArray, lt } from 'drizzle-orm'
 import { db } from '~/db'
 import { comments, users, posts, notes } from '~/db/schema'
 import { notify } from '~/services/notify'
+import { sendEmail } from '~/services/email'
+import { renderNewCommentEmail, renderNewReplyEmail, renderReplyEmail } from '@3qrain/shared'
 import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
@@ -141,32 +143,82 @@ export async function create(c: Context) {
 
   // 通知管理员
   try {
-    let targetTitle = ''
-    if (body.targetType === 'post') {
-      const post = db.select({ title: posts.title }).from(posts).where(eq(posts.id, body.targetId)).get()
-      targetTitle = `「${post?.title || ''}」`    
-    } else if (body.targetType === 'note') {
-      targetTitle = '说说#' + body.targetId + ' '
-    }
-
     const isReply = !!body.parentId
     const maxLength = 25
     let summary = body.content.slice(0, maxLength)
     if (body.content.length > maxLength) summary += '...'
+
+    // 获取文章信息
+    let postTitle = ''
+    let postSlug = ''
+    if (body.targetType === 'post') {
+      const post = db.select({ title: posts.title, slug: posts.slug }).from(posts).where(eq(posts.id, body.targetId)).get()
+      postTitle = post?.title || ''
+      postSlug = post?.slug || ''
+    } else if (body.targetType === 'note') {
+      postTitle = '说说#' + body.targetId
+    }
+
     const meta = JSON.stringify({
       targetType: body.targetType,
       targetId: body.targetId,
       commentId: result.id,
       parentId: body.parentId || null,
     })
-    
+
     await notify({
       scope: 'admin',
       type: isReply ? 'new_reply' : 'new_comment',
-      title: targetTitle + (isReply ? '有新回复' : '有新评论'),  
+      title: postTitle + (isReply ? ' 有新回复' : ' 有新评论'),
       content: summary,
       meta,
     })
+
+    // 邮件通知
+    const admin = db.select({ username: users.username, email: users.email }).from(users).where(eq(users.role, 'system')).get()
+    const siteName = admin?.username || '3qrain'
+    const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+
+    if (isReply) {
+      // 回复：只通知被回复的人，不邮件通知站长
+      if (body.replyToUserId) {
+        const parentAuthor = db.select({ username: users.username, email: users.email }).from(users).where(eq(users.id, body.replyToUserId)).get()
+        const parentComment = db.select({ content: comments.content }).from(comments).where(eq(comments.id, body.parentId!)).get()
+
+        if (parentAuthor?.email) {
+          sendEmail({
+            to: parentAuthor.email,
+            subject: `[${siteName}] 您收到了来自 ${user.username} 的评论回复`,
+            html: renderReplyEmail({
+              siteName,
+              userName: parentAuthor.username,
+              replierName: user.username,
+              postTitle,
+              postSlug,
+              replyContent: body.content,
+              yourComment: parentComment?.content?.slice(0, 100) || '...',
+            }),
+          }).catch(() => {})
+        }
+      }
+    } else {
+      // 新评论：通知站长
+      if (admin?.email) {
+        sendEmail({
+          to: admin.email,
+          subject: `[${siteName}] 新评论飞来「${postTitle}」`,
+          html: renderNewCommentEmail({
+            siteName,
+            postTitle,
+            postSlug,
+            commenterName: user.username,
+            commenterEmail: user.email || '',
+            commentContent: body.content,
+            time: now,
+          }),
+        }).catch(() => {})
+      }
+    }
   } catch (e) {
     console.error('[notify] failed to send notification:', e)
   }

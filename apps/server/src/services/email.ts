@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 import { db } from '~/db'
 import { configs } from '~/db/schema'
 import { eq } from 'drizzle-orm'
+import { emailLayout } from '@3qrain/shared'
 
 export interface EmailConfig {
   enabled: boolean
@@ -16,7 +17,7 @@ const CONFIG_KEYS = {
   host: 'email_host',
   port: 'email_port',
   user: 'email_user',
-  pass: 'email_pass',
+  pass: 'email_pass'
 } as const
 
 function getConfigValue(key: string): string | null {
@@ -39,7 +40,7 @@ export function getEmailConfig(): EmailConfig {
     host: getConfigValue(CONFIG_KEYS.host) || '',
     port: Number(getConfigValue(CONFIG_KEYS.port)) || 465,
     user: getConfigValue(CONFIG_KEYS.user) || '',
-    pass: getConfigValue(CONFIG_KEYS.pass) || '',
+    pass: getConfigValue(CONFIG_KEYS.pass) || ''
   }
 }
 
@@ -57,6 +58,10 @@ function createTransport(config: EmailConfig) {
     port: config.port,
     secure: config.port === 465,
     auth: { user: config.user, pass: config.pass },
+    // TCP 连接超时时间
+    connectionTimeout: 10000,
+    // smtp 响应欢迎信息超时时间
+    greetingTimeout: 10000
   })
 }
 
@@ -66,7 +71,7 @@ export async function testEmailConnection(config: EmailConfig): Promise<{ ok: bo
     const result = await transport.verify()
     transport.close()
     return { ok: result as boolean }
-  } catch (e: any) {    
+  } catch (e: any) {
     return { ok: false, error: e.message }
   }
 }
@@ -85,7 +90,7 @@ export async function sendEmail(options: {
       from: config.user,
       to: options.to,
       subject: options.subject,
-      html: options.html,
+      html: options.html
     })
     transport.close()
     return { ok: true }
@@ -94,14 +99,23 @@ export async function sendEmail(options: {
   }
 }
 
-export async function sendTestEmail(config: EmailConfig, to: string, siteName: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendTestEmail(
+  config: EmailConfig,
+  to: string,
+  siteName: string
+): Promise<{ ok: boolean; error?: string }> {
   try {
     const transport = createTransport(config)
     await transport.sendMail({
       from: config.user,
       to,
       subject: `[${siteName}] 测试邮件`,
-      html: '<p>如果你收到这封邮件，说明 SMTP 配置正确，邮件服务可以正常使用。</p>',
+      // html: '<p>如果你收到这封邮件，说明 SMTP 配置正确，邮件服务可以正常使用。</p>',
+      html: emailLayout({
+        siteName,
+        heading: '邮件连通性测试',
+        body: '<p style="color:#3f3f46;font-size:.875rem;line-height:1.6">SMTP 配置正确，邮件服务可以正常使用。</p>'
+      })
     })
     transport.close()
     return { ok: true }
