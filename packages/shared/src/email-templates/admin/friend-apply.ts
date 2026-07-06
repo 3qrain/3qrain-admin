@@ -2,31 +2,20 @@ import { emailLayout } from '../layout'
 
 export interface FriendApplyData {
   siteName: string
-  applicantName: string
   siteUrl: string
+  applicantName: string
+  applicantUrl: string
   description?: string
-  time: string
 }
 
 export function renderFriendApplyEmail(data: FriendApplyData): string {
   return emailLayout({
     siteName: data.siteName,
-    heading: '收到新的友链申请',
-    subheading: `${data.applicantName} · ${data.time}`,
+    siteUrl: data.siteUrl,
     body: `
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:.75rem">
-        <tr><td style="font-size:.8125rem;color:#71717a;padding-bottom:.25rem">申请人</td></tr>
-        <tr><td style="font-size:.875rem;color:#18181b">${data.applicantName}</td></tr>
-      </table>
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:.75rem">
-        <tr><td style="font-size:.8125rem;color:#71717a;padding-bottom:.25rem">网站</td></tr>
-        <tr><td style="font-size:.875rem;color:#18181b"><a href="${data.siteUrl}" style="color:#18181b">${data.siteUrl}</a></td></tr>
-      </table>
-      ${data.description ? `
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr><td style="font-size:.8125rem;color:#71717a;padding-bottom:.25rem">简介</td></tr>
-        <tr><td style="font-size:.875rem;color:#3f3f46;line-height:1.5">${data.description}</td></tr>
-      </table>` : ''}`,
-    cta: { label: '处理申请', url: '/admin/notifications' },
+      <p style="margin:0 0 10px;color:#555"><strong>${data.applicantName}</strong> 申请友链</p>
+      <p style="margin:5px 0;color:#555">网站：<a href="${data.applicantUrl}" style="color:#4a90e2">${data.applicantUrl}</a></p>
+      ${data.description ? `<p style="margin:5px 0;color:#555">简介：${data.description}</p>` : ''}
+      <a href="${data.siteUrl}/admin/notifications" style="display:inline-block;background:#4a90e2;color:#fff;padding:12px 28px;text-decoration:none;border-radius:6px;margin:20px 0 10px;font-weight:500" target="_blank">处理申请</a>`,
   })
 }

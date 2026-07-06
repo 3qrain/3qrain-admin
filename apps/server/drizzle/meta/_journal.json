@@ -57,6 +57,13 @@
       "when": 1783217606112,
       "tag": "0007_adorable_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1783358296714,
+      "tag": "0008_steady_tyger_tiger",
+      "breakpoints": true
     }
   ]
 }

@@ -21,5 +21,8 @@ export const configSchemaMapping = {
 export type ConfigKey = keyof typeof configSchemaMapping
 
 // ==================== Full Config ====================
-export const FullConfigSchema = z.object(configSchemaMapping)
+export const FullConfigSchema = z.object({
+  ...configSchemaMapping,
+  emailEnabled: z.boolean(),
+})
 export type FullConfig = z.infer<typeof FullConfigSchema>

@@ -33,6 +33,7 @@ export async function syncThemeFromServer() {
       useAppStore().theme = serverTheme;
       apply(resolve(serverTheme));
     }
+    useAppStore().emailEnabled = config.emailEnabled ?? false
   } catch { /* use local */ }
 }
 

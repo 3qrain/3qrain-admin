@@ -113,7 +113,6 @@ export async function sendTestEmail(
       // html: '<p>如果你收到这封邮件，说明 SMTP 配置正确，邮件服务可以正常使用。</p>',
       html: emailLayout({
         siteName,
-        heading: '邮件连通性测试',
         body: '<p style="color:#3f3f46;font-size:.875rem;line-height:1.6">SMTP 配置正确，邮件服务可以正常使用。</p>'
       })
     })

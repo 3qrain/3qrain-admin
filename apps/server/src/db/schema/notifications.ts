@@ -8,7 +8,7 @@ export const notifications = sqliteTable('notifications', {
   content: text('content'),
   meta: text('meta'),
   isRead: integer('is_read').notNull().default(0),
-  emailStatus: text('email_status').notNull().default('pending'),
+  emailStatus: text('email_status').notNull().default('not_required'),
   emailError: text('email_error'),
   emailSentAt: integer('email_sent_at', { mode: 'timestamp_ms' }),
   ...timestamps,

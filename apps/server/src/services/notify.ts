@@ -2,6 +2,9 @@ import { db, redis } from '~/db'
 import { notifications } from '~/db/schema'
 import type { WsChannelMessage, NotificationPayload, WsScope } from '@3qrain/shared'
 import { CHANNEL } from './ws'
+import { dispatchEmail } from './email/dispatch'
+import { getEmailConfig } from './email'
+import type { EmailStatus } from '@3qrain/shared'
 
 interface NotifyInput {
   scope: WsScope
@@ -9,9 +12,13 @@ interface NotifyInput {
   title: string
   content?: string
   meta?: string
+  emailStatus?: EmailStatus
 }
 
 export async function notify(input: NotifyInput) {
+  if (!input.emailStatus) {
+    input.emailStatus = getEmailConfig().enabled ? 'pending' : 'not_required'
+  }
   const record = db.insert(notifications).values(input).returning().get()
 
   const payload: NotificationPayload = {
@@ -25,6 +32,8 @@ export async function notify(input: NotifyInput) {
 
   const msg: WsChannelMessage = { scope: input.scope, payload }
   await redis.publish(CHANNEL, JSON.stringify(msg))
+
+  if (input.meta) dispatchEmail(input.type, input.meta, record.id)
 
   return record
 }

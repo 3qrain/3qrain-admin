@@ -21,7 +21,10 @@ const envSchema = z.object({
 	GOOGLE_SECRET: z.string().min(1, '❌ GOOGLE_SECRET 不能为空'),
 
   // 网站跳转地址
-  WEB_URL: z.url('❌ WEB_URL 必须是合法的网站地址')
+  WEB_URL: z.url('❌ WEB_URL 必须是合法的网站地址'),
+  // 后台地址
+  ADMIN_URL: z.url('❌ ADMIN_URL 必须是合法的网站地址')
+  // 上传地址
 })
 
 // 2. 解析并导出配置

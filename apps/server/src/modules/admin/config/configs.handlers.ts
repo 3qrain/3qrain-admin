@@ -12,8 +12,10 @@ export async function getAll(c: Context) {
   const rows = db.select().from(configs).all()
   const result = {} as Record<string, unknown>
   for (const row of rows) {
+    if (row.key.startsWith('email_')) continue
     try { result[row.key] = JSON.parse(row.value) } catch { /* skip */ }
   }
+  result.emailEnabled = getEmailConfig().enabled
   return c.json(ok(result as FullConfig, '获取成功'), HttpStatusCodes.OK)
 }
 

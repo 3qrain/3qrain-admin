@@ -2,30 +2,22 @@ import { emailLayout } from '../layout'
 
 export interface NewCommentData {
   siteName: string
+  siteUrl: string
+  adminUrl: string
   postTitle: string
-  postSlug: string
   commenterName: string
-  commenterEmail: string
   commentContent: string
-  time: string
 }
 
 export function renderNewCommentEmail(data: NewCommentData): string {
   return emailLayout({
     siteName: data.siteName,
-    heading: `《${data.postTitle}》有新评论`,
-    subheading: `评论人 ${data.commenterName} · ${data.time}`,
+    siteUrl: data.siteUrl,
     body: `
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:.75rem">
-        <tr><td style="font-size:.8125rem;color:#71717a;padding-bottom:.375rem">评论人</td></tr>
-        <tr><td style="font-size:.875rem;color:#18181b">${data.commenterName}${data.commenterEmail ? ` &lt;${data.commenterEmail}&gt;` : ''}</td></tr>
-      </table>
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr><td style="font-size:.8125rem;color:#71717a;padding-bottom:.375rem">评论内容</td></tr>
-        <tr><td style="font-size:.875rem;color:#3f3f46;line-height:1.6;padding:.75rem;background:#fafafa;border-radius:.5rem">${data.commentContent}</td></tr>
-      </table>`,
-    cta: data.postSlug
-      ? { label: '进入后台处理', url: `/admin/comments` }
-      : undefined,
+      <p style="margin:0 0 10px;color:#555"><strong>${data.commenterName}</strong> 评论了 <strong>「${data.postTitle}」</strong></p>
+      <div style="background:#f8f9fa;border-left:4px solid #4a90e2;padding:15px;margin:15px 0;border-radius:4px">
+        <p style="margin:0;color:#333;line-height:1.6">${data.commentContent}</p>
+      </div>
+      <a href="${data.adminUrl}/notifications" style="display:inline-block;background:#4a90e2;color:#fff;padding:12px 28px;text-decoration:none;border-radius:6px;margin:20px 0 10px;font-weight:500" target="_blank">后台管理</a>`,
   })
 }

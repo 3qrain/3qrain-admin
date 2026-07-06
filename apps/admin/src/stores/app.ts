@@ -25,6 +25,7 @@ interface AppState {
   noteComposeDraft: NoteComposeDraft | null
   adminUser: AdminUser | null
   unreadCount: number
+  emailEnabled: boolean
 }
 
 export const useAppStore = defineStore('app', {
@@ -37,6 +38,7 @@ export const useAppStore = defineStore('app', {
     noteComposeDraft: null,
     adminUser: null,
     unreadCount: 0,
+    emailEnabled: false,
   }),
   persist: { key: '3qrain:admin-app' },
 })

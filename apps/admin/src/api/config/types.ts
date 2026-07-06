@@ -9,4 +9,5 @@ export interface Appearance {
 export interface FullConfig {
   siteInfo: SiteInfo
   appearance: Appearance
+  emailEnabled: boolean
 }
