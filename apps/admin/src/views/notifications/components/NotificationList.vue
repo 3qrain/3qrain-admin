@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { Bell, MessageCircle, MessageCircleReply, Link2, Settings, Trash2 } from '@lucide/vue'
+import { Bell, MessageCircle, MessageCircleReply, Link2, Settings, Trash2, RotateCw } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import { getNotifications, markRead, deleteNotifications } from '~/api/notifications'
 import type { NotificationItem } from '~/api/notifications/types'
@@ -23,6 +23,14 @@ const pageSize = 20
 const activeCategory = ref('')
 const activeFilter = ref<'all' | 'unread'>('unread')
 const selectedId = ref<number | null>(null)
+const hasNew = ref(false)
+
+watch(
+  () => store.unreadCount,
+  () => {
+    hasNew.value = true
+  }
+)
 
 const categoryTypeMap: Record<string, string[]> = {
   comment: ['new_comment', 'new_reply'],
@@ -63,6 +71,7 @@ async function load(append = false) {
     totalPages.value = Math.ceil(res.total / pageSize)
   } finally {
     loading.value = false
+    if (!append) hasNew.value = false
   }
 }
 
@@ -120,9 +129,15 @@ onMounted(() => load(true))
           {{ f.label }}
         </button>
       </div>
-      <select v-model="activeCategory" class="category-select">
-        <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
-      </select>
+
+      <div class="header-right">
+        <button v-if="hasNew" class="refresh-btn" title="有新通知" :disabled="loading" @click="load()">
+          <RotateCw class="refresh-btn-icon" :class="{ spinning: loading }" :size="14" :stroke-width="2" />
+        </button>
+        <select v-model="activeCategory" class="category-select">
+          <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
+        </select>
+      </div>
     </div>
 
     <div v-if="loading && list.length === 0" class="list-loading">加载中...</div>
@@ -178,6 +193,7 @@ onMounted(() => load(true))
 }
 
 .panel-header {
+  height: 3.375rem;
   flex-shrink: 0;
   padding: 0.75rem 1rem;
   display: flex;
@@ -217,17 +233,52 @@ onMounted(() => load(true))
   display: flex;
   align-items: center;
   gap: 0.375rem;
-}
+  .refresh-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--color-base-content);
+    cursor: pointer;
+    border-radius: 0.375rem;
+    &:disabled {
+      cursor: default;
+      pointer-events: none;
+    }
+    &:hover {
+      background: color-mix(in oklab, var(--color-base-content) 6%, transparent);
+      opacity: 1;
+    }
+    &-icon {
+      &.spinning {
+        animation: spin .5s linear infinite;
+      }
+      &:not(.spinning) {
+        animation: pulse-icon 1.5s infinite;
+      }
+    }
+    @keyframes pulse-icon {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .5; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  }
 
-.category-select {
-  padding: 0.25rem 0.5rem;
-  border: 0.0625rem solid var(--color-border);
-  border-radius: 0.25rem;
-  background: transparent;
-  font-size: 0.75rem;
-  color: var(--color-base-content);
-  opacity: 0.6;
-  cursor: pointer;
+  .category-select {
+    padding: 0.25rem 0.5rem;
+    border: 0.0625rem solid var(--color-border);
+    border-radius: 0.25rem;
+    background: transparent;
+    font-size: 0.75rem;
+    color: var(--color-base-content);
+    opacity: 0.6;
+    cursor: pointer;
+  }
 }
 
 .list-loading,
@@ -316,7 +367,7 @@ onMounted(() => load(true))
   width: 0.1875rem;
   height: 2rem;
   background: var(--color-base-content);
-  border-radius: 2rem 2rem 0 0;
+  // border-radius: 2rem 2rem 0 0;
   opacity: 0;
   transform: scaleY(0.4);
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);

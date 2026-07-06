@@ -6,9 +6,9 @@ export async function getPosts(query: PostListQuery = {}, signal?: AbortSignal) 
   return data.data;
 }
 
-export async function getPost(id: number) {
-  const { data } = await apiClient.get<{ data: Post }>(`/admin/posts/${id}`);
-  return data.data;
+export async function getPost(id: number, params?: { fields?: string }) {
+  const { data } = await apiClient.get<{ data: Post }>(`/admin/posts/${id}`, { params })
+  return data.data
 }
 
 export async function createPost(body: CreatePostBody) {

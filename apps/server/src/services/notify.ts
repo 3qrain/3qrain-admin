@@ -17,7 +17,7 @@ interface NotifyInput {
 
 export async function notify(input: NotifyInput) {
   if (!input.emailStatus) {
-    input.emailStatus = getEmailConfig().enabled ? 'pending' : 'not_required'
+    input.emailStatus = getEmailConfig().enabled ? 'pending' : 'failed'
   }
   const record = db.insert(notifications).values(input).returning().get()
 

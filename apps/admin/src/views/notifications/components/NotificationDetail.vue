@@ -2,22 +2,28 @@
 import { ref, watch } from 'vue'
 import { Mail } from '@lucide/vue'
 import Skeleton from '~/components/base/Skeleton.vue'
+import EmailStatus from './EmailStatus.vue'
 import type { NotificationItem } from '~/api/notifications/types'
 import { getComments } from '~/api/comments'
 import type { Comment } from '~/api/comments/types'
+import { getPost } from '~/api/posts'
 import { formatDate } from '~/utils/date'
-import { withMinDuration } from '~/utils/async'
 const props = defineProps<{
   item: NotificationItem | null
 }>()
 
 const comment = ref<Comment | null>(null)
+const postTitle = ref('')
+const postSlug = ref('')
+const beRepliedContent = ref('')
 const commentLoading = ref(false)
 
 watch(
   () => props.item,
   async item => {
     comment.value = null
+    postTitle.value = ''
+    beRepliedContent.value = ''
     if (!item) return
 
     const isComment = item.type === 'new_comment' || item.type === 'new_reply'
@@ -29,8 +35,28 @@ watch(
       const commentId = meta?.commentId
       if (!commentId) return
 
-      const res = await withMinDuration(() => getComments({ id: commentId }))
+      const tasks = {
+        comment: getComments({ id: commentId }),
+        post: Promise.resolve(null) as Promise<any>,
+        replied: Promise.resolve(null) as Promise<any>
+      }
+
+      if (meta?.targetType === 'post' && meta?.targetId) {
+        tasks.post = getPost(meta.targetId, { fields: 'title,slug' }).catch(() => null)
+      }
+
+      if (item.type === 'new_reply') {
+        const repliedId = meta?.replyToId || meta?.parentId
+        if (repliedId) {
+          tasks.replied = getComments({ id: repliedId }).catch(() => null)
+        }
+      }
+
+      const [res, post, replied] = await Promise.all([tasks.comment, tasks.post, tasks.replied])
       comment.value = res.list[0] || undefined
+      postTitle.value = (post as any)?.title || ''
+      postSlug.value = (post as any)?.slug || ''
+      beRepliedContent.value = replied?.list?.[0]?.content || ''
     } catch {
       /* ignore */
     } finally {
@@ -76,6 +102,7 @@ watch(
               <span class="comment-username">{{ comment.replyToUser?.username }}</span>
             </template>
           </div>
+          <div v-if="beRepliedContent" class="comment-beRepliedContent">> {{ beRepliedContent }}</div>
           <div class="comment-content">{{ comment.content }}</div>
           <div class="comment-meta">
             <span>{{ (comment.targetType === 'post' ? '文章' : '说说') + '#' + comment.targetId }}</span>
@@ -88,15 +115,14 @@ watch(
         </Skeleton>
       </div>
 
-      <!-- 邮件发送（占位） -->
-      <div class="detail-section">
-        <h3 class="section-title">邮件发送</h3>
-        <div class="email-placeholder">
-          <Mail :size="28" :stroke-width="1" />
-          <p>SMTP 邮件服务暂未接入</p>
-          <span>接入后此处将展示邮件发送状态、模板预览、重试操作</span>
-        </div>
-      </div>
+      <EmailStatus
+        v-show="!commentLoading"
+        :item="item"
+        :comment="comment"
+        :post-title="postTitle"
+        :post-slug="postSlug"
+        :be-replied-content="beRepliedContent"
+      />
     </template>
 
     <div v-else class="detail-empty">
@@ -176,6 +202,21 @@ watch(
   min-height: 6.25rem;
   background: color-mix(in oklab, var(--color-base-content) 4%, transparent);
   border-radius: 0.5rem;
+  animation: fadeIn 0.3s;
+}
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.comment-target-title {
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: bold;
 }
 
 .comment-author {
@@ -195,6 +236,13 @@ watch(
 .comment-username {
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+.comment-beRepliedContent {
+  position: relative;
+  // margin-bottom: .25rem;
+  font-size: 0.75rem;
+  opacity: 0.4;
 }
 
 .comment-content {
@@ -217,27 +265,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: .875rem;
-  color: color-mix(in oklab, var(--color-base-content) 65%, transparent 50%) ;
-}
-
-.email-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 2rem 1rem;
-  border: 0.0625rem dashed var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-base-content);
-  opacity: 0.35;
-  p {
-    font-size: 0.8125rem;
-    margin: 0;
-  }
-  span {
-    font-size: 0.6875rem;
-    text-align: center;
-  }
+  font-size: 0.875rem;
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent 50%);
 }
 </style>

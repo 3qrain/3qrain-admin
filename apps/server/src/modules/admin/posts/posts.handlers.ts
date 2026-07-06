@@ -148,6 +148,18 @@ export async function list(c: Context) {
 
 export async function detail(c: Context) {
   const id = Number.parseInt(c.req.param('id')!)
+  const fields = c.req.query('fields')?.split(',')
+
+  if (fields && fields.length > 0) {
+    const post = db.select().from(posts).where(eq(posts.id, id)).get()
+    if (!post) {
+      return c.json(fail(ErrorCode.POST_NOT_FOUND, '文章不存在'), HttpStatusCodes.NOT_FOUND)
+    }
+    const slim: Record<string, any> = {}
+    for (const f of fields) slim[f] = (post as any)[f]
+    return c.json(ok(slim, '获取成功'), HttpStatusCodes.OK)
+  }
+
   const post = await getPostWithRelations(id)
   if (!post) {
     return c.json(fail(ErrorCode.POST_NOT_FOUND, '文章不存在'), HttpStatusCodes.NOT_FOUND)

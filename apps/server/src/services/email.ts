@@ -19,7 +19,7 @@ const defaultConfig: EmailConfig = {
   host: '',
   port: 465,
   user: '',
-  pass: '',
+  pass: ''
 }
 
 export function getEmailConfig(): EmailConfig {
@@ -70,22 +70,20 @@ export async function sendEmail(options: {
   to: string
   subject: string
   html: string
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<void> {
   const config = getEmailConfig()
-  if (!config.enabled) return { ok: false, error: '邮件服务未启用' }
+  if (!config.enabled) throw new Error('邮件服务未启用')
 
+  const transport = createTransport(config)
   try {
-    const transport = createTransport(config)
     await transport.sendMail({
       from: config.user,
       to: options.to,
       subject: options.subject,
-      html: options.html
+      html: options.html,
     })
+  } finally {
     transport.close()
-    return { ok: true }
-  } catch (e: any) {
-    return { ok: false, error: e.message }
   }
 }
 
@@ -94,8 +92,8 @@ export async function sendTestEmail(
   to: string,
   siteName: string
 ): Promise<{ ok: boolean; error?: string }> {
+  const transport = createTransport(config)
   try {
-    const transport = createTransport(config)
     await transport.sendMail({
       from: config.user,
       to,
@@ -106,9 +104,10 @@ export async function sendTestEmail(
         body: '<p style="color:#3f3f46;font-size:.875rem;line-height:1.6">SMTP 配置正确，邮件服务可以正常使用。</p>'
       })
     })
-    transport.close()
     return { ok: true }
   } catch (e: any) {
     return { ok: false, error: e.message }
+  } finally {
+    transport.close()
   }
 }

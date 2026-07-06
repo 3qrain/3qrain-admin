@@ -1,1 +1,1 @@
-export type EmailStatus = 'pending' | 'sent' | 'failed' | 'not_required'
+export type EmailStatus = 'pending' | 'sent' | 'failed'

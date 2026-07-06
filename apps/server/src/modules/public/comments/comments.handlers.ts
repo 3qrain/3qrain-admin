@@ -164,6 +164,7 @@ export async function create(c: Context) {
         targetId: body.targetId,
         commentId: result.id,
         parentId: body.parentId || null,
+        replyToId: body.replyToId || null,
       }),
     })
   } catch (e) {

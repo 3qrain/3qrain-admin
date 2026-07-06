@@ -96,7 +96,7 @@ onMounted(load)
       </label>
       <label class="field">
         <span>端口</span>
-        <Input v-model.number="form.port" placeholder="465" :disabled="!form.enabled" />
+        <Input v-model.number="form.port" type="number" placeholder="465" :disabled="!form.enabled" />
       </label>
       <label class="field">
         <span>用户名</span>
