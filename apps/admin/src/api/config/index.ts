@@ -22,6 +22,11 @@ export interface EmailConfig {
   pass: string
 }
 
+export async function getSiteUrls() {
+  const { data } = await apiClient.get<{ data: { webUrl: string; adminUrl: string } }>('/admin/site-urls')
+  return data.data
+}
+
 export async function getEmailConfig() {
   const { data } = await apiClient.get<{ data: EmailConfig }>('/admin/email-config')
   return data.data

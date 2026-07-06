@@ -26,6 +26,8 @@ interface AppState {
   adminUser: AdminUser | null
   unreadCount: number
   emailEnabled: boolean
+  webUrl: string
+  adminUrl: string
 }
 
 export const useAppStore = defineStore('app', {
@@ -39,6 +41,8 @@ export const useAppStore = defineStore('app', {
     adminUser: null,
     unreadCount: 0,
     emailEnabled: false,
+    webUrl: '',
+    adminUrl: '',
   }),
   persist: { key: '3qrain:admin-app' },
 })

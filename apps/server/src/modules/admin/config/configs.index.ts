@@ -4,6 +4,7 @@ import * as routes from "./configs.routes";
 
 const configRouter = createApp();
 
+configRouter.openapi(routes.getSiteUrlsRoute, handlers.getSiteUrls)
 configRouter.openapi(routes.getConfigRoute, handlers.getAll)
 configRouter.openapi(routes.getConfigByKeyRoute, handlers.getByKey)
 configRouter.openapi(routes.updateConfigRoute, handlers.update)

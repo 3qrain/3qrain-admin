@@ -8,6 +8,13 @@ import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { configSchemaMapping, type ConfigKey, type FullConfig } from './configs.schema'
 import { getEmailConfig, saveEmailConfig, testEmailConnection, sendTestEmail } from '~/services/email'
 
+export async function getSiteUrls(c: Context) {
+  return c.json(ok({
+    webUrl: process.env.WEB_URL || '',
+    adminUrl: process.env.ADMIN_URL || '',
+  }, '获取成功'), HttpStatusCodes.OK)
+}
+
 export async function getAll(c: Context) {
   const keys = c.req.query('keys')?.split(',').filter(Boolean)
   const rows = keys

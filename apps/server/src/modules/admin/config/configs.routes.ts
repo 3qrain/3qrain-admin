@@ -63,6 +63,22 @@ export const updateConfigRoute = createRoute({
   },
 });
 
+export const getSiteUrlsRoute = createRoute({
+  tags: ['Admin/Config'],
+  summary: '获取站点 URL',
+  method: 'get',
+  path: '/site-urls',
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.object({
+        webUrl: z.string(),
+        adminUrl: z.string(),
+      })) } },
+      description: '站点 URL',
+    },
+  },
+})
+
 // ---- Email Config ----
 
 export const getEmailConfigRoute = createRoute({

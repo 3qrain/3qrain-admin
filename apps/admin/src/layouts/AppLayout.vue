@@ -12,7 +12,7 @@ import { storeToRefs } from 'pinia'
 import { applyTheme } from '~/css/themes/index'
 import { useWebSocket } from '~/composables/useWebSocket'
 import { getUnreadCount } from '~/api/notifications'
-import { getConfig } from '~/api/config'
+import { getConfig, getSiteUrls } from '~/api/config'
 
 const { drawerPanel } = storeToRefs(useGlobalStore())
 const appStore = useAppStore()
@@ -49,6 +49,7 @@ async function fetchUnreadCount() {
 onMounted(() => {
   fetchAdminInfo()
   fetchUnreadCount()
+  getSiteUrls().then(u => { appStore.webUrl = u.webUrl; appStore.adminUrl = u.adminUrl }).catch(() => {})
   getConfig(['appearance', 'email']).then(config => {
     if (config.appearance) {
       appStore.theme = config.appearance.theme

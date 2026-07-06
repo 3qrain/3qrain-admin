@@ -21,9 +21,10 @@ watch(() => props.item.id, () => { showPreview.value = false })
 
 const previewHtml = computed(() => {
   if (!props.comment) return ''
-  const siteName = useAppStore().adminUser?.username || '3qrain'
-  const siteUrl = window.location.origin.replace(':5173', ':3020')
-  const adminUrl = window.location.origin
+  const store = useAppStore()
+  const siteName = store.adminUser?.username || '3qrain'
+  const siteUrl = store.webUrl
+  const adminUrl = store.adminUrl
 
   if (props.item.type === 'new_comment') {
     return renderNewCommentEmail({
