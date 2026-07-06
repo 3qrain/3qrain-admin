@@ -7,6 +7,7 @@ import Button from '~/components/base/Button.vue'
 import ToggleSwitch from '~/components/base/ToggleSwitch.vue'
 import { getEmailConfig, saveEmailConfig, testEmailConnection, sendTestEmail, type EmailConfig } from '~/api/config'
 import { withMinDuration } from '~/utils/async'
+import { useAppStore } from '~/stores/app'
 
 const loading = ref(false)
 const testing = ref(false)
@@ -33,6 +34,7 @@ async function handleSave() {
   loading.value = true
   try {
     await withMinDuration(() => saveEmailConfig(form.value))
+    useAppStore().emailEnabled = form.value.enabled
     toast.success('已保存')
     testResult.value = null
   } catch (e: any) {

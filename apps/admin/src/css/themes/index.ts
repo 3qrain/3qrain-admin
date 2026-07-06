@@ -1,46 +1,42 @@
-import { useAppStore } from "~/stores/app";
-import { getConfig, updateConfig } from "~/api/config";
+import { useAppStore } from '~/stores/app'
+import { updateConfig } from '~/api/config'
 
-export type Theme = "light" | "dark" | "system";
+export type Theme = 'light' | 'dark' | 'system'
 
-function resolve(theme: Theme): "light" | "dark" {
-  if (theme === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+function resolve(theme: Theme): 'light' | 'dark' {
+  if (theme === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   }
-  return theme;
+  return theme
 }
 
-function apply(resolved: "light" | "dark") {
-  document.documentElement.classList.toggle("dark", resolved === "dark");
-  document.documentElement.classList.toggle("light", resolved === "light");
+function apply(resolved: 'light' | 'dark') {
+  if (resolved === 'light') {
+    document.documentElement.classList.remove('dark')
+    document.documentElement.classList.add('light')
+  } else {
+    document.documentElement.classList.remove('light')
+    document.documentElement.classList.add('dark')
+  }
 }
 
 export function getTheme(): Theme {
-  return useAppStore().theme;
+  return useAppStore().theme
 }
 
 export function setTheme(theme: Theme) {
-  useAppStore().theme = theme;
-  apply(resolve(theme));
-  updateConfig("appearance", { theme }).catch(() => {});
+  useAppStore().theme = theme
+  apply(resolve(theme))
+  updateConfig('appearance', { theme }).catch(() => {})
 }
 
-export async function syncThemeFromServer() {
-  try {
-    const config = await getConfig();
-    const serverTheme = config.appearance.theme;
-    if (serverTheme !== getTheme()) {
-      useAppStore().theme = serverTheme;
-      apply(resolve(serverTheme));
-    }
-    useAppStore().emailEnabled = config.emailEnabled ?? false
-  } catch { /* use local */ }
+export function applyTheme() {
+  apply(resolve(getTheme()))
 }
 
 export function initTheme() {
-  apply(resolve(getTheme()));
-
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (getTheme() === "system") apply(resolve("system"));
-  });
+  applyTheme()
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (getTheme() === 'system') applyTheme()
+  })
 }

@@ -6,10 +6,13 @@ import { FullConfigSchema } from "./configs.schema";
 // --- Routes ---
 
 export const getConfigRoute = createRoute({
-  tags: ["Admin/Config"],
-  summary: "获取所有配置",
-  method: "get",
-  path: "/config",
+  tags: ['Admin/Config'],
+  summary: '获取配置（可按 keys 筛选）',
+  method: 'get',
+  path: '/config',
+  request: {
+    query: z.object({ keys: z.string().optional() }),
+  },
   responses: {
     [HttpStatusCodes.OK]: {
       content: { "application/json": { schema: successResponseSchema(FullConfigSchema) } },

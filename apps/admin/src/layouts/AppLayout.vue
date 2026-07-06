@@ -9,9 +9,10 @@ import { apiClient } from '~/lib/axios'
 import { useGlobalStore, type DrawerPanel } from '~/stores/global.ts'
 import { useAppStore } from '~/stores/app'
 import { storeToRefs } from 'pinia'
-import { syncThemeFromServer } from '~/css/themes/index'
+import { applyTheme } from '~/css/themes/index'
 import { useWebSocket } from '~/composables/useWebSocket'
 import { getUnreadCount } from '~/api/notifications'
+import { getConfig } from '~/api/config'
 
 const { drawerPanel } = storeToRefs(useGlobalStore())
 const appStore = useAppStore()
@@ -48,8 +49,14 @@ async function fetchUnreadCount() {
 onMounted(() => {
   fetchAdminInfo()
   fetchUnreadCount()
+  getConfig(['appearance', 'email']).then(config => {
+    if (config.appearance) {
+      appStore.theme = config.appearance.theme
+      appStore.emailEnabled = config.email?.enabled ?? false
+      applyTheme()
+    }
+  }).catch(() => {})
   connect()
-  syncThemeFromServer()
 
   mediaQuery = window.matchMedia(`(width <= ${BREAKPOINT}px)`)
   isMobile.value = mediaQuery.matches

@@ -12,44 +12,34 @@ export interface EmailConfig {
   pass: string
 }
 
-const CONFIG_KEYS = {
-  enabled: 'email_enabled',
-  host: 'email_host',
-  port: 'email_port',
-  user: 'email_user',
-  pass: 'email_pass'
-} as const
+const CONFIG_KEY = 'email'
 
-function getConfigValue(key: string): string | null {
-  const row = db.select({ value: configs.value }).from(configs).where(eq(configs.key, key)).get()
-  return row?.value ?? null
-}
-
-function setConfigValue(key: string, value: string) {
-  const existing = db.select({ id: configs.id }).from(configs).where(eq(configs.key, key)).get()
-  if (existing) {
-    db.update(configs).set({ value }).where(eq(configs.key, key)).run()
-  } else {
-    db.insert(configs).values({ key, value }).run()
-  }
+const defaultConfig: EmailConfig = {
+  enabled: false,
+  host: '',
+  port: 465,
+  user: '',
+  pass: '',
 }
 
 export function getEmailConfig(): EmailConfig {
-  return {
-    enabled: getConfigValue(CONFIG_KEYS.enabled) === 'true',
-    host: getConfigValue(CONFIG_KEYS.host) || '',
-    port: Number(getConfigValue(CONFIG_KEYS.port)) || 465,
-    user: getConfigValue(CONFIG_KEYS.user) || '',
-    pass: getConfigValue(CONFIG_KEYS.pass) || ''
+  const row = db.select({ value: configs.value }).from(configs).where(eq(configs.key, CONFIG_KEY)).get()
+  if (!row) return { ...defaultConfig }
+  try {
+    return { ...defaultConfig, ...JSON.parse(row.value) }
+  } catch {
+    return { ...defaultConfig }
   }
 }
 
 export function saveEmailConfig(config: EmailConfig) {
-  setConfigValue(CONFIG_KEYS.enabled, String(config.enabled))
-  setConfigValue(CONFIG_KEYS.host, config.host)
-  setConfigValue(CONFIG_KEYS.port, String(config.port))
-  setConfigValue(CONFIG_KEYS.user, config.user)
-  if (config.pass) setConfigValue(CONFIG_KEYS.pass, config.pass)
+  const value = JSON.stringify(config)
+  const existing = db.select({ id: configs.id }).from(configs).where(eq(configs.key, CONFIG_KEY)).get()
+  if (existing) {
+    db.update(configs).set({ value }).where(eq(configs.key, CONFIG_KEY)).run()
+  } else {
+    db.insert(configs).values({ key: CONFIG_KEY, value }).run()
+  }
 }
 
 function createTransport(config: EmailConfig) {

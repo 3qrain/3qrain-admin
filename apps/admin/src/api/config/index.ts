@@ -1,8 +1,9 @@
 import { apiClient } from '~/lib/axios'
 import type { FullConfig } from './types'
 
-export async function getConfig() {
-  const { data } = await apiClient.get<{ data: FullConfig }>('/admin/config')
+export async function getConfig(keys?: string[]) {
+  const params = keys?.length ? { keys: keys.join(',') } : undefined
+  const { data } = await apiClient.get<{ data: FullConfig }>('/admin/config', { params })
   return data.data
 }
 

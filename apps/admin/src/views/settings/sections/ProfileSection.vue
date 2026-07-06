@@ -16,7 +16,7 @@ const bio = ref('')
 async function load() {
   loading.value = true
   try {
-    const [p, config] = await withMinDuration(() => Promise.all([getProfile(), getConfig()]))
+    const [p, config] = await withMinDuration(() => Promise.all([getProfile(), getConfig(['siteInfo'])]))
     profile.value = { username: p.username, email: p.email, avatarUrl: p.avatarUrl }
     bio.value = config.siteInfo?.bio ?? ''
   } catch {

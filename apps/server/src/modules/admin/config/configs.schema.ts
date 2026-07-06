@@ -13,16 +13,22 @@ export const AppearanceSchema = z.object({
 export type Appearance = z.infer<typeof AppearanceSchema>
 
 // ==================== Schema Mapping ====================
+export const EmailSchema = z.object({
+  enabled: z.boolean(),
+  host: z.string(),
+  port: z.number(),
+  user: z.string(),
+  pass: z.string(),
+})
+
 export const configSchemaMapping = {
   siteInfo: SiteInfoSchema,
   appearance: AppearanceSchema,
+  email: EmailSchema,
 } as const
 
 export type ConfigKey = keyof typeof configSchemaMapping
 
 // ==================== Full Config ====================
-export const FullConfigSchema = z.object({
-  ...configSchemaMapping,
-  emailEnabled: z.boolean(),
-})
+export const FullConfigSchema = z.object(configSchemaMapping)
 export type FullConfig = z.infer<typeof FullConfigSchema>

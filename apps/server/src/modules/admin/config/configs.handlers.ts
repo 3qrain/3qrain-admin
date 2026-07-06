@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { db } from '~/db'
 import { configs, users } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
@@ -9,13 +9,14 @@ import { configSchemaMapping, type ConfigKey, type FullConfig } from './configs.
 import { getEmailConfig, saveEmailConfig, testEmailConnection, sendTestEmail } from '~/services/email'
 
 export async function getAll(c: Context) {
-  const rows = db.select().from(configs).all()
+  const keys = c.req.query('keys')?.split(',').filter(Boolean)
+  const rows = keys
+    ? db.select().from(configs).where(inArray(configs.key, keys)).all()
+    : db.select().from(configs).all()
   const result = {} as Record<string, unknown>
   for (const row of rows) {
-    if (row.key.startsWith('email_')) continue
     try { result[row.key] = JSON.parse(row.value) } catch { /* skip */ }
   }
-  result.emailEnabled = getEmailConfig().enabled
   return c.json(ok(result as FullConfig, '获取成功'), HttpStatusCodes.OK)
 }
 
