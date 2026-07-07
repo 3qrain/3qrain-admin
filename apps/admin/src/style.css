@@ -29,6 +29,13 @@ ul {
   list-style: none;
 }
 
+[data-sonner-toast][data-type="success"] svg {
+  color: var(--color-success);
+}
+[data-sonner-toast][data-type="error"] svg {
+  color: #ef4444;
+}
+
 @media (max-width: 48rem) {
   input, select, textarea {
     font-size: 1rem !important;
