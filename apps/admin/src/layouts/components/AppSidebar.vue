@@ -46,6 +46,9 @@ function handleClick() {
         <span v-if="route.name === 'notifications' && appStore.unreadCount > 0" class="notify-badge">
           {{ appStore.unreadCount > 99 ? '99+' : appStore.unreadCount }}
         </span>
+        <span v-if="route.name === 'friendLinks' && appStore.pendingFriendLinkCount > 0" class="notify-badge">
+          {{ appStore.pendingFriendLinkCount > 99 ? '99+' : appStore.pendingFriendLinkCount }}
+        </span>
       </router-link>
     </nav>
 
@@ -137,8 +140,9 @@ function handleClick() {
   min-width: 1rem;
   height: 1rem;
   padding: 0 .25rem;
-  border-radius: 62.4375rem;
-  box-shadow: 0 0 .1875rem .0625rem #ef4444;
+  // border-radius: 62.4375rem;
+  border-radius: .25rem;
+  box-shadow: 0 0 .125rem .0625rem #ef4444;
   background: #ef4444;
   color: #fff;
   font-size: .625rem;

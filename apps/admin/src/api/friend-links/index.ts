@@ -11,6 +11,11 @@ export async function createFriendLink(body: { siteName: string; siteUrl: string
   return data
 }
 
+export async function getPendingFriendLinkCount() {
+  const { data } = await apiClient.get<{ data: { count: number } }>('/admin/friend-links/pending-count')
+  return data.data.count
+}
+
 export async function getFriendLinkCounts() {
   const { data } = await apiClient.get<{ data: { pending: number; approved: number; rejected: number } }>('/admin/friend-links/counts')
   return data.data

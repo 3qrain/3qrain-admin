@@ -374,9 +374,10 @@ onMounted(() => {
 }
 
 .confirm-text {
+  max-width: 20rem;
   font-size: 0.75rem;
   margin: 0 0 0.625rem;
-  white-space: nowrap;
+  // white-space: nowrap;
 }
 
 .confirm-actions {

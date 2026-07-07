@@ -147,39 +147,37 @@ onMounted(() => load(true))
       <p>暂无通知</p>
     </div>
 
-    <div v-else :id="listBodyId" class="list-body-wrapper">
-      <div class="list-body">
-        <div
-          v-for="item in list"
-          :key="item.id"
-          class="list-item"
-          :class="{ unread: !item.isRead, selected: selectedId === item.id }"
-          @click="handleSelect(item)"
-        >
-          <span class="item-dot" />
-          <div class="item-icon">
-            <component :is="typeIcon(item.type)" style="width: 1rem; height: 1rem" />
-          </div>
-          <div class="item-main">
-            <div class="item-title">{{ item.title }}</div>
-            <div v-if="item.content" class="item-preview">{{ item.content }}</div>
-            <div class="item-meta">
-              <span class="item-time">{{ formatDate(item.createdAt) }}</span>
-            </div>
-          </div>
-          <button class="item-trash" title="删除" @click.stop="handleDelete(item)">
-            <Trash2 :size="13" :stroke-width="1.5" />
-          </button>
+    <div v-else :id="listBodyId" class="list-body">
+      <div
+        v-for="item in list"
+        :key="item.id"
+        class="list-item"
+        :class="{ unread: !item.isRead, selected: selectedId === item.id }"
+        @click="handleSelect(item)"
+      >
+        <span class="item-dot" />
+        <div class="item-icon">
+          <component :is="typeIcon(item.type)" style="width: 1rem; height: 1rem" />
         </div>
-        <Pagination
-          :current-page="page"
-          :total-pages="totalPages"
-          :loading="loading"
-          :mode="'scroll'"
-          @change="goPage"
-          :rootId="listBodyId"
-        />
+        <div class="item-main">
+          <div class="item-title">{{ item.title }}</div>
+          <div v-if="item.content" class="item-preview">{{ item.content }}</div>
+          <div class="item-meta">
+            <span class="item-time">{{ formatDate(item.createdAt) }}</span>
+          </div>
+        </div>
+        <button class="item-trash" title="删除" @click.stop="handleDelete(item)">
+          <Trash2 :size="13" :stroke-width="1.5" />
+        </button>
       </div>
+      <Pagination
+        :current-page="page"
+        :total-pages="totalPages"
+        :loading="loading"
+        :mode="'scroll'"
+        @change="goPage"
+        :rootId="listBodyId"
+      />
     </div>
   </div>
 </template>
@@ -254,18 +252,25 @@ onMounted(() => load(true))
     }
     &-icon {
       &.spinning {
-        animation: spin .5s linear infinite;
+        animation: spin 0.5s linear infinite;
       }
       &:not(.spinning) {
         animation: pulse-icon 1.5s infinite;
       }
     }
     @keyframes pulse-icon {
-      0%, 100% { opacity: 1; }
-      50% { opacity: .5; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
     }
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
   }
 
@@ -298,11 +303,11 @@ onMounted(() => load(true))
 }
 
 .list-body-wrapper {
-  flex: 1;
-  overflow-y: auto;
 }
 
 .list-body {
+  flex: 1;
+  overflow-y: auto;
   animation: list-enter 0.3s ease-in-out;
 }
 

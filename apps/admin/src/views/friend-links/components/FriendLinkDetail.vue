@@ -30,8 +30,11 @@ async function handleApprove() {
     await approveFriendLink(props.item.id)
     emit('update', { ...props.item, status: 'approved', approvedAt: new Date().toISOString() })
     toast.success('已通过')
-  } catch (e: any) { toast.error(e?.response?.data?.message || '操作失败') }
-  finally { approving.value = false }
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || '操作失败')
+  } finally {
+    approving.value = false
+  }
 }
 
 async function handleReject() {
@@ -39,18 +42,30 @@ async function handleReject() {
   rejecting.value = true
   try {
     await rejectFriendLink(props.item.id, rejectReason.value)
-    emit('update', { ...props.item, status: 'rejected', rejectReason: rejectReason.value, rejectedAt: new Date().toISOString() })
+    emit('update', {
+      ...props.item,
+      status: 'rejected',
+      rejectReason: rejectReason.value,
+      rejectedAt: new Date().toISOString()
+    })
     rejectReason.value = ''
     toast.success('已拒绝')
-  } catch (e: any) { toast.error(e?.response?.data?.message || '操作失败') }
-  finally { rejecting.value = false }
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || '操作失败')
+  } finally {
+    rejecting.value = false
+  }
 }
 
 async function handleDelete() {
   if (!props.item) return
-  await deleteFriendLinks([props.item.id])
-  emit('delete', props.item.id)
-  toast.success('已删除')
+  try {
+    await deleteFriendLinks([props.item.id])
+    emit('delete', props.item.id)
+    toast.success('已删除')
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || '删除失败')
+  }
 }
 </script>
 
@@ -69,18 +84,24 @@ async function handleDelete() {
           <dt>名称</dt>
           <dd>{{ item.siteName }}</dd>
           <dt>URL</dt>
-          <dd><a :href="item.siteUrl" target="_blank" class="link">{{ item.siteUrl }}</a></dd>
+          <dd>
+            <a :href="item.siteUrl" target="_blank" class="link">{{ item.siteUrl }}</a>
+          </dd>
           <dt v-if="item.avatarUrl">头像</dt>
-          <dd v-if="item.avatarUrl"><a :href="item.avatarUrl" target="_blank" class="link">{{ item.avatarUrl }}</a></dd>
+          <dd v-if="item.avatarUrl">
+            <a :href="item.avatarUrl" target="_blank" class="link">{{ item.avatarUrl }}</a>
+          </dd>
           <dt v-if="item.applicantEmail">邮箱</dt>
           <dd v-if="item.applicantEmail">{{ item.applicantEmail }}</dd>
           <dt>状态</dt>
-          <dd><span class="badge" :class="item.status">{{ item.status }}</span></dd>
+          <dd>
+            <span class="badge" :class="item.status">{{ item.status }}</span>
+          </dd>
           <dt>时间</dt>
           <dd>{{ formatDate(item.createdAt) }}</dd>
         </dl>
 
-        <FriendLinkFormModal v-model:open="showEdit" :edit-item="item" @saved="(v) => v && emit('update', v)" />
+        <FriendLinkFormModal v-model:open="showEdit" :edit-item="item" @saved="v => v && emit('update', v)" />
       </div>
 
       <div v-if="item.description" class="detail-section">
@@ -99,17 +120,26 @@ async function handleDelete() {
       </div>
 
       <div v-if="item.status === 'pending'" class="detail-actions">
-        <Button variant="ghost" :loading="approving" @click="handleApprove">
-          <Check :size="14" /> 通过
-        </Button>
+        <Button variant="ghost" :loading="approving" @click="handleApprove"> <Check :size="14" /> 通过 </Button>
         <Popover>
           <Button variant="ghost" class="reject-btn"><X :size="14" /> 拒绝</Button>
           <template #content="{ close }">
             <div class="reject-form">
-              <textarea v-model="rejectReason" class="reject-input" placeholder="拒绝原因..." rows="3" />
+              <textarea v-model="rejectReason" class="reject-input" placeholder="拒绝原因..." rows="4" />
               <div class="reject-actions">
                 <Button variant="ghost" size="sm" @click="close()">取消</Button>
-                <Button size="sm" :disabled="!rejectReason" :loading="rejecting" @click="handleReject(); close()">确定</Button>
+                <Button
+                  size="sm"
+                  :disabled="!rejectReason"
+                  :loading="rejecting"
+                  @click="
+                    () => {
+                      handleReject()
+                      close()
+                    }
+                  "
+                  >确定</Button
+                >
               </div>
             </div>
           </template>
@@ -120,7 +150,17 @@ async function handleDelete() {
             <p class="confirm-text">确定删除此申请？</p>
             <div class="confirm-actions">
               <Button variant="ghost" size="sm" @click="close()">取消</Button>
-              <Button size="sm" @click="handleDelete(); close()">确定</Button>
+              <Button
+                variant="danger"
+                size="sm"
+                @click="
+                  () => {
+                    handleDelete()
+                    close()
+                  }
+                "
+                >确定</Button
+              >
             </div>
           </template>
         </Popover>
@@ -135,7 +175,11 @@ async function handleDelete() {
 </template>
 
 <style scoped lang="less">
-.detail-panel { height: 100%; overflow-y: auto; padding: 1.25rem 2rem; }
+.detail-panel {
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.25rem 2rem;
+}
 
 .detail-empty {
   height: 100%;
@@ -143,19 +187,24 @@ async function handleDelete() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: .5rem;
+  gap: 0.5rem;
   color: var(--color-base-content);
-  opacity: .25;
-  p { font-size: .8125rem; margin: 0; }
+  opacity: 0.25;
+  p {
+    font-size: 0.8125rem;
+    margin: 0;
+  }
 }
 
-.detail-section { margin-bottom: 1.5rem; }
+.detail-section {
+  margin-bottom: 1.5rem;
+}
 
 .section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: .75rem;
+  margin-bottom: 0.75rem;
 }
 
 .edit-btn {
@@ -167,69 +216,132 @@ async function handleDelete() {
   border: none;
   background: transparent;
   color: var(--color-base-content);
-  opacity: .3;
+  opacity: 0.3;
   cursor: pointer;
-  border-radius: .25rem;
-  &:hover { opacity: .7; background: color-mix(in oklab, var(--color-base-content) 6%, transparent); }
+  border-radius: 0.25rem;
+  &:hover {
+    opacity: 0.7;
+    background: color-mix(in oklab, var(--color-base-content) 6%, transparent);
+  }
 }
 
 .section-title {
-  font-size: .6875rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .0625rem;
+  letter-spacing: 0.0625rem;
   color: var(--color-base-content);
-  opacity: .35;
-  margin: 0 0 .75rem;
+  opacity: 0.35;
+  margin: 0 0 0.75rem;
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: 3rem 1fr;
-  gap: .25rem 1rem;
-  dt { font-size: .75rem; color: var(--color-base-content); opacity: .4; }
-  dd { font-size: .8125rem; color: var(--color-base-content); margin: 0; }
+  gap: 0.25rem 1rem;
+  dt {
+    font-size: 0.75rem;
+    color: var(--color-base-content);
+    opacity: 0.4;
+  }
+  dd {
+    font-size: 0.8125rem;
+    color: var(--color-base-content);
+    margin: 0;
+  }
 }
 
-.link { color: var(--color-base-content); opacity: .6; }
+.link {
+  color: var(--color-base-content);
+  opacity: 0.6;
+}
 
 .badge {
-  font-size: .6875rem;
-  padding: .0625rem .375rem;
-  border-radius: .25rem;
-  &.pending { background: color-mix(in oklab, #f59e0b 12%, transparent); color: #d97706; }
-  &.approved { background: color-mix(in oklab, #22c55e 12%, transparent); color: #16a34a; }
-  &.rejected { background: color-mix(in oklab, #ef4444 12%, transparent); color: #dc2626; }
+  font-size: 0.6875rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
+  &.pending {
+    background: color-mix(in oklab, #f59e0b 12%, transparent);
+    color: #d97706;
+  }
+  &.approved {
+    background: color-mix(in oklab, #22c55e 12%, transparent);
+    color: #16a34a;
+  }
+  &.rejected {
+    background: color-mix(in oklab, #ef4444 12%, transparent);
+    color: #dc2626;
+  }
 }
 
-.desc { font-size: .8125rem; color: var(--color-base-content); opacity: .6; line-height: 1.6; margin: 0; }
+.desc {
+  font-size: 0.8125rem;
+  color: var(--color-base-content);
+  opacity: 0.6;
+  line-height: 1.6;
+  margin: 0;
+}
 
-.reject-reason { font-size: .8125rem; color: #dc2626; margin: 0; }
+.reject-reason {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin: 0;
+}
 
-.time { font-size: .8125rem; color: var(--color-base-content); opacity: .5; margin: 0; }
+.time {
+  font-size: 0.8125rem;
+  color: var(--color-base-content);
+  opacity: 0.5;
+  margin: 0;
+}
 
 .detail-actions {
   display: flex;
-  gap: .5rem;
-  padding-top: .5rem;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
 
-  .reject-btn { color: color-mix(in oklab, #ef4444 80%, black); }
-  .delete-btn { color: color-mix(in oklab, #ef4444 80%, black); }
+  .reject-btn {
+    color: color-mix(in oklab, #ef4444 80%, black);
+  }
+  .delete-btn {
+    color: color-mix(in oklab, #ef4444 80%, black);
+  }
 }
 
-.reject-form { display: flex; flex-direction: column; gap: .5rem; }
+.reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .reject-input {
   width: 16rem;
-  padding: .5rem;
-  border: .0625rem solid var(--color-border);
-  border-radius: .375rem;
-  font-size: .75rem;
-  background: var(--color-base-100);
+  padding: 0.5rem;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  background: var(--color-base-200);
   color: var(--color-base-content);
   resize: none;
+  &:focus {
+    outline-color: var(--color-primary);
+  }
 }
-.reject-actions { display: flex; justify-content: flex-end; gap: .25rem; }
 
-.confirm-text { font-size: .75rem; margin: 0 0 .625rem; white-space: nowrap; }
-.confirm-actions { display: flex; justify-content: flex-end; gap: .25rem; }
+.reject-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.confirm-text {
+  font-size: 0.75rem;
+  margin: 0 0 0.625rem;
+  white-space: nowrap;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
 </style>

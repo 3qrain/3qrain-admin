@@ -145,6 +145,19 @@ export const updateFriendLinkRoute = createRoute({
   }
 })
 
+export const pendingCountRoute = createRoute({
+  tags: ['Admin/FriendLinks'],
+  summary: '待审核数量',
+  method: 'get',
+  path: '/friend-links/pending-count',
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.object({ count: z.number() })) } },
+      description: '获取成功',
+    },
+  },
+})
+
 export const countsRoute = createRoute({
   tags: ['Admin/FriendLinks'],
   summary: '各状态数量',

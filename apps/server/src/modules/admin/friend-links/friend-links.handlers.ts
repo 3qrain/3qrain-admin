@@ -65,6 +65,11 @@ export async function reject(c: Context) {
   return c.json(ok({}, '已拒绝'), HttpStatusCodes.OK)
 }
 
+export async function pendingCount(c: Context) {
+  const result = db.select({ count: count() }).from(friendLinks).where(eq(friendLinks.status, 'pending')).get()!
+  return c.json(ok({ count: result.count }, '获取成功'), HttpStatusCodes.OK)
+}
+
 export async function counts(c: Context) {
   const rows = db.select({ status: friendLinks.status, count: count() }).from(friendLinks).groupBy(friendLinks.status).all()
   const map: Record<string, number> = { pending: 0, approved: 0, rejected: 0 }

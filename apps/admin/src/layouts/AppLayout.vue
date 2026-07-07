@@ -12,6 +12,7 @@ import { storeToRefs } from 'pinia'
 import { applyTheme } from '~/css/themes/index'
 import { useWebSocket } from '~/composables/useWebSocket'
 import { getUnreadCount } from '~/api/notifications'
+import { getPendingFriendLinkCount } from '~/api/friend-links'
 import { getConfig, getSiteUrls } from '~/api/config'
 
 const { drawerPanel } = storeToRefs(useGlobalStore())
@@ -49,6 +50,7 @@ async function fetchUnreadCount() {
 onMounted(() => {
   fetchAdminInfo()
   fetchUnreadCount()
+  getPendingFriendLinkCount().then(c => { appStore.pendingFriendLinkCount = c }).catch(() => {})
   getSiteUrls().then(u => { appStore.webUrl = u.webUrl; appStore.adminUrl = u.adminUrl }).catch(() => {})
   getConfig(['appearance', 'email']).then(config => {
     if (config.appearance) {

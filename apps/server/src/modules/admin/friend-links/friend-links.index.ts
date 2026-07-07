@@ -5,6 +5,7 @@ import * as handlers from './friend-links.handlers'
 const friendLinksRouter = createApp()
 
 friendLinksRouter.openapi(routes.createFriendLinkRoute, handlers.create)
+friendLinksRouter.openapi(routes.pendingCountRoute, handlers.pendingCount)
 friendLinksRouter.openapi(routes.countsRoute, handlers.counts)
 friendLinksRouter.openapi(routes.listFriendLinksRoute, handlers.list)
 friendLinksRouter.openapi(routes.updateFriendLinkRoute, handlers.update)

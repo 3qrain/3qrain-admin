@@ -38,6 +38,9 @@ async function loadCounts() {
 }
 
 function handleSaved() {
+  page.value = 1
+  totalPages.value = 1
+  list.value = []
   load(true)
   loadCounts()
 }
@@ -164,6 +167,7 @@ onMounted(() => {
               <Button variant="ghost" size="sm" @click="close()">取消</Button>
               <Button
                 size="sm"
+                variant="danger"
                 @click="
                   () => {
                     handleDelete(item)
@@ -264,6 +268,22 @@ onMounted(() => {
   overflow-y: auto;
 }
 
+.list-body {
+  animation: list-enter 0.3s ease-in-out;
+}
+
+@keyframes list-enter {
+  from {
+    opacity: 0;
+    // transform: translateY(-0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    // transform: translateY(0);
+  }
+}
+
 .list-item {
   position: relative;
   display: flex;
@@ -284,6 +304,15 @@ onMounted(() => {
     background: color-mix(in oklab, var(--color-base-content) 5%, transparent);
     padding-left: 1rem;
   }
+
+  // &::after {
+  //   content: '';
+  //   left: 0;
+  //   position: absolute;
+  //   height: 100%;
+  //   width: 100%;
+  //   // background: linear-gradient(135deg, transparent, rgba(255, 0, 0, 0.05), transparent);
+  // }
 }
 
 .item-dot {
@@ -299,8 +328,7 @@ onMounted(() => {
     background: linear-gradient(135deg, var(--color-warning), var(--color-base-100));
   }
   &.approved {
-    // background: var(--color-success);
-    // background: linear-gradient(135deg, var(--color-info), var(--color-base-100));
+    background: linear-gradient(135deg, var(--color-base-content), var(--color-base-100));
   }
   &.rejected {
     background: linear-gradient(135deg, var(--color-error), var(--color-base-100));
