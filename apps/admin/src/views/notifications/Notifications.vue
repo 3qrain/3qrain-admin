@@ -56,7 +56,7 @@ function handleSelect(item: NotificationItem | null) {
   background: var(--color-base-200);
 }
 
-@media (width <= 64rem) {
+@media (width <= 1024px) {
   .list-panel {
     border-right: none;
   }

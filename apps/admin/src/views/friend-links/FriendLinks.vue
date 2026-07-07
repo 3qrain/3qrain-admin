@@ -10,7 +10,7 @@ const showModal = ref(false)
 
 function handleSelect(item: FriendLink | null) {
   selectedItem.value = item
-  if (item && window.innerWidth <= 768) showModal.value = true
+  if (item && window.innerWidth <= 1024) showModal.value = true
 }
 
 function handleUpdate(item: FriendLink) {
@@ -71,7 +71,7 @@ function handleDelete() {
   overflow-y: auto;
 }
 
-@media (width <= 64rem) {
+@media (width <= 1024px) {
   .list-panel {
     border-right: none;
   }

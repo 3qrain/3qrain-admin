@@ -4,6 +4,7 @@ import { toast } from 'vue-sonner'
 import { Check, X, Link2, Trash2, Pencil } from '@lucide/vue'
 import Button from '~/components/base/Button.vue'
 import Popover from '~/components/base/Popover.vue'
+import Badge from '~/components/base/Badge.vue'
 import FriendLinkFormModal from './FriendLinkFormModal.vue'
 import { approveFriendLink, rejectFriendLink, deleteFriendLinks } from '~/api/friend-links'
 import type { FriendLink } from '~/api/friend-links/types'
@@ -22,6 +23,19 @@ const rejectReason = ref('')
 const rejecting = ref(false)
 const approving = ref(false)
 const showEdit = ref(false)
+
+function statusBadge(status: string): { label: string; class: any } {
+  switch (status) {
+    case 'pending':
+      return { label: '待审核', class: 'warning' }
+    case 'approved':
+      return { label: '已通过', class: 'success' }
+    case 'rejected':
+      return { label: '已拒绝', class: 'error' }
+    default:
+      return { label: status, class: 'neutral' }
+  }
+}
 
 async function handleApprove() {
   if (!props.item) return
@@ -73,17 +87,19 @@ async function handleDelete() {
   <div class="detail-panel">
     <template v-if="item">
       <div class="detail-section">
-        <div class="section-head">
-          <h3 class="section-title">基本信息</h3>
-          <button class="edit-btn" title="编辑" @click="showEdit = true">
-            <Pencil :size="13" :stroke-width="1.5" />
-          </button>
+        <div class="section-head-avator">
+          <img v-if="item.avatarUrl" :src="item.avatarUrl" class="avatar" />
+          <span v-else>{{ item.siteName.slice(0, 1) }}</span>
         </div>
+      </div>
+
+      <div class="detail-section">
+        <h3 class="section-title">基本信息</h3>
 
         <dl class="info-grid">
           <dt>名称</dt>
           <dd>{{ item.siteName }}</dd>
-          <dt>URL</dt>
+          <dt>站点</dt>
           <dd>
             <a :href="item.siteUrl" target="_blank" class="link">{{ item.siteUrl }}</a>
           </dd>
@@ -93,12 +109,12 @@ async function handleDelete() {
           </dd>
           <dt v-if="item.applicantEmail">邮箱</dt>
           <dd v-if="item.applicantEmail">{{ item.applicantEmail }}</dd>
-          <dt>状态</dt>
-          <dd>
-            <span class="badge" :class="item.status">{{ item.status }}</span>
-          </dd>
           <dt>时间</dt>
           <dd>{{ formatDate(item.createdAt) }}</dd>
+          <dt>状态</dt>
+          <dd>
+            <Badge :variant="statusBadge(item.status).class">{{ statusBadge(item.status).label }}</Badge>
+          </dd>
         </dl>
 
         <FriendLinkFormModal v-model:open="showEdit" :edit-item="item" @saved="v => v && emit('update', v)" />
@@ -109,23 +125,30 @@ async function handleDelete() {
         <p class="desc">{{ item.description }}</p>
       </div>
 
-      <div v-if="item.status === 'rejected' && item.rejectReason" class="detail-section">
-        <h3 class="section-title">拒绝原因</h3>
-        <p class="reject-reason">{{ item.rejectReason }}</p>
-      </div>
-
       <div v-if="item.status === 'approved' && item.approvedAt" class="detail-section">
         <h3 class="section-title">通过时间</h3>
         <p class="time">{{ formatDate(item.approvedAt) }}</p>
       </div>
 
-      <div v-if="item.status === 'pending'" class="detail-actions">
-        <Button variant="ghost" :loading="approving" @click="handleApprove"> <Check :size="14" /> 通过 </Button>
-        <Popover>
+      <div v-if="item.status === 'rejected' && item.approvedAt" class="detail-section">
+        <h3 class="section-title">拒绝时间</h3>
+        <p class="time">{{ formatDate(item.approvedAt) }}</p>
+      </div>
+
+      <div v-if="item.status === 'rejected' && item.rejectReason" class="detail-section">
+        <h3 class="section-title">拒绝原因</h3>
+        <p class="reject-reason">{{ item.rejectReason }}</p>
+      </div>
+
+      <div class="detail-actions">
+        <Button v-if="item.status === 'pending'" variant="ghost" :loading="approving" @click="handleApprove">
+          <Check :size="14" /> 通过
+        </Button>
+        <Popover v-if="item.status === 'pending'">
           <Button variant="ghost" class="reject-btn"><X :size="14" /> 拒绝</Button>
           <template #content="{ close }">
             <div class="reject-form">
-              <textarea v-model="rejectReason" class="reject-input" placeholder="拒绝原因..." rows="4" />
+              <textarea v-model="rejectReason" class="reject-input" placeholder="拒绝原因……" rows="4" />
               <div class="reject-actions">
                 <Button variant="ghost" size="sm" @click="close()">取消</Button>
                 <Button
@@ -144,10 +167,13 @@ async function handleDelete() {
             </div>
           </template>
         </Popover>
+        <Button v-if="item.status === 'approved'" variant="ghost" @click="showEdit = true">
+          <Pencil :size="14" /> 编辑
+        </Button>
         <Popover>
           <Button variant="ghost" class="delete-btn"><Trash2 :size="14" /> 删除</Button>
           <template #content="{ close }">
-            <p class="confirm-text">确定删除此申请？</p>
+            <p class="confirm-text">确定删除此友链？</p>
             <div class="confirm-actions">
               <Button variant="ghost" size="sm" @click="close()">取消</Button>
               <Button
@@ -179,6 +205,8 @@ async function handleDelete() {
   height: 100%;
   overflow-y: auto;
   padding: 1.25rem 2rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-empty {
@@ -200,11 +228,21 @@ async function handleDelete() {
   margin-bottom: 1.5rem;
 }
 
-.section-head {
+.section-head-avator {
+  width: 8rem;
+  height: 8rem;
+  border-radius: 0.375rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
+  justify-content: center;
+  background: color-mix(in oklab, var(--color-base-content) 5%, transparent);
+  color: var(--color-base-content);
+  overflow: hidden;
+  .avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .edit-btn {
@@ -232,22 +270,29 @@ async function handleDelete() {
   letter-spacing: 0.0625rem;
   color: var(--color-base-content);
   opacity: 0.35;
-  margin: 0 0 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .info-grid {
+  margin-top: 0.75rem;
   display: grid;
-  grid-template-columns: 3rem 1fr;
-  gap: 0.25rem 1rem;
+  grid-template-columns: 2rem 1fr;
+  gap: 0.375rem 1rem;
+  align-items: center;
   dt {
     font-size: 0.75rem;
+    line-height: 1.5;
     color: var(--color-base-content);
     opacity: 0.4;
   }
   dd {
+    margin: 0;
     font-size: 0.8125rem;
     color: var(--color-base-content);
-    margin: 0;
+    word-break: break-all;
+    a {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -256,29 +301,11 @@ async function handleDelete() {
   opacity: 0.6;
 }
 
-.badge {
-  font-size: 0.6875rem;
-  padding: 0.0625rem 0.375rem;
-  border-radius: 0.25rem;
-  &.pending {
-    background: color-mix(in oklab, #f59e0b 12%, transparent);
-    color: #d97706;
-  }
-  &.approved {
-    background: color-mix(in oklab, #22c55e 12%, transparent);
-    color: #16a34a;
-  }
-  &.rejected {
-    background: color-mix(in oklab, #ef4444 12%, transparent);
-    color: #dc2626;
-  }
-}
-
 .desc {
   font-size: 0.8125rem;
   color: var(--color-base-content);
-  opacity: 0.6;
-  line-height: 1.6;
+  // opacity: 0.6;
+  line-height: 1.5;
   margin: 0;
 }
 
@@ -291,14 +318,14 @@ async function handleDelete() {
 .time {
   font-size: 0.8125rem;
   color: var(--color-base-content);
-  opacity: 0.5;
-  margin: 0;
+  // opacity: 0.5;
 }
 
 .detail-actions {
+  margin-top: auto;
+  padding-top: 0.5rem;
   display: flex;
   gap: 0.5rem;
-  padding-top: 0.5rem;
 
   .reject-btn {
     color: color-mix(in oklab, #ef4444 80%, black);

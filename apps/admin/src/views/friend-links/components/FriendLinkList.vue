@@ -8,6 +8,7 @@ import type { FriendLink } from '~/api/friend-links/types'
 import { formatDate } from '~/utils/date'
 import Popover from '~/components/base/Popover.vue'
 import Button from '~/components/base/Button.vue'
+import { toast } from 'vue-sonner'
 
 const emit = defineEmits<{
   select: [item: FriendLink | null]
@@ -45,19 +46,6 @@ function handleSaved() {
   loadCounts()
 }
 
-function statusBadge(status: string) {
-  switch (status) {
-    case 'pending':
-      return { label: '待审核', class: 'pending' }
-    case 'approved':
-      return { label: '已通过', class: 'approved' }
-    case 'rejected':
-      return { label: '已拒绝', class: 'rejected' }
-    default:
-      return { label: status, class: '' }
-  }
-}
-
 async function load(append = false) {
   loading.value = true
   try {
@@ -80,13 +68,18 @@ function goPage(p: number) {
 }
 
 async function handleDelete(item: FriendLink) {
-  await deleteFriendLinks([item.id])
-  list.value = list.value.filter(n => n.id !== item.id)
-  total.value--
-  totalPages.value = Math.ceil(total.value / pageSize)
-  if (selectedId.value === item.id) {
-    selectedId.value = null
-    emit('select', null)
+  try {
+    await deleteFriendLinks([item.id])
+    list.value = list.value.filter(n => n.id !== item.id)
+    total.value--
+    totalPages.value = Math.ceil(total.value / pageSize)
+    loadCounts()
+    if (selectedId.value === item.id) {
+      selectedId.value = null
+      emit('select', null)
+    }
+  } catch (e:any) {
+    toast.error(e?.response?.data?.message || '操作失败')
   }
 }
 

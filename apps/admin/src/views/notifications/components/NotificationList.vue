@@ -126,7 +126,7 @@ onMounted(() => load(true))
           :class="{ active: activeFilter === f.value }"
           @click="activeFilter = f.value as typeof activeFilter"
         >
-          {{ f.label }} {{ f.value === 'unread' ? store.unreadCount : '' }}
+          {{ f.label }} {{ activeFilter === f.value ? total : '' }}
         </button>
       </div>
 
@@ -300,9 +300,6 @@ onMounted(() => load(true))
   p {
     margin: 0;
   }
-}
-
-.list-body-wrapper {
 }
 
 .list-body {
