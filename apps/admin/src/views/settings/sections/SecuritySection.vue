@@ -51,9 +51,9 @@ async function handleKickAll() {
     await kickAllSessions()
     sessions.value = sessions.value.filter(s => s.isCurrent)
     toast.success('已踢出全部其他设备')
-  } catch {
-    toast.error('操作失败')
-  }
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || '操作失败')
+  } 
 }
 
 async function handleLogout() {

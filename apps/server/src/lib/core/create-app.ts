@@ -6,7 +6,7 @@ import { BAD_REQUEST } from "~/constants/http-status-codes";
 
 const defaultHook: Hook<any, any, any, any> = (result, c) => {
   if (!result.success && result.error.issues.length > 0) {
-    console.log('zod error: ',result.error.issues[0].message);
+    // console.log('zod error: ',result.error.issues[0].message);
     return c.json(
       fail(ErrorCode.INVALID_PARAMS, result.error.issues[0].message),
       BAD_REQUEST,

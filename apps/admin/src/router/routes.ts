@@ -1,5 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { LayoutDashboard, PenLine, MessageCircle, MessagesSquare, FolderTree, Tags, Folder, Users, Settings, Bell } from '@lucide/vue'
+import { LayoutDashboard, PenLine, MessageCircle, MessagesSquare, FolderTree, Tags, Folder, Users, Settings, Bell, Link2 } from '@lucide/vue'
 import AppLayout from '~/layouts/AppLayout.vue'
 
 export const menuRoutes: RouteRecordRaw[] = [
@@ -105,6 +105,15 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import('~/views/comments/Comments.vue')
       }
     ]
+  },
+   {
+    path: '/friend-links',
+    name: 'friendLinks',
+    component: () => import('~/views/friend-links/FriendLinks.vue'),
+    meta: {
+      title: '友链',
+      icon: Link2
+    }
   },
   {
     path: '/notifications',

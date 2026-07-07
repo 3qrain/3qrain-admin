@@ -1,0 +1,1 @@
+ALTER TABLE `friend_links` ADD `icon_url` text;

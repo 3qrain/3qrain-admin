@@ -126,7 +126,7 @@ onMounted(() => load(true))
           :class="{ active: activeFilter === f.value }"
           @click="activeFilter = f.value as typeof activeFilter"
         >
-          {{ f.label }}
+          {{ f.label }} {{ f.value === 'unread' ? store.unreadCount : '' }}
         </button>
       </div>
 
@@ -363,7 +363,6 @@ onMounted(() => load(true))
 
 .item-dot {
   position: relative;
-  flex-shrink: 0;
   width: 0.1875rem;
   height: 2rem;
   background: var(--color-base-content);

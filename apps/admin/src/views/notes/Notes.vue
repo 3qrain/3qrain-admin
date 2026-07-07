@@ -171,8 +171,8 @@ async function handleEmptyTrash() {
     load()
     toast.success('回收站已清空')
   } catch (e: any) {
-    toast.error(e?.message || '操作失败')
-  }
+    toast.error(e?.response?.data?.message || '操作失败')
+  } 
 }
 
 watch(paginationMode, val => {

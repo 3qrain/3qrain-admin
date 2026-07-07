@@ -15,6 +15,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@3qrain/shared": "workspace:*",
+        "@floating-ui/vue": "^2.0.0",
         "@lucide/vue": "^1.14.0",
         "@tiptap/extension-image": "^3.25.0",
         "@tiptap/extension-text-align": "^3.26.1",
@@ -257,6 +258,8 @@
     "@floating-ui/dom": ["@floating-ui/dom@1.7.6", "https://registry.npmmirror.com/@floating-ui/dom/-/dom-1.7.6.tgz", { "dependencies": { "@floating-ui/core": "^1.7.5", "@floating-ui/utils": "^0.2.11" } }, "sha512-9gZSAI5XM36880PPMm//9dfiEngYoC6Am2izES1FF406YFsjvyBMmeJ2g4SAju3xWwtuynNRFL2s9hgxpLI5SQ=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "https://registry.npmmirror.com/@floating-ui/utils/-/utils-0.2.11.tgz", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
+
+    "@floating-ui/vue": ["@floating-ui/vue@2.0.0", "https://registry.npmmirror.com/@floating-ui/vue/-/vue-2.0.0.tgz", { "dependencies": { "@floating-ui/dom": "^1.7.6", "@floating-ui/utils": "^0.2.11" }, "peerDependencies": { "vue": ">=3.3.0" } }, "sha512-I7hYpCAkgBrtXdZbfCpGaqAV+E09fENSHBIm81z6WhSgcl1ctkb3+1gW9h8PVDus0Em2FwGRR41epgxILS6YhQ=="],
 
     "@hono/oauth-providers": ["@hono/oauth-providers@0.8.5", "https://registry.npmmirror.com/@hono/oauth-providers/-/oauth-providers-0.8.5.tgz", { "peerDependencies": { "hono": ">=3.0.0" } }, "sha512-hgEDH/gUmB/opman9jvT8dLItZsSC9M9yFiaam0b6InK7WQkdzIcaRAkdda47QpixnK9S1Ah2vjDB2U16LkMnA=="],
 
