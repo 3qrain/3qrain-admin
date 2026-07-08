@@ -5,27 +5,25 @@ import Input from '~/components/base/Input.vue'
 import Button from '~/components/base/Button.vue'
 import BaseModal from '~/components/base/Modal.vue'
 import { createFriendLink, updateFriendLink } from '~/api/friend-links'
-import type { FriendLink } from '~/api/friend-links/types'
+import type { FriendLink, CreateFriendLinkInput } from '~/api/friend-links/types'
 
-const props = defineProps<{
-  editItem: FriendLink | null
-}>()
+const editItem = defineModel<FriendLink | null>('editItem')
 
 const emit = defineEmits<{
   saved: [item?: FriendLink]
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
-const form = ref({ siteName: '', siteUrl: '', avatarUrl: '', description: '' })
+const form = ref<CreateFriendLinkInput>({ siteName: '', siteUrl: '', avatarUrl: '', description: '' })
 const saving = ref(false)
 
 watch(open, v => {
-  if (v && props.editItem) {
+  if (v && editItem.value) {
     form.value = {
-      siteName: props.editItem.siteName,
-      siteUrl: props.editItem.siteUrl,
-      avatarUrl: props.editItem.avatarUrl || '',
-      description: props.editItem.description || ''
+      siteName: editItem.value.siteName,
+      siteUrl: editItem.value.siteUrl,
+      avatarUrl: editItem.value.avatarUrl || '',
+      description: editItem.value.description || ''
     }
   } else if (v) {
     form.value = { siteName: '', siteUrl: '', avatarUrl: '', description: '' }
@@ -36,10 +34,13 @@ async function handleSubmit() {
   if (!form.value.siteName || !form.value.siteUrl) return
   saving.value = true
   try {
-    if (props.editItem) {
-      await updateFriendLink(props.editItem.id, form.value)
+    if (editItem.value) {
+      await updateFriendLink(editItem.value.id, form.value)
+      for (const key in form.value) {
+        const k = key as keyof CreateFriendLinkInput
+        editItem.value[k] = form.value[k] || ''
+      }
       toast.success('已保存')
-      emit('saved', { ...props.editItem, ...form.value } as FriendLink)
     } else {
       await createFriendLink(form.value)
       toast.success('添加成功')

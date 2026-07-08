@@ -3,7 +3,13 @@ import { ref, watch, onMounted } from 'vue'
 import { Link2, Trash2, Plus } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import FriendLinkFormModal from './FriendLinkFormModal.vue'
-import { getFriendLinks, getFriendLinkCounts, deleteFriendLinks } from '~/api/friend-links'
+import {
+  getFriendLinks,
+  getFriendLinkCounts,
+  deleteFriendLinks,
+  approveFriendLink,
+  rejectFriendLink
+} from '~/api/friend-links'
 import type { FriendLink } from '~/api/friend-links/types'
 import { formatDate } from '~/utils/date'
 import Popover from '~/components/base/Popover.vue'
@@ -38,6 +44,25 @@ async function loadCounts() {
   }
 }
 
+function removeItem(item: FriendLink) {
+  if (!item) return
+
+  const index = list.value.findIndex(n => n.id === item.id)
+  if (index === -1) return
+  list.value.splice(index, 1)
+
+  total.value--
+  totalPages.value = Math.ceil(total.value / pageSize)
+
+  if (selectedId.value === item.id) {
+    const nextItem = list.value[index] || list.value[index - 1] || null
+
+    selectedId.value = nextItem?.id ?? null
+    emit('select', nextItem)
+  }
+  loadCounts()
+}
+
 function handleSaved() {
   page.value = 1
   totalPages.value = 1
@@ -67,37 +92,60 @@ function goPage(p: number) {
   load(true)
 }
 
-async function handleDelete(item: FriendLink) {
+function handleSelect(item: FriendLink) {
+  selectedId.value = item.id
+  emit('select', item)
+}
+
+async function handleApprove(item: FriendLink) {
+  if (!item) return
   try {
-    await deleteFriendLinks([item.id])
-    list.value = list.value.filter(n => n.id !== item.id)
-    total.value--
-    totalPages.value = Math.ceil(total.value / pageSize)
-    loadCounts()
-    if (selectedId.value === item.id) {
-      selectedId.value = null
-      emit('select', null)
-    }
-  } catch (e:any) {
+    await approveFriendLink(item.id)
+    removeItem(item)
+    toast.success('已通过')
+  } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
   }
 }
 
-function handleSelect(item: FriendLink) {
-  selectedId.value = item.id
-  emit('select', item)
+async function handleReject(item: FriendLink, rejectReason: string) {
+  if (!item || !rejectReason) return
+  try {
+    await rejectFriendLink(item.id, rejectReason)
+    removeItem(item)
+    toast.success('已拒绝')
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || '操作失败')
+  }
+}
+
+async function handleDelete(item: FriendLink) {
+  try {
+    await deleteFriendLinks([item.id])
+    removeItem(item)
+    toast.success('删除成功')
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || '删除失败')
+  }
 }
 
 watch(activeStatus, () => {
   page.value = 1
   totalPages.value = 1
   list.value = []
+  loadCounts()
   load(true)
 })
 
 onMounted(() => {
   load(true)
   loadCounts()
+})
+
+defineExpose({
+  handleDelete,
+  handleReject,
+  handleApprove
 })
 </script>
 

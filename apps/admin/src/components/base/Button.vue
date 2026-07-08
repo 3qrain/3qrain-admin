@@ -61,7 +61,7 @@ withDefaults(
   }
   &.loading:disabled {
     opacity: 0.75;
-    cursor: wait;
+    cursor: default;
   }
   &:active:not(:disabled) {
     scale: 0.97;

@@ -25,7 +25,6 @@ export interface CreateFriendLinkInput {
   siteUrl: string
   avatarUrl?: string
   description?: string
-  applicantEmail: string
 }
 
 export interface FriendLinkListQuery {

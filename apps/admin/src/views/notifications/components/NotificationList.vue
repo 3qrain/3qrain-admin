@@ -90,12 +90,19 @@ async function handleMarkRead(item: NotificationItem) {
 async function handleDelete(item: NotificationItem) {
   await deleteNotifications([item.id])
   if (!item.isRead && store.unreadCount > 0) store.unreadCount--
-  list.value = list.value.filter(n => n.id !== item.id)
+
+  const index = list.value.findIndex(n => n.id === item.id)
+  if (index === -1) return
+  list.value.splice(index, 1)
+
   total.value--
   totalPages.value = Math.ceil(total.value / pageSize)
+
   if (selectedId.value === item.id) {
-    selectedId.value = null
-    emit('select', null)
+    const nextItem = list.value[index] || list.value[index - 1] || null
+
+    selectedId.value = nextItem?.id ?? null
+    emit('select', nextItem)
   }
 }
 

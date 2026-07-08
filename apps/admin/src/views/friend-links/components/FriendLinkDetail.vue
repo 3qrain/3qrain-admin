@@ -1,27 +1,28 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { toast } from 'vue-sonner'
 import { Check, X, Link2, Trash2, Pencil } from '@lucide/vue'
 import Button from '~/components/base/Button.vue'
 import Popover from '~/components/base/Popover.vue'
 import Badge from '~/components/base/Badge.vue'
 import FriendLinkFormModal from './FriendLinkFormModal.vue'
-import { approveFriendLink, rejectFriendLink, deleteFriendLinks } from '~/api/friend-links'
 import type { FriendLink } from '~/api/friend-links/types'
 import { formatDate } from '~/utils/date'
 
+const selectedItem = defineModel<FriendLink | null>('selectedItem')
+
 const props = defineProps<{
-  item: FriendLink | null
+  approving: boolean
+  rejecting: boolean
+  deleting: boolean
 }>()
 
 const emit = defineEmits<{
-  update: [item: FriendLink]
-  delete: [id: number]
+  approve: []
+  reject: [rejectReason: string]
+  delete: []
 }>()
 
 const rejectReason = ref('')
-const rejecting = ref(false)
-const approving = ref(false)
 const showEdit = ref(false)
 
 function statusBadge(status: string): { label: string; class: any } {
@@ -38,58 +39,28 @@ function statusBadge(status: string): { label: string; class: any } {
 }
 
 async function handleApprove() {
-  if (!props.item) return
-  approving.value = true
-  try {
-    await approveFriendLink(props.item.id)
-    emit('update', { ...props.item, status: 'approved', approvedAt: new Date().toISOString() })
-    toast.success('已通过')
-  } catch (e: any) {
-    toast.error(e?.response?.data?.message || '操作失败')
-  } finally {
-    approving.value = false
-  }
+  if (!selectedItem.value) return
+  emit('approve')
 }
 
 async function handleReject() {
-  if (!props.item || !rejectReason.value) return
-  rejecting.value = true
-  try {
-    await rejectFriendLink(props.item.id, rejectReason.value)
-    emit('update', {
-      ...props.item,
-      status: 'rejected',
-      rejectReason: rejectReason.value,
-      rejectedAt: new Date().toISOString()
-    })
-    rejectReason.value = ''
-    toast.success('已拒绝')
-  } catch (e: any) {
-    toast.error(e?.response?.data?.message || '操作失败')
-  } finally {
-    rejecting.value = false
-  }
+  if (!selectedItem.value && !rejectReason.value) return
+  emit('reject', rejectReason.value)
 }
 
 async function handleDelete() {
-  if (!props.item) return
-  try {
-    await deleteFriendLinks([props.item.id])
-    emit('delete', props.item.id)
-    toast.success('已删除')
-  } catch (e: any) {
-    toast.error(e?.response?.data?.message || '删除失败')
-  }
+  if (!selectedItem.value) return
+  emit('delete')
 }
 </script>
 
 <template>
   <div class="detail-panel">
-    <template v-if="item">
+    <template v-if="selectedItem">
       <div class="detail-section">
         <div class="section-head-avator">
-          <img v-if="item.avatarUrl" :src="item.avatarUrl" class="avatar" />
-          <span v-else>{{ item.siteName.slice(0, 1) }}</span>
+          <img v-if="selectedItem.avatarUrl" :src="selectedItem.avatarUrl" class="avatar" />
+          <span v-else>{{ selectedItem.siteName.slice(0, 1) }}</span>
         </div>
       </div>
 
@@ -98,54 +69,56 @@ async function handleDelete() {
 
         <dl class="info-grid">
           <dt>名称</dt>
-          <dd>{{ item.siteName }}</dd>
+          <dd>{{ selectedItem.siteName }}</dd>
           <dt>站点</dt>
           <dd>
-            <a :href="item.siteUrl" target="_blank" class="link">{{ item.siteUrl }}</a>
+            <a :href="selectedItem.siteUrl" target="_blank" class="link">{{ selectedItem.siteUrl }}</a>
           </dd>
-          <dt v-if="item.avatarUrl">头像</dt>
-          <dd v-if="item.avatarUrl">
-            <a :href="item.avatarUrl" target="_blank" class="link">{{ item.avatarUrl }}</a>
+          <dt v-if="selectedItem.avatarUrl">头像</dt>
+          <dd v-if="selectedItem.avatarUrl">
+            <a :href="selectedItem.avatarUrl" target="_blank" class="link">{{ selectedItem.avatarUrl }}</a>
           </dd>
-          <dt v-if="item.applicantEmail">邮箱</dt>
-          <dd v-if="item.applicantEmail">{{ item.applicantEmail }}</dd>
+          <dt v-if="selectedItem.applicantEmail">邮箱</dt>
+          <dd v-if="selectedItem.applicantEmail">{{ selectedItem.applicantEmail }}</dd>
           <dt>时间</dt>
-          <dd>{{ formatDate(item.createdAt) }}</dd>
+          <dd>{{ formatDate(selectedItem.createdAt) }}</dd>
           <dt>状态</dt>
           <dd>
-            <Badge :variant="statusBadge(item.status).class">{{ statusBadge(item.status).label }}</Badge>
+            <Badge :variant="statusBadge(selectedItem.status).class">{{
+              statusBadge(selectedItem.status).label
+            }}</Badge>
           </dd>
         </dl>
 
-        <FriendLinkFormModal v-model:open="showEdit" :edit-item="item" @saved="v => v && emit('update', v)" />
+        <FriendLinkFormModal v-model:open="showEdit" v-model:editItem="selectedItem" />
       </div>
 
-      <div v-if="item.description" class="detail-section">
+      <div v-if="selectedItem.description" class="detail-section">
         <h3 class="section-title">简介</h3>
-        <p class="desc">{{ item.description }}</p>
+        <p class="desc">{{ selectedItem.description }}</p>
       </div>
 
-      <div v-if="item.status === 'approved' && item.approvedAt" class="detail-section">
+      <div v-if="selectedItem.status === 'approved' && selectedItem.approvedAt" class="detail-section">
         <h3 class="section-title">通过时间</h3>
-        <p class="time">{{ formatDate(item.approvedAt) }}</p>
+        <p class="time">{{ formatDate(selectedItem.approvedAt) }}</p>
       </div>
 
-      <div v-if="item.status === 'rejected' && item.approvedAt" class="detail-section">
+      <div v-if="selectedItem.status === 'rejected' && selectedItem.approvedAt" class="detail-section">
         <h3 class="section-title">拒绝时间</h3>
-        <p class="time">{{ formatDate(item.approvedAt) }}</p>
+        <p class="time">{{ formatDate(selectedItem.approvedAt) }}</p>
       </div>
 
-      <div v-if="item.status === 'rejected' && item.rejectReason" class="detail-section">
+      <div v-if="selectedItem.status === 'rejected' && selectedItem.rejectReason" class="detail-section">
         <h3 class="section-title">拒绝原因</h3>
-        <p class="reject-reason">{{ item.rejectReason }}</p>
+        <p class="reject-reason">{{ selectedItem.rejectReason }}</p>
       </div>
 
       <div class="detail-actions">
-        <Button v-if="item.status === 'pending'" variant="ghost" :loading="approving" @click="handleApprove">
+        <Button v-if="selectedItem.status === 'pending'" variant="ghost" :loading="approving" @click="handleApprove">
           <Check :size="14" /> 通过
         </Button>
-        <Popover v-if="item.status === 'pending'">
-          <Button variant="ghost" class="reject-btn"><X :size="14" /> 拒绝</Button>
+        <Popover v-if="selectedItem.status === 'pending'">
+          <Button :loading="rejecting" variant="ghost" class="reject-btn"><X :size="14" /> 拒绝</Button>
           <template #content="{ close }">
             <div class="reject-form">
               <textarea v-model="rejectReason" class="reject-input" placeholder="拒绝原因……" rows="4" />
@@ -154,7 +127,6 @@ async function handleDelete() {
                 <Button
                   size="sm"
                   :disabled="!rejectReason"
-                  :loading="rejecting"
                   @click="
                     () => {
                       handleReject()
@@ -167,11 +139,11 @@ async function handleDelete() {
             </div>
           </template>
         </Popover>
-        <Button v-if="item.status === 'approved'" variant="ghost" @click="showEdit = true">
+        <Button v-if="selectedItem.status === 'approved'" variant="ghost" @click="showEdit = true">
           <Pencil :size="14" /> 编辑
         </Button>
         <Popover>
-          <Button variant="ghost" class="delete-btn"><Trash2 :size="14" /> 删除</Button>
+          <Button variant="ghost" class="delete-btn" :loading="deleting"><Trash2 :size="14" /> 删除</Button>
           <template #content="{ close }">
             <p class="confirm-text">确定删除此友链？</p>
             <div class="confirm-actions">
