@@ -159,6 +159,7 @@ export async function create(c: Context) {
       type: isReply ? 'new_reply' : 'new_comment',
       title: postTitle + (isReply ? ' 有新回复' : ' 有新评论'),
       content: summary,
+      emailStatus: (user.role === 'system' || user.role === 'admin') ? 'not_required' : undefined,
       meta: JSON.stringify({
         targetType: body.targetType,
         targetId: body.targetId,

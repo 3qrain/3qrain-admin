@@ -11,7 +11,7 @@ import { config } from '~/env'
 
 const TOKEN_TTL = Number(config.TOKEN_TTL) || 86400
 
-/** 内联校验 — 返回 user 或 null（用于不能挂中间件的场景） */
+/** 内联校验 **/
 export async function resolveUserSession(c: Context) {
   const cookie = c.req.header('cookie') || ''
   const match = cookie.match(/3qrain_user_token=([^;]+)/)
@@ -38,7 +38,7 @@ export async function resolveUserSession(c: Context) {
   return user
 }
 
-/** 中间件 — 用于所有接口都需登录的模块 */
+/** 中间件 — 用于前台用户权限校验（评论接口使用） */
 export const authGuardPublic = createMiddleware(async (c, next) => {
   const user = await resolveUserSession(c)
   if (!user) {

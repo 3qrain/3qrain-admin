@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Mail, CheckCircle, XCircle, ChevronDown, ChevronUp } from '@lucide/vue'
+import { CheckCircle, XCircle, ChevronDown, ChevronUp, ShieldCheck } from '@lucide/vue'
 import type { NotificationItem } from '~/api/notifications/types'
 import type { Comment } from '~/api/comments/types'
 import { formatDate } from '~/utils/date'
@@ -53,6 +53,11 @@ const previewHtml = computed(() => {
   <div class="detail-section">
     <h3 class="section-title">邮件发送</h3>
 
+    <div v-if="item.emailStatus === 'not_required'" class="email-status not_required">
+      <ShieldCheck :size="16" />
+      <span>无需发送邮件（管理员）</span>
+    </div>
+
     <div v-if="item.emailStatus === 'pending'" class="email-status pending">
       <span class="email-spinner" />
       <span>邮件发送中...</span>
@@ -103,6 +108,11 @@ const previewHtml = computed(() => {
   padding: .5rem .75rem;
   border-radius: .5rem;
   font-size: .8125rem;
+
+  &.not_required {
+    background: color-mix(in oklab, var(--color-base-content) 4%, transparent);
+    color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+  }
 
   &.pending {
     background: color-mix(in oklab, #f59e0b 12%, transparent);
