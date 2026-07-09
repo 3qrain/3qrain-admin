@@ -90,7 +90,7 @@ export async function reject(c: Context) {
     scope: 'admin',
     type: 'friend_reject',
     title: `${existing.siteName} 友链已拒绝`,
-    content: reason,
+    // content: reason,
     meta: JSON.stringify({
       id,
       siteName: existing.siteName,

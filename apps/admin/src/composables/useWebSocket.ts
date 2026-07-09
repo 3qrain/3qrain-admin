@@ -50,6 +50,9 @@ export function useWebSocket() {
           if (msg.data.type === 'friend_apply') store.pendingFriendLinkCount++
           // 页面通知
           toast(msg.data.title, {
+            position: 'top-right',
+            duration: 6000,
+            // icon: h(BellRing, { size: 20}),
             description: msg.data.content || undefined,
             action: msg.data.meta
               ? {
@@ -71,7 +74,7 @@ export function useWebSocket() {
                 }
               : undefined
           })
-          
+
           // 系统通知
           // 没啥用，使用时除了浏览器要允许该站点通知外，还要在系统上允许浏览器通知
           // mac横幅还不出现，只显示在通知中心。还是只用toast吧，系统通知看邮箱就行了

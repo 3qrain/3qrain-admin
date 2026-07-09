@@ -149,15 +149,15 @@ export async function create(c: Context) {
     let postTitle = ''
     if (body.targetType === 'post') {
       const post = db.select({ title: posts.title }).from(posts).where(eq(posts.id, body.targetId)).get()
-      postTitle = post?.title || ''
+      postTitle = `「${post?.title}」` || ''
     } else if (body.targetType === 'note') {
-      postTitle = '说说#' + body.targetId
+      postTitle = '说说#' + body.targetId + ' '
     }
 
     await notify({
       scope: 'admin',
       type: isReply ? 'new_reply' : 'new_comment',
-      title: postTitle + (isReply ? ' 有新回复' : ' 有新评论'),
+      title: postTitle + (isReply ? '有新回复' : '有新评论'),
       content: summary,
       emailStatus: (user.role === 'system' || user.role === 'admin') ? 'not_required' : undefined,
       meta: JSON.stringify({
@@ -169,7 +169,7 @@ export async function create(c: Context) {
       }),
     })
   } catch (e) {
-    console.error('[notify] failed:', e)
+    // console.error('[notify] failed:', e)
   }
 
   return c.json(ok(enriched, '评论成功'), HttpStatusCodes.CREATED)
