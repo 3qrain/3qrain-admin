@@ -79,8 +79,8 @@ function onDragEnd(e: TouchEvent | MouseEvent) {
   </Transition>
 
   <Transition name="drawer">
-    <aside v-if="open" ref="drawerRef" class="drawer" @touchstart="onDragStart" @mousedown="onDragStart">
-      <div class="drawer-header">
+    <aside v-if="open" ref="drawerRef" class="drawer">
+      <div class="drawer-header" @touchstart="onDragStart" @mousedown="onDragStart">
         <div v-if="showHandle" class="drawer-handle" />
         <slot name="header" />
       </div>
@@ -127,8 +127,9 @@ function onDragEnd(e: TouchEvent | MouseEvent) {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: .75rem 1rem .5rem;
+  padding: .75rem 1rem;
   flex-shrink: 0;
+  cursor: grab;
 }
 
 .drawer-handle {

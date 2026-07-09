@@ -75,6 +75,12 @@ function handleClick() {
   flex-shrink: 0;
 }
 
+@media (width <= 48rem) {
+  .logo {
+    padding-top: 0rem;
+  }
+}
+
 .logo-text {
   font-size: 1.25rem;
   font-weight: 700;

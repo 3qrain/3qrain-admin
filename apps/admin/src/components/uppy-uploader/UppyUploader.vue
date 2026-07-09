@@ -24,7 +24,7 @@ onMounted(() => {
 
 <style scoped lang="less">
 .uploader {
-  padding: .75rem 1.5rem 1.5rem;
+  padding: 0 1.5rem 1.5rem;
   height: 100%;
 }
 #uppy-dashboard {

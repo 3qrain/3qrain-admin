@@ -126,6 +126,7 @@ onUnmounted(() => {
 .layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--color-base-100);
 }
@@ -158,6 +159,7 @@ onUnmounted(() => {
   align-items: center;
   border-bottom: 0.0625rem solid var(--color-border);
   background: var(--color-base-100);
+  color: var(--color-base-content);
   .header-left {
     display: flex;
     justify-content: start;
@@ -175,6 +177,7 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     border: none;
+    color: inherit;
     background: transparent;
     cursor: pointer;
     position: relative;

@@ -112,7 +112,9 @@ watch(
 
     <!-- 滚动模式 -->
     <div v-else-if="mode === 'scroll'" ref="sentinel" class="scroll-sentinel">
-      <LoaderCircle v-if="loading"  class="scroll-loading" />
+      <span v-if="loading" class="loader">
+        <LoaderCircle class="scroll-loading" />
+      </span>
       <span v-else-if="currentPage >= totalPages && totalPages > 1" class="ended">没有更多了</span>
     </div>
   </div>
@@ -120,7 +122,7 @@ watch(
 
 <style scoped lang="less">
 .pagination {
-  min-height: 2rem;
+  // min-height: 2rem;
 }
 /* ---- 按钮分页 ---- */
 .pager {
@@ -194,26 +196,29 @@ watch(
 
 /* ---- 滚动加载 ---- */
 .scroll-sentinel {
-  padding: 2rem 0;
   display: flex;
   justify-content: center;
   font-size: 0.8125rem;
   color: var(--color-base-content);
-  .scroll-loading {
-    opacity: .1;
-    animation: rotate 1s linear infinite;
-  }
-  @keyframes rotate {
-    from {
-      transform: rotate(0deg);
+  .loader {
+    padding: 2rem 0;
+    .scroll-loading {
+      opacity: 0.1;
+      animation: rotate 1s linear infinite;
     }
-    to {
-      transform: rotate(360deg);
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
   }
-}
 
-.ended {
-  opacity: 0.35;
+  .ended {
+    padding: 2rem 0;
+    opacity: 0.35;
+  }
 }
 </style>
