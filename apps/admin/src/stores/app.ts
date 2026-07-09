@@ -10,7 +10,7 @@ interface NoteComposeDraft {
 }
 
 interface AdminUser {
-  id: number
+  id?: number
   username: string
   email: string
   avatarUrl: string

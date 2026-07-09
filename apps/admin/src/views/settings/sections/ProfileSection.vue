@@ -7,6 +7,9 @@ import Loading from '~/components/base/Loading.vue'
 import { getProfile, updateProfile } from '~/api/account'
 import { getConfig, updateConfig } from '~/api/config'
 import { withMinDuration } from '~/utils/async'
+import { useAppStore } from '~/stores/app'
+
+const appStore = useAppStore()
 
 const loading = ref(true)
 const saving = ref(false)
@@ -33,6 +36,7 @@ async function save() {
       updateProfile(profile.value),
       updateConfig('siteInfo', { bio: bio.value }),
     ]))
+    appStore.adminUser = { ...appStore.adminUser, ...profile.value }
     toast.success('已保存')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '保存失败')

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { MailCheck, MailX, ChevronDown, ChevronUp, CircleOff } from '@lucide/vue'
+import { CircleCheckBig, CircleX, ChevronDown, ChevronUp, CircleOff } from '@lucide/vue'
 import type { NotificationItem } from '~/api/notifications/types'
 import type { Comment } from '~/api/comments/types'
 import { formatDate } from '~/utils/date'
@@ -23,6 +23,7 @@ const props = defineProps<{
 
 const showPreview = ref(false)
 const previewHtml = ref('')
+const iframe = ref<HTMLIFrameElement>()
 
 watch(
   () => props.item.id,
@@ -103,7 +104,7 @@ function notRequiredMsg(emailStatus: NotificationType) {
     case 'new_comment':
       return '无需发送邮件（管理员评论）'
     case 'new_reply':
-      return '无需发送邮件（评论人id与被回复人id一致）'
+      return '无需发送邮件（回复者与评论者为同一用户）'
     case 'friend_apply':
     case 'friend_approve':
     case 'friend_reject':
@@ -127,7 +128,7 @@ function togglePreview() {
     <h3 class="section-title">邮件发送</h3>
 
     <div v-if="item.emailStatus === 'not_required'" class="email-status not_required">
-      <CircleOff style="height: 1.125rem; width: 1.125rem;" />
+      <CircleOff style="height: 1.125rem; width: 1.125rem" />
       <span>{{ notRequiredMsg(item.type) }}</span>
     </div>
 
@@ -137,24 +138,39 @@ function togglePreview() {
     </div>
 
     <div v-else-if="item.emailStatus === 'sent'" class="email-status ok">
-      <MailCheck style="height: 1.125rem; width: 1.125rem;" />
+      <CircleCheckBig style="height: 1.125rem; width: 1.125rem" />
       <span>已发送</span>
       <span v-if="item.emailSentAt" class="email-time">{{ formatDate(item.emailSentAt) }}</span>
       <button v-if="item.emailStatus === 'sent'" class="preview-toggle" @click="togglePreview">
         {{ showPreview ? '收起' : '展开' }}邮件
-        <ChevronUp v-if="showPreview" style="height: .75rem; width: .75rem;" />
-        <ChevronDown v-else style="height: .75rem; width: .75rem;" />
+        <ChevronUp v-if="showPreview" style="height: 0.75rem; width: 0.75rem" />
+        <ChevronDown v-else style="height: 0.75rem; width: 0.75rem" />
       </button>
     </div>
 
     <div v-else-if="item.emailStatus === 'failed'" class="email-status fail">
-      <MailX style="height: 1.125rem; width: 1.125rem;" />
+      <CircleX style="height: 1.125rem; width: 1.125rem" />
       <span>发送失败</span>
       <span v-if="item.emailError" class="email-error">{{ item.emailError }}</span>
     </div>
 
     <div v-if="previewHtml && item.emailStatus === 'sent' && showPreview" class="email-preview">
-      <iframe :srcdoc="previewHtml" class="email-frame" sandbox="allow-popups allow-popups-to-escape-sandbox" />
+      <iframe
+        ref="iframe"
+        :srcdoc="previewHtml"
+        class="email-frame"
+        sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        @load="
+          () => {
+            if (!iframe) return
+            const doc = iframe?.contentDocument
+            console.log(doc);
+            
+            if (!doc) return
+            iframe.style.height = doc.documentElement.scrollHeight + 'px'
+          }
+        "
+      />
     </div>
   </div>
 </template>
