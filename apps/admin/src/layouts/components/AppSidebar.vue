@@ -102,6 +102,7 @@ function handleClick() {
   align-items: center;
   gap: 0.625rem;
   padding: 0.625rem 0.75rem;
+  height: 2.5rem;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;

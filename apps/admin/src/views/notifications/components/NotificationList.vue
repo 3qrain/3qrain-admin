@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { Bell, MessageCircle, MessageCircleReply, Panda, Settings, Trash2, RotateCw } from '@lucide/vue'
+import { Bell, MessageCircle, MessageCircleReply, Panda, Settings, Trash2, RotateCw, UserRoundCheck, UserRoundX } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import { getNotifications, markRead, deleteNotifications } from '~/api/notifications'
 import type { NotificationItem } from '~/api/notifications/types'
+import type { NotificationType } from '@3qrain/shared'
 import { formatDate } from '~/utils/date'
 import { useAppStore } from '~/stores/app'
 
@@ -51,10 +52,12 @@ const filters = [
   { value: 'all', label: '全部' }
 ]
 
-function typeIcon(type: string) {
+function typeIcon(type: NotificationType) {
   if (type === 'new_comment') return MessageCircle
   if (type === 'new_reply') return MessageCircleReply
   if (type === 'friend_apply') return Panda
+  if (type === 'friend_approve') return UserRoundCheck
+  if (type === 'friend_reject') return UserRoundX
   return Settings
 }
 
@@ -401,8 +404,8 @@ onMounted(() => load(false))
   left: 0;
   width: 100%;
   height: 100%;
-  // background: linear-gradient(135deg, #3b82f6, var(--color-info));
   background: linear-gradient(135deg, #3b82f6, var(--color-base-100));
+  // background: linear-gradient(135deg, var(--color-base-content), var(--color-base-100));
   opacity: 0;
   transition: opacity 0.6s;
 }

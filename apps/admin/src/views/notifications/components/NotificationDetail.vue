@@ -118,11 +118,15 @@ watch(
         </template>
 
         <div
-          v-else-if="item.type === 'friend_apply'"
+          v-else-if="item.type === 'friend_apply' || item.type === 'friend_approve' || item.type === 'friend_reject'"
           class="comment-card friend-apply-card"
           @click="router.push('friend-links')"
         >
-          <Panda class="friend-icon" style="width: 2rem; height: 2rem" />
+          <Panda
+            class="friend-icon"
+            :class="{ friend_approve: item.type === 'friend_approve', friend_reject: item.type === 'friend_reject' }"
+            style="width: 2rem; height: 2rem"
+          />
         </div>
       </div>
 
@@ -285,16 +289,25 @@ watch(
   display: flex;
   flex-direction: row;
   align-items: center;
-  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
   cursor: pointer;
-  transition: color 0.3s;
+
+  .friend-icon {
+    opacity: 0.75;
+    transition: opacity 0.3s;
+  }
 
   &:hover {
-    color: color-mix(in oklab, var(--color-base-content) 100%, transparent);
-
     .friend-icon {
+      opacity: 1;
       animation: shake 0.5s ease-in-out;
     }
+  }
+
+  .friend_approve {
+    color: var(--color-success);
+  }
+  .friend_reject {
+    color: var(--color-error);
   }
 }
 

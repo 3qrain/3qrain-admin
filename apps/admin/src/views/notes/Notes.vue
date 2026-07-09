@@ -550,7 +550,7 @@ onMounted(() => {
 }
 
 .note-pagination {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
 @media (max-width: 48rem) {

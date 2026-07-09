@@ -1,7 +1,7 @@
 <!-- app-main区域内专用分页组件 -->
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, LoaderCircle } from '@lucide/vue'
 import Loading from '~/components/base/Loading.vue'
 
 const props = withDefaults(
@@ -39,16 +39,16 @@ function goTo(page: number) {
 function setupObserver() {
   if (!sentinel.value) return
   const scrollRoot = props.rootId ? document.getElementById(props.rootId) : document.getElementById('app-main')
-  
+
   observer = new IntersectionObserver(
-    ([entry]) => {      
+    ([entry]) => {
       if (entry.isIntersecting && !props.loading && props.currentPage < props.totalPages) {
         emit('change', props.currentPage + 1)
       }
     },
     {
       root: scrollRoot,
-      rootMargin: '0px 0px 500px 0px',
+      rootMargin: '0px 0px 500px 0px'
     }
   )
   observer.observe(sentinel.value)
@@ -75,11 +75,11 @@ watch(
   }
 )
 
-// 每次加载完后重建Observer，强制触发一次新的交叉检测 
+// 每次加载完后重建Observer，强制触发一次新的交叉检测
 // 避免了加载完成时，填充完内容后，分页组件还在观测区域范围内，导致不能重新计算交叉关系。
 watch(
   () => props.loading,
-  async (val) => {
+  async val => {
     if (!val && props.mode === 'scroll') {
       teardownObserver()
       await nextTick()
@@ -112,7 +112,7 @@ watch(
 
     <!-- 滚动模式 -->
     <div v-else-if="mode === 'scroll'" ref="sentinel" class="scroll-sentinel">
-      <Loading v-if="loading" />
+      <LoaderCircle v-if="loading"  class="scroll-loading" />
       <span v-else-if="currentPage >= totalPages && totalPages > 1" class="ended">没有更多了</span>
     </div>
   </div>
@@ -136,7 +136,7 @@ watch(
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  border-radius: .375rem;
+  border-radius: 0.375rem;
   border: none;
   background: transparent;
   color: var(--color-base-content);
@@ -160,10 +160,10 @@ watch(
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  border-radius: .375rem;
+  border-radius: 0.375rem;
   border: none;
   background: transparent;
-  font-size: .875rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-base-content);
   opacity: 0.5;
@@ -194,14 +194,26 @@ watch(
 
 /* ---- 滚动加载 ---- */
 .scroll-sentinel {
+  padding: 2rem 0;
   display: flex;
   justify-content: center;
   font-size: 0.8125rem;
   color: var(--color-base-content);
+  .scroll-loading {
+    opacity: .1;
+    animation: rotate 1s linear infinite;
+  }
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 
 .ended {
-  padding: 2rem 0;
   opacity: 0.35;
 }
 </style>
