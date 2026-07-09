@@ -36,6 +36,7 @@ withDefaults(
 
 <style scoped lang="less">
 .btn {
+  --fade-in-duration: 0.3s;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -48,7 +49,7 @@ withDefaults(
   outline: none;
   border: 0.0625rem solid transparent;
   border-radius: 0.25rem;
-
+  user-select: none;
   transition:
     background 0.2s,
     opacity 0.2s,
@@ -75,14 +76,32 @@ withDefaults(
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-
+  opacity: 1;
+  transition: opacity var(--fade-in-duration);
   &.invisible {
-    visibility: hidden;
+    opacity: 0.3;
   }
 }
 
 .loader {
   position: absolute;
+}
+
+.spin {
+  animation: spin 1s linear infinite, fadeIn var(--fade-in-duration);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* sizes */
@@ -157,7 +176,7 @@ withDefaults(
   background: color-mix(in oklab, var(--color-error) 10%, transparent);
   color: var(--color-error);
   border-color: color-mix(in oklab, var(--color-error) 20%, transparent);
-  box-shadow: 0 .0625rem 0.1875rem -0.125rem var(--color-error);
+  box-shadow: 0 0.0625rem 0.1875rem -0.125rem var(--color-error);
 
   &:hover:not(:disabled) {
     background: color-mix(in oklab, var(--color-error) 18%, transparent);
@@ -173,15 +192,6 @@ withDefaults(
 
   &:hover:not(:disabled) {
     opacity: 0.88;
-  }
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 </style>

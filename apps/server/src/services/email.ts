@@ -13,6 +13,7 @@ export interface EmailConfig {
 }
 
 const CONFIG_KEY = 'email'
+let transporter: nodemailer.Transporter | null = null
 
 const defaultConfig: EmailConfig = {
   enabled: false,
@@ -40,51 +41,52 @@ export function saveEmailConfig(config: EmailConfig) {
   } else {
     db.insert(configs).values({ key: CONFIG_KEY, value }).run()
   }
+  transporter?.close()
+  transporter = null
 }
 
-function createTransport(config: EmailConfig) {
-  return nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.port === 465,
-    auth: { user: config.user, pass: config.pass },
-    // TCP 连接超时时间
-    connectionTimeout: 10000,
-    // smtp 响应欢迎信息超时时间
-    greetingTimeout: 10000
-  })
+function getTransporter() {
+  if (!transporter) {
+    const config = getEmailConfig()
+
+    transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.port === 465,
+      auth: { user: config.user, pass: config.pass },
+      // TCP 连接超时时间
+      connectionTimeout: 10000,
+      // smtp 响应欢迎信息超时时间
+      greetingTimeout: 10000
+    })
+  }
+
+  return transporter
 }
 
 export async function testEmailConnection(config: EmailConfig): Promise<{ ok: boolean; error?: string }> {
   try {
-    const transport = createTransport(config)
+    const transport = getTransporter()
     const result = await transport.verify()
-    transport.close()
     return { ok: result as boolean }
   } catch (e: any) {
     return { ok: false, error: e.message }
   }
 }
 
-export async function sendEmail(options: {
-  to: string
-  subject: string
-  html: string
-}): Promise<void> {
+export async function sendEmail(options: { to: string; subject: string; html: string }): Promise<void> {
   const config = getEmailConfig()
   if (!config.enabled) throw new Error('邮件服务未启用')
 
-  const transport = createTransport(config)
+  const transport = getTransporter()
   try {
     await transport.sendMail({
       from: config.user,
       to: options.to,
       subject: options.subject,
-      html: options.html,
+      html: options.html
     })
-  } finally {
-    transport.close()
-  }
+  } catch (e: any) {}
 }
 
 export async function sendTestEmail(
@@ -92,7 +94,7 @@ export async function sendTestEmail(
   to: string,
   siteName: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const transport = createTransport(config)
+  const transport = getTransporter()
   try {
     await transport.sendMail({
       from: config.user,
@@ -107,7 +109,5 @@ export async function sendTestEmail(
     return { ok: true }
   } catch (e: any) {
     return { ok: false, error: e.message }
-  } finally {
-    transport.close()
   }
 }

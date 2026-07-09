@@ -111,7 +111,7 @@ async function handleDelete(item: NotificationItem) {
 }
 
 function handleSelect(item: NotificationItem) {
-  if (!item.id) return
+  if (!item) return
   selectedId.value = item.id
   emit('select', item)
   if (!item.isRead) handleMarkRead(item)

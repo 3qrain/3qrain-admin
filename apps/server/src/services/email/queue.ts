@@ -2,8 +2,8 @@ type Task = () => Promise<void>
 
 const queue: Task[] = []
 let running = 0
-// 邮件发送最多并发量
-const MAX_CONCURRENCY = 5
+// 邮件发送并发量
+const MAX_CONCURRENCY = 1
 
 function next() {
   while (running < MAX_CONCURRENCY && queue.length > 0) {
