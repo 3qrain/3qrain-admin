@@ -10,6 +10,13 @@ export const getDefaultConfig = (): FullConfig => ({
   appearance: {
     theme: 'system',
   },
+  email: {
+    enabled: false,
+    host: '',
+    port: 465,
+    user: '',
+    pass: '',
+  }
 })
 
 export async function initConfigs() {

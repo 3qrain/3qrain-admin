@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { CheckCircle, XCircle, ChevronDown, ChevronUp, ShieldCheck } from '@lucide/vue'
 import type { NotificationItem } from '~/api/notifications/types'
 import type { Comment } from '~/api/comments/types'
 import { formatDate } from '~/utils/date'
-import { renderNewCommentEmail, renderReplyEmail, renderFriendApplyEmail } from '@3qrain/shared'
+import {
+  renderNewCommentEmail,
+  renderReplyEmail,
+  renderFriendApplyEmail,
+  renderFriendApplyResultEmail
+} from '@3qrain/shared'
+import type { NotificationType } from '@3qrain/shared'
 import { useAppStore } from '~/stores/app'
 
 const props = defineProps<{
@@ -36,21 +42,22 @@ function buildPreviewHtml() {
   const common = {
     siteName: store.adminUser?.username || '3qrain',
     siteUrl: store.webUrl,
-    adminUrl: store.adminUrl,
+    adminUrl: store.adminUrl
   }
 
   switch (props.item.type) {
-    case 'new_comment':
+    case 'new_comment': {
       if (!props.comment) return
       previewHtml.value = renderNewCommentEmail({
         ...common,
         postTitle: props.postTitle,
         commenterName: props.comment.user.username,
-        commentContent: props.comment.content,
+        commentContent: props.comment.content
       })
       break
+    }
 
-    case 'new_reply':
+    case 'new_reply': {
       if (!props.comment) return
       previewHtml.value = renderReplyEmail({
         ...common,
@@ -59,22 +66,49 @@ function buildPreviewHtml() {
         postTitle: props.postTitle,
         postSlug: props.postSlug,
         replyContent: props.comment.content,
-        yourComment: props.beRepliedContent,
+        yourComment: props.beRepliedContent
       })
       break
+    }
 
-    case 'friend_apply':
+    case 'friend_apply': {
       if (!props.item.meta) return
       const meta = JSON.parse(props.item.meta)
       previewHtml.value = renderFriendApplyEmail({
         ...common,
         applicantName: meta.siteName,
-        applicantUrl: meta.siteUrl,
+        applicantUrl: meta.siteUrl
       })
       break
+    }
 
+    case 'friend_approve':
+    case 'friend_reject':
+      if (!props.item.meta) return
+      const meta = JSON.parse(props.item.meta)
+      previewHtml.value = renderFriendApplyResultEmail({
+        ...common,
+        applicantName: meta.siteName,
+        approved: props.item.type === 'friend_approve',
+        reason: meta.reason
+      })
+      break
     default:
       previewHtml.value = ''
+  }
+}
+
+function notRequiredMsg(emailStatus: NotificationType) {
+  switch (emailStatus) {
+    case 'new_comment':
+    case 'new_reply':
+      return '无需发送邮件（管理员评论）'
+    case 'friend_apply':
+    case 'friend_approve':
+    case 'friend_reject':
+      return '无需发送邮件（友链没有联系邮箱）'
+    default:
+      return '无需发送邮件'
   }
 }
 
@@ -93,7 +127,7 @@ function togglePreview() {
 
     <div v-if="item.emailStatus === 'not_required'" class="email-status not_required">
       <ShieldCheck :size="16" />
-      <span>无需发送邮件（管理员）</span>
+      <span>{{ notRequiredMsg(item.type) }}</span>
     </div>
 
     <div v-if="item.emailStatus === 'pending'" class="email-status pending">

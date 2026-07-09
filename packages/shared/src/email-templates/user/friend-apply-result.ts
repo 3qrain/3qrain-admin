@@ -9,10 +9,9 @@ export interface FriendApplyResultData {
 }
 
 export function renderFriendApplyResultEmail(data: FriendApplyResultData): string {
-  const heading = data.approved ? '友链申请已通过' : '友链申请未通过'
   const subheading = data.approved
-    ? `你在 ${data.siteName} 申请的友链已通过审核`
-    : `你在 ${data.siteName} 申请的友链未通过审核`
+    ? `您在 ${data.siteName} 申请的友链已通过审核`
+    : `您在 ${data.siteName} 申请的友链未通过审核`
 
   return emailLayout({
     siteName: data.siteName,

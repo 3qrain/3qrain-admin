@@ -60,6 +60,8 @@ export async function approve(c: Context) {
     scope: 'admin',
     type: 'friend_approve',
     title: `${existing.siteName} 友链已通过`,
+    // 友链有申请邮箱就发邮件
+    emailStatus: existing.applicantEmail ? undefined : 'not_required',
     meta: JSON.stringify({
       id,
       siteName: existing.siteName,
@@ -90,6 +92,7 @@ export async function reject(c: Context) {
     scope: 'admin',
     type: 'friend_reject',
     title: `${existing.siteName} 友链已拒绝`,
+    emailStatus: existing.applicantEmail ? undefined : 'not_required',
     // content: reason,
     meta: JSON.stringify({
       id,
