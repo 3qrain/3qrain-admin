@@ -29,7 +29,7 @@ const total = ref(0)
 const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 20
-const t = +new Date()
+const t = ref<number>(Date.now())
 const activeStatus = ref('pending')
 const selectedId = ref<number | null>(null)
 const counts = ref({ pending: 0, approved: 0, rejected: 0 })
@@ -87,7 +87,7 @@ async function load(append = false) {
   loading.value = true
   try {
     const res = await getFriendLinks({
-      t,
+      t: t.value,
       pageSize,
       status: activeStatus.value || undefined,
       offset: String(append ? list.value.length : 0)
@@ -147,15 +147,16 @@ async function handleDelete(item: FriendLink) {
 }
 
 watch(activeStatus, () => {
+  t.value = Date.now()
   page.value = 1
   totalPages.value = 1
   list.value = []
   loadCounts()
-  load(true)
+  load(false)
 })
 
 onMounted(() => {
-  load(true)
+  load(false)
   loadCounts()
 })
 
@@ -188,6 +189,7 @@ defineExpose({
           :disabled="loading"
           @click="
             () => {
+              t = Date.now()
               load()
               loadCounts()
             }

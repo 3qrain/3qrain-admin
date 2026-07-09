@@ -20,7 +20,7 @@ const total = ref(0)
 const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 20
-const t = +new Date()
+const t = ref<number>(Date.now())
 const activeCategory = ref('')
 const activeFilter = ref<'all' | 'unread'>('unread')
 const selectedId = ref<number | null>(null)
@@ -62,7 +62,7 @@ async function load(append = false) {
   loading.value = true
   try {
     const res = await getNotifications({
-      t,
+      t: t.value,
       pageSize,
       types: activeCategory.value ? categoryTypeMap[activeCategory.value]?.join(',') : undefined,
       isRead: activeFilter.value === 'unread' ? '0' : undefined,
@@ -114,13 +114,14 @@ function handleSelect(item: NotificationItem) {
 }
 
 watch([activeCategory, activeFilter], () => {
+  t.value = Date.now()
   page.value = 1
   totalPages.value = 1
   list.value = []
-  load(true)
+  load(false)
 })
 
-onMounted(() => load(true))
+onMounted(() => load(false))
 </script>
 
 <template>
@@ -139,7 +140,18 @@ onMounted(() => load(true))
       </div>
 
       <div class="header-right">
-        <button v-if="hasNew" class="refresh-btn" title="有新通知" :disabled="loading" @click="load()">
+        <button
+          v-if="hasNew"
+          class="refresh-btn"
+          title="有新通知"
+          :disabled="loading"
+          @click="
+            () => {
+              t = Date.now()
+              load()
+            }
+          "
+        >
           <RotateCw class="refresh-btn-icon" :class="{ spinning: loading }" :size="14" :stroke-width="2" />
         </button>
         <select v-model="activeCategory" class="category-select">
