@@ -16,57 +16,75 @@ const props = defineProps<{
 }>()
 
 const showPreview = ref(false)
+const previewHtml = ref('')
 
 watch(
   () => props.item.id,
   () => {
     showPreview.value = false
+    previewHtml.value = ''
   }
 )
 
-const previewHtml = computed(() => {
-  if (props.item.emailStatus !== 'sent') return ''
+function buildPreviewHtml() {
+  if (props.item.emailStatus !== 'sent') {
+    previewHtml.value = ''
+    return
+  }
+
   const store = useAppStore()
-  const siteName = store.adminUser?.username || '3qrain'
-  const siteUrl = store.webUrl
-  const adminUrl = store.adminUrl
+  const common = {
+    siteName: store.adminUser?.username || '3qrain',
+    siteUrl: store.webUrl,
+    adminUrl: store.adminUrl,
+  }
 
-  if (props.item.type === 'new_comment' && props.comment) {
-    return renderNewCommentEmail({
-      siteName,
-      siteUrl,
-      adminUrl,
-      postTitle: props.postTitle,
-      commenterName: props.comment.user.username,
-      commentContent: props.comment.content
-    })
-  }
-  if (props.item.type === 'new_reply' && props.comment) {
-    return renderReplyEmail({
-      siteName,
-      siteUrl,
-      userName: props.comment.replyToUser?.username || '',
-      replierName: props.comment.user.username,
-      postTitle: props.postTitle,
-      postSlug: props.postSlug,
-      replyContent: props.comment.content,
-      yourComment: props.beRepliedContent
-    })
-  }
-  if (props.item.type === 'friend_apply') {
-    if(!props.item.meta) return
-    const meta: any = JSON.parse(props.item.meta)
+  switch (props.item.type) {
+    case 'new_comment':
+      if (!props.comment) return
+      previewHtml.value = renderNewCommentEmail({
+        ...common,
+        postTitle: props.postTitle,
+        commenterName: props.comment.user.username,
+        commentContent: props.comment.content,
+      })
+      break
 
-    return renderFriendApplyEmail({
-      siteName,
-      siteUrl,
-      adminUrl,
-      applicantName: meta.siteName,
-      applicantUrl: meta.siteUrl
-    })
+    case 'new_reply':
+      if (!props.comment) return
+      previewHtml.value = renderReplyEmail({
+        ...common,
+        userName: props.comment.replyToUser?.username || '',
+        replierName: props.comment.user.username,
+        postTitle: props.postTitle,
+        postSlug: props.postSlug,
+        replyContent: props.comment.content,
+        yourComment: props.beRepliedContent,
+      })
+      break
+
+    case 'friend_apply':
+      if (!props.item.meta) return
+      const meta = JSON.parse(props.item.meta)
+      previewHtml.value = renderFriendApplyEmail({
+        ...common,
+        applicantName: meta.siteName,
+        applicantUrl: meta.siteUrl,
+      })
+      break
+
+    default:
+      previewHtml.value = ''
   }
-  return ''
-})
+}
+
+function togglePreview() {
+  showPreview.value = !showPreview.value
+
+  if (showPreview.value) {
+    buildPreviewHtml()
+  }
+}
 </script>
 
 <template>
@@ -87,7 +105,7 @@ const previewHtml = computed(() => {
       <CheckCircle :size="16" />
       <span>已发送</span>
       <span v-if="item.emailSentAt" class="email-time">{{ formatDate(item.emailSentAt) }}</span>
-      <button v-if="item.emailStatus === 'sent'" class="preview-toggle" @click="showPreview = !showPreview">
+      <button v-if="item.emailStatus === 'sent'" class="preview-toggle" @click="togglePreview">
         {{ showPreview ? '收起' : '展开' }}邮件
         <ChevronUp v-if="showPreview" :size="12" />
         <ChevronDown v-else :size="12" />
@@ -100,7 +118,7 @@ const previewHtml = computed(() => {
       <span v-if="item.emailError" class="email-error">{{ item.emailError }}</span>
     </div>
 
-    <div v-if="item.emailStatus === 'sent' && showPreview" class="email-preview">
+    <div v-if="previewHtml && item.emailStatus === 'sent' && showPreview" class="email-preview">
       <iframe :srcdoc="previewHtml" class="email-frame" sandbox="allow-popups allow-popups-to-escape-sandbox" />
     </div>
   </div>
