@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { Bell, MessageCircle, MessageCircleReply, Link2, Settings, Trash2, RotateCw } from '@lucide/vue'
+import { Bell, MessageCircle, MessageCircleReply, Panda, Settings, Trash2, RotateCw } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import { getNotifications, markRead, deleteNotifications } from '~/api/notifications'
 import type { NotificationItem } from '~/api/notifications/types'
@@ -27,8 +27,8 @@ const hasNew = ref(false)
 
 watch(
   () => store.unreadCount,
-  () => {
-    hasNew.value = true
+  (newCount, oldCount) => {
+    if (newCount > oldCount) hasNew.value = true
   }
 )
 
@@ -53,7 +53,7 @@ const filters = [
 function typeIcon(type: string) {
   if (type === 'new_comment') return MessageCircle
   if (type === 'new_reply') return MessageCircleReply
-  if (type === 'friend_apply') return Link2
+  if (type === 'friend_apply') return Panda
   return Settings
 }
 
@@ -101,8 +101,7 @@ async function handleDelete(item: NotificationItem) {
   if (selectedId.value === item.id) {
     const nextItem = list.value[index] || list.value[index - 1] || null
 
-    selectedId.value = nextItem?.id ?? null
-    emit('select', nextItem)
+    handleSelect(nextItem)
   }
 }
 
@@ -133,7 +132,7 @@ onMounted(() => load(true))
           :class="{ active: activeFilter === f.value }"
           @click="activeFilter = f.value as typeof activeFilter"
         >
-          {{ f.label }} {{ activeFilter === f.value ? total : '' }}
+          {{ f.label }} {{ activeFilter === f.value ? (f.value === 'unread' ? store.unreadCount : total) : '' }}
         </button>
       </div>
 

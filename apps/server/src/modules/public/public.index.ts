@@ -7,6 +7,7 @@ import notesRouter from './notes/notes.index'
 import viewRouter from './view/view.index'
 import siteRouter from './site/site.index'
 import commentsRouter from './comments/comments.index'
+import friendLinksRouter from './friend-links/friend-links.index'
 
 const publicRouter = createApp()
 
@@ -16,6 +17,7 @@ publicRouter.route('/', notesRouter)
 publicRouter.route('/', viewRouter)
 publicRouter.route('/', siteRouter)
 publicRouter.route('/', commentsRouter)
+publicRouter.route('/', friendLinksRouter)
 
 // 前台 WebSocket（无需认证）
 publicRouter.get('/ws', upgradeWebSocket(publicWsHandler))

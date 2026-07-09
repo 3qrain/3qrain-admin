@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { Link2, Trash2, Plus } from '@lucide/vue'
+import { Link2, Trash2, Plus, RotateCw } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import FriendLinkFormModal from './FriendLinkFormModal.vue'
 import {
@@ -15,10 +15,13 @@ import { formatDate } from '~/utils/date'
 import Popover from '~/components/base/Popover.vue'
 import Button from '~/components/base/Button.vue'
 import { toast } from 'vue-sonner'
+import { useAppStore } from '~/stores/app'
 
 const emit = defineEmits<{
   select: [item: FriendLink | null]
 }>()
+
+const store = useAppStore()
 
 const list = ref<FriendLink[]>([])
 const loading = ref(false)
@@ -35,6 +38,14 @@ const statusFilters = [
   { value: 'approved', label: '已通过' },
   { value: 'rejected', label: '已拒绝' }
 ]
+const hasNew = ref(false)
+
+watch(
+  () => store.pendingFriendLinkCount,
+  (newCount, oldCount) => {
+    if (newCount > oldCount) hasNew.value = true
+  }
+)
 
 async function loadCounts() {
   try {
@@ -84,6 +95,7 @@ async function load(append = false) {
     totalPages.value = Math.ceil(res.total / pageSize)
   } finally {
     loading.value = false
+    if (!append) hasNew.value = false
   }
 }
 
@@ -102,6 +114,7 @@ async function handleApprove(item: FriendLink) {
   try {
     await approveFriendLink(item.id)
     removeItem(item)
+    store.pendingFriendLinkCount--
     toast.success('已通过')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
@@ -113,6 +126,7 @@ async function handleReject(item: FriendLink, rejectReason: string) {
   try {
     await rejectFriendLink(item.id, rejectReason)
     removeItem(item)
+    store.pendingFriendLinkCount--
     toast.success('已拒绝')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
@@ -123,6 +137,7 @@ async function handleDelete(item: FriendLink) {
   try {
     await deleteFriendLinks([item.id])
     removeItem(item)
+    store.pendingFriendLinkCount--
     toast.success('删除成功')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '删除失败')
@@ -163,9 +178,25 @@ defineExpose({
           {{ s.label }} {{ counts[s.value as keyof typeof counts] ?? 0 }}
         </button>
       </div>
-      <button class="add-btn" title="添加友链" @click="showCreate = true">
-        <Plus :size="16" :stroke-width="2" />
-      </button>
+      <div class="header-right">
+        <button
+          v-if="hasNew"
+          class="refresh-btn"
+          title="有新通知"
+          :disabled="loading"
+          @click="
+            () => {
+              load()
+              loadCounts()
+            }
+          "
+        >
+          <RotateCw class="refresh-btn-icon" :class="{ spinning: loading }" :size="14" :stroke-width="2" />
+        </button>
+        <button class="add-btn" title="添加友链" @click="showCreate = true">
+          <Plus :size="16" :stroke-width="2" />
+        </button>
+      </div>
     </div>
 
     <FriendLinkFormModal v-model:open="showCreate" :edit-item="null" @saved="handleSaved" />
@@ -266,6 +297,54 @@ defineExpose({
     opacity: 1;
     background: color-mix(in oklab, var(--color-base-content) 10%, transparent);
     font-weight: 600;
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  .refresh-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--color-base-content);
+    cursor: pointer;
+    border-radius: 0.375rem;
+    &:disabled {
+      cursor: default;
+      pointer-events: none;
+    }
+    &:hover {
+      background: color-mix(in oklab, var(--color-base-content) 6%, transparent);
+      opacity: 1;
+    }
+    &-icon {
+      &.spinning {
+        animation: spin 0.5s linear infinite;
+      }
+      &:not(.spinning) {
+        animation: pulse-icon 1.5s infinite;
+      }
+    }
+    @keyframes pulse-icon {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   }
 }
 

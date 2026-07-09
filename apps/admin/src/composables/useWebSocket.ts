@@ -47,7 +47,7 @@ export function useWebSocket() {
 
         if (msg.type === 'notification') {
           store.unreadCount++
-
+          if (msg.data.type === 'friend_apply') store.pendingFriendLinkCount++
           // 页面通知
           toast(msg.data.title, {
             description: msg.data.content || undefined,
@@ -56,11 +56,14 @@ export function useWebSocket() {
                   label: '查看',
                   onClick: () => {
                     try {
-                      const meta = JSON.parse(msg.data.meta!)
-                      if (meta.targetType === 'post' && meta.targetId) {
-                        // 跳转到文章管理页
-                        router.push('/notifications')
-                      }
+                      // if (msg.data.type === 'new_post' || msg.data.type === 'new_note') {
+                      //   // 跳转到文章管理页
+                      //   router.push('/notifications')
+                      // } else if (msg.data.type === 'friend_apply') {
+                      //   // 跳转到好友管理页
+                      //   router.push('/friend-links')
+                      // }
+                      router.push('/notifications') // 跳转到通知管理页
                     } catch {
                       /* ignore */
                     }

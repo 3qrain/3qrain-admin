@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { enqueue } from './queue'
 import { sendNewCommentEmail } from './new-comment'
 import { sendNewReplyEmail } from './new-reply'
+import { sendFriendApplyEmail } from './friend-apply'
 
 export function dispatchEmail(type: NotificationType, meta: string, notificationId: number) {
   let parsed: Record<string, any>
@@ -32,6 +33,16 @@ export function dispatchEmail(type: NotificationType, meta: string, notification
       enqueue(async () => {
         try {
           await sendNewReplyEmail(parsed)
+          await markStatus('sent')
+        } catch (e: any) {
+          await markStatus('failed', e.message)
+        }
+      })
+      break
+    case 'friend_apply':
+      enqueue(async () => {
+        try {
+          await sendFriendApplyEmail(parsed)
           await markStatus('sent')
         } catch (e: any) {
           await markStatus('failed', e.message)

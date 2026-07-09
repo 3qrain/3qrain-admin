@@ -1,8 +1,7 @@
-import type { EmailStatus } from '@3qrain/shared'
-
+import type { EmailStatus, NotificationType } from '@3qrain/shared'
 export interface NotificationItem {
   id: number
-  type: string
+  type: NotificationType
   title: string
   content: string | null
   meta: string | null

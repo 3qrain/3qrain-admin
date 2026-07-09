@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Mail } from '@lucide/vue'
+import { Mail, Panda } from '@lucide/vue'
 import Skeleton from '~/components/base/Skeleton.vue'
 import EmailStatus from './EmailStatus.vue'
 import type { NotificationItem } from '~/api/notifications/types'
@@ -8,6 +8,7 @@ import { getComments } from '~/api/comments'
 import type { Comment } from '~/api/comments/types'
 import { getPost } from '~/api/posts'
 import { formatDate } from '~/utils/date'
+import router from '~/router/index.ts'
 const props = defineProps<{
   item: NotificationItem | null
 }>()
@@ -92,27 +93,37 @@ watch(
       <!-- 通知内容 -->
       <div class="detail-section">
         <h3 class="section-title">通知内容</h3>
-        <div v-if="comment" class="comment-card">
-          <div class="comment-author">
-            <img v-if="comment.user.avatarUrl" :src="comment.user.avatarUrl" class="comment-avatar" />
-            <span class="comment-username">{{ comment.user.username }}</span>
-            <template v-if="comment.replyToUser">
-              <span style="opacity: 0.5; font-size: 0.875rem">@</span>
-              <img :src="comment.replyToUser?.avatarUrl" class="comment-avatar" />
-              <span class="comment-username">{{ comment.replyToUser?.username }}</span>
-            </template>
+        <template v-if="item.type === 'new_comment' || item.type === 'new_reply'">
+          <div v-if="comment" class="comment-card">
+            <div class="comment-author">
+              <img v-if="comment.user.avatarUrl" :src="comment.user.avatarUrl" class="comment-avatar" />
+              <span class="comment-username">{{ comment.user.username }}</span>
+              <template v-if="comment.replyToUser">
+                <span style="opacity: 0.5; font-size: 0.875rem">@</span>
+                <img :src="comment.replyToUser?.avatarUrl" class="comment-avatar" />
+                <span class="comment-username">{{ comment.replyToUser?.username }}</span>
+              </template>
+            </div>
+            <div v-if="beRepliedContent" class="comment-beRepliedContent">> {{ beRepliedContent }}</div>
+            <div class="comment-content">{{ comment.content }}</div>
+            <div class="comment-meta">
+              <span>{{ (comment.targetType === 'post' ? '文章' : '说说') + '#' + comment.targetId }}</span>
+              <span>{{ formatDate(comment.createdAt) }}</span>
+              <!-- <span v-if="comment.replyToUser">回复 {{ comment.replyToUser.username }}</span> -->
+            </div>
           </div>
-          <div v-if="beRepliedContent" class="comment-beRepliedContent">> {{ beRepliedContent }}</div>
-          <div class="comment-content">{{ comment.content }}</div>
-          <div class="comment-meta">
-            <span>{{ (comment.targetType === 'post' ? '文章' : '说说') + '#' + comment.targetId }}</span>
-            <span>{{ formatDate(comment.createdAt) }}</span>
-            <!-- <span v-if="comment.replyToUser">回复 {{ comment.replyToUser.username }}</span> -->
-          </div>
+          <Skeleton v-else class="comment-card comment-card-skeleton">
+            {{ comment === undefined ? '评论不存在或已被删除' : '' }}
+          </Skeleton>
+        </template>
+
+        <div
+          v-else-if="item.type === 'friend_apply'"
+          class="comment-card friend-apply-card"
+          @click="router.push('friend-links')"
+        >
+          <Panda class="friend-icon" style="width: 2rem; height: 2rem" />
         </div>
-        <Skeleton v-else class="comment-card comment-card-skeleton">
-          {{ comment === undefined ? '评论不存在或已被删除' : '' }}
-        </Skeleton>
       </div>
 
       <EmailStatus
@@ -184,6 +195,7 @@ watch(
 
 .content-meta {
   font-size: 0.6875rem;
+  line-height: 1.5;
   color: var(--color-base-content);
   opacity: 0.4;
   background: color-mix(in oklab, var(--color-base-content) 5%, transparent);
@@ -266,6 +278,44 @@ watch(
   align-items: center;
   justify-content: center;
   font-size: 0.875rem;
-  color: color-mix(in oklab, var(--color-base-content) 65%, transparent 50%);
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+}
+
+.friend-apply-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+  cursor: pointer;
+  transition: color 0.3s;
+
+  &:hover {
+    color: color-mix(in oklab, var(--color-base-content) 100%, transparent);
+
+    .friend-icon {
+      animation: shake 0.5s ease-in-out;
+    }
+  }
+}
+
+@keyframes shake {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-12deg);
+  }
+  40% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(-8deg);
+  }
+  80% {
+    transform: rotate(6deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 </style>
