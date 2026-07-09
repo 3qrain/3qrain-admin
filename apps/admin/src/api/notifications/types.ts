@@ -26,4 +26,5 @@ export interface NotificationListQuery {
   offset?: string
   types?: string
   isRead?: string
+  t: number
 }

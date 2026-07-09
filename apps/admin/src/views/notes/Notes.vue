@@ -28,6 +28,7 @@ const pageSize = ref(10)
 const totalPages = ref(1)
 const { notesPaginationMode: paginationMode } = storeToRefs(useAppStore())
 const showDeleted = ref(false)
+const t = +new Date()
 
 const route = useRoute()
 const router = useRouter()
@@ -53,7 +54,7 @@ async function load(append = false) {
   loading.value = true
   try {
     !append && (notes.value = [])
-    const params: any = { pageSize: pageSize.value, deleted: showDeleted.value || undefined }
+    const params: any = { t, pageSize: pageSize.value, deleted: showDeleted.value || undefined }
     if (paginationMode.value === 'scroll') {
       params.offset = append ? notes.value.length : 0
     } else {
@@ -172,7 +173,7 @@ async function handleEmptyTrash() {
     toast.success('回收站已清空')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
-  } 
+  }
 }
 
 watch(paginationMode, val => {

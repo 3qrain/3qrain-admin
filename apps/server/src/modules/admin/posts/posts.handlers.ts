@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import { eq, like, and, desc, count as drizzleCount, inArray, isNull, isNotNull } from 'drizzle-orm'
+import { eq, like, and, desc, count as drizzleCount, inArray, isNull, isNotNull, lt } from 'drizzle-orm'
 import { db } from '~/db'
 import { posts, postTags, categories, tags } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
@@ -86,9 +86,12 @@ export async function list(c: Context) {
   const page = Number.parseInt(query.page || '1')
   const pageSize = Number.parseInt(query.pageSize || '10')
   const actualOffset = query.offset !== undefined ? Number(query.offset) : (page - 1) * pageSize
+  const t = query.t ? Number(query.t) : undefined
   const filters = buildPostFilters(query)
 
-  const where = filters.length > 0 ? and(...filters) : undefined
+  const conditions = filters
+  if (t) conditions.push(lt(posts.createdAt, new Date(t)))
+  const where = conditions.length > 0 ? and(...conditions) : undefined
 
   const total = db.select({ count: drizzleCount() }).from(posts).where(where).get()!.count
 

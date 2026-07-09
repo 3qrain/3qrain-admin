@@ -41,6 +41,7 @@ const route = useRoute()
 const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 10
+const t = +new Date()
 const tab = ref('')
 const keyword = ref('')
 const showDeleted = ref(false)
@@ -81,6 +82,7 @@ async function load(append = false) {
   !append && (comments.value = [])
   try {
     const params: any = {
+      t,
       pageSize,
       status: showDeleted.value ? undefined : tab.value || undefined,
       keyword: keyword.value || undefined,
@@ -184,7 +186,7 @@ watch([tab, showDeleted], () => {
   comments.value = []
   load()
 })
-watch(paginationMode, (val) => {
+watch(paginationMode, val => {
   page.value = 1
   if (val === 'scroll') router.replace({ query: {} })
   load()
@@ -254,7 +256,9 @@ onMounted(() => {
               <template v-if="c.replyToUser">
                 <span class="reply-arrow">→</span>
                 <img :src="c.replyToUser.avatarUrl" alt="" class="avatar sm" />
-                <span class="name">{{ c.replyToUser.username }}<span class="uid">#{{ c.replyToUserId }}</span></span>
+                <span class="name"
+                  >{{ c.replyToUser.username }}<span class="uid">#{{ c.replyToUserId }}</span></span
+                >
               </template>
             </div>
             <div class="tags">
@@ -344,7 +348,9 @@ onMounted(() => {
                 <template v-if="r.replyToId && r.replyToUser">
                   <span class="reply-arrow">→</span>
                   <img :src="r.replyToUser.avatarUrl" alt="" class="avatar sm" />
-                  <span class="name">{{ r.replyToUser.username }}<span class="uid">#{{ r.replyToUserId }}</span></span>
+                  <span class="name"
+                    >{{ r.replyToUser.username }}<span class="uid">#{{ r.replyToUserId }}</span></span
+                  >
                 </template>
               </div>
               <div class="tags">

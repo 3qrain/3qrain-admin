@@ -20,6 +20,7 @@ const total = ref(0)
 const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 20
+const t = +new Date()
 const activeCategory = ref('')
 const activeFilter = ref<'all' | 'unread'>('unread')
 const selectedId = ref<number | null>(null)
@@ -61,6 +62,7 @@ async function load(append = false) {
   loading.value = true
   try {
     const res = await getNotifications({
+      t,
       pageSize,
       types: activeCategory.value ? categoryTypeMap[activeCategory.value]?.join(',') : undefined,
       isRead: activeFilter.value === 'unread' ? '0' : undefined,

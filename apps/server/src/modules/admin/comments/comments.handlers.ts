@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import { eq, and, desc, count, inArray, isNull, isNotNull, like } from 'drizzle-orm'
+import { eq, and, desc, count, inArray, isNull, isNotNull, like, lt } from 'drizzle-orm'
 import { db } from '~/db'
 import { comments, users } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
@@ -22,6 +22,7 @@ function buildFilters(query: Record<string, string | undefined>) {
   if (query.targetType) conditions.push(eq(comments.targetType, query.targetType))
   if (query.targetId) conditions.push(eq(comments.targetId, Number(query.targetId)))
   if (query.keyword) conditions.push(like(comments.content, `%${query.keyword}%`))
+  if (query.t) conditions.push(lt(comments.createdAt, new Date(Number(query.t))))
 
   return conditions
 }
@@ -29,21 +30,23 @@ function buildFilters(query: Record<string, string | undefined>) {
 function enrichComments(rows: any[]) {
   if (rows.length === 0) return []
 
-  const userIds = [...new Set(
-    rows.flatMap(r => [r.userId, r.replyToUserId].filter(Boolean))
-  )] as number[]
+  const userIds = [...new Set(rows.flatMap(r => [r.userId, r.replyToUserId].filter(Boolean)))] as number[]
 
   const userMap = new Map(
     userIds.length > 0
-      ? db.select({ id: users.id, username: users.username, avatarUrl: users.avatarUrl })
-        .from(users).where(inArray(users.id, userIds)).all().map(u => [u.id, u])
-      : [],
+      ? db
+          .select({ id: users.id, username: users.username, avatarUrl: users.avatarUrl })
+          .from(users)
+          .where(inArray(users.id, userIds))
+          .all()
+          .map(u => [u.id, u])
+      : []
   )
 
   return rows.map(c => ({
     ...c,
     user: userMap.get(c.userId) || { id: c.userId, username: '', avatarUrl: '' },
-    replyToUser: c.replyToUserId ? (userMap.get(c.replyToUserId) || null) : null,
+    replyToUser: c.replyToUserId ? userMap.get(c.replyToUserId) || null : null
   }))
 }
 
@@ -74,23 +77,26 @@ export async function list(c: Context) {
   const replyCounts: Record<number, number> = {}
   if (parentIds.length > 0) {
     for (const pid of parentIds) {
-      const cnt = db.select({ count: count() }).from(comments)
-        .where(eq(comments.parentId, pid)).get()!.count
+      const cnt = db.select({ count: count() }).from(comments).where(eq(comments.parentId, pid)).get()!.count
       replyCounts[pid] = cnt
     }
   }
   const listWithCounts = list.map((c: any) => ({
     ...c,
-    replyCount: c.parentId ? 0 : (replyCounts[c.id] || 0),
+    replyCount: c.parentId ? 0 : replyCounts[c.id] || 0
   }))
 
   return c.json(ok({ list: listWithCounts, total, page, pageSize }, '获取成功'), HttpStatusCodes.OK)
 }
 
 export async function create(c: Context) {
-  const body = await c.req.json() as {
-    targetType: string; targetId: number; content: string
-    parentId?: number; replyToUserId?: number; replyToId?: number
+  const body = (await c.req.json()) as {
+    targetType: string
+    targetId: number
+    content: string
+    parentId?: number
+    replyToUserId?: number
+    replyToId?: number
   }
 
   const systemUser = db.select({ id: users.id }).from(users).where(eq(users.role, 'system')).get()!
@@ -105,7 +111,7 @@ export async function create(c: Context) {
       replyToId: body.replyToId || null,
       replyToUserId: body.replyToUserId || null,
       content: body.content,
-      status: 'published',
+      status: 'published'
     })
     .returning()
     .get()
@@ -170,7 +176,9 @@ export async function remove(c: Context) {
 export async function restore(c: Context) {
   const id = Number(c.req.param('id')!)
 
-  const existing = db.select().from(comments)
+  const existing = db
+    .select()
+    .from(comments)
     .where(and(eq(comments.id, id), isNotNull(comments.deletedAt)))
     .get()
   if (!existing) {
@@ -187,12 +195,7 @@ export async function restore(c: Context) {
 export async function replies(c: Context) {
   const id = Number(c.req.param('id')!)
 
-  const rows = db
-    .select()
-    .from(comments)
-    .where(eq(comments.parentId, id))
-    .orderBy(desc(comments.createdAt))
-    .all()
+  const rows = db.select().from(comments).where(eq(comments.parentId, id)).orderBy(desc(comments.createdAt)).all()
 
   const list = enrichComments(rows)
   return c.json(ok({ list, total: rows.length }, '获取成功'), HttpStatusCodes.OK)

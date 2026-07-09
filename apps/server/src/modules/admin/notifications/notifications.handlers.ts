@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import { eq, desc, and, count, inArray } from 'drizzle-orm'
+import { eq, desc, and, count, inArray, lt } from 'drizzle-orm'
 import { db } from '~/db'
 import { notifications } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
@@ -18,6 +18,7 @@ export async function list(c: Context) {
     if (types.length > 0) conditions.push(inArray(notifications.type, types))
   }
   if (query.isRead) conditions.push(eq(notifications.isRead, Number(query.isRead)))
+  if (query.t) conditions.push(lt(notifications.createdAt, new Date(Number(query.t))))
   const where = conditions.length > 0 ? and(...conditions) : undefined
 
   const total = db.select({ count: count() }).from(notifications).where(where).get()!.count
@@ -35,11 +36,7 @@ export async function list(c: Context) {
 }
 
 export async function unreadCount(c: Context) {
-  const result = db
-    .select({ count: count() })
-    .from(notifications)
-    .where(eq(notifications.isRead, 0))
-    .get()!
+  const result = db.select({ count: count() }).from(notifications).where(eq(notifications.isRead, 0)).get()!
 
   return c.json(ok({ count: result.count }, '获取成功'), HttpStatusCodes.OK)
 }

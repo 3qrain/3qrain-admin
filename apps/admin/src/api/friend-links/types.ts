@@ -32,4 +32,5 @@ export interface FriendLinkListQuery {
   pageSize?: number
   offset?: string
   status?: string
+  t: number
 }

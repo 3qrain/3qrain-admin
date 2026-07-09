@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import { eq, desc, count, inArray, isNull, isNotNull, and } from 'drizzle-orm'
+import { eq, desc, count, inArray, isNull, isNotNull, and, lt } from 'drizzle-orm'
 import { db } from '~/db'
 import { notes, noteTags, noteMedia, tags, media } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
@@ -16,12 +16,17 @@ export async function list(c: Context) {
   const pageSize = Number(c.req.query('pageSize') || 20)
   const actualOffset = c.req.query('offset') !== undefined ? Number(c.req.query('offset')) : (page - 1) * pageSize
   const deleted = c.req.query('deleted') === 'true'
+  const t = c.req.query('t') ? Number(c.req.query('t')) : undefined
 
-  const filter = deleted ? isNotNull(notes.deletedAt) : isNull(notes.deletedAt)
+  const conditions = [deleted ? isNotNull(notes.deletedAt) : isNull(notes.deletedAt)]
+  if (t) conditions.push(lt(notes.createdAt, new Date(t)))
+  const where = and(...conditions)
 
-  const total = db.select({ count: count() }).from(notes).where(filter).get()!.count
-  const rows = db.select().from(notes)
-    .where(filter)
+  const total = db.select({ count: count() }).from(notes).where(where).get()!.count
+  const rows = db
+    .select()
+    .from(notes)
+    .where(where)
     .orderBy(desc(notes.createdAt))
     .limit(pageSize)
     .offset(actualOffset)
@@ -33,31 +38,35 @@ export async function list(c: Context) {
 
   const noteIds = rows.map(r => r.id)
 
-  const tagRows = db.select({
-    noteId: noteTags.noteId,
-    id: tags.id,
-    name: tags.name,
-    slug: tags.slug,
-  }).from(noteTags)
+  const tagRows = db
+    .select({
+      noteId: noteTags.noteId,
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug
+    })
+    .from(noteTags)
     .innerJoin(tags, eq(noteTags.tagId, tags.id))
     .where(inArray(noteTags.noteId, noteIds))
     .all()
 
-  const mediaRows = db.select({
-    noteId: noteMedia.noteId,
-    sort: noteMedia.sort,
-    id: media.id,
-    originalPath: media.originalPath,
-    thumbnailPath: media.thumbnailPath,
-    previewPath: media.previewPath,
-    placeholder: media.placeholder,
-    mimeType: media.mimeType,
-    type: media.type,
-    filename: media.filename,
-    ext: media.ext,
-    width: media.width,
-    height: media.height,
-  }).from(noteMedia)
+  const mediaRows = db
+    .select({
+      noteId: noteMedia.noteId,
+      sort: noteMedia.sort,
+      id: media.id,
+      originalPath: media.originalPath,
+      thumbnailPath: media.thumbnailPath,
+      previewPath: media.previewPath,
+      placeholder: media.placeholder,
+      mimeType: media.mimeType,
+      type: media.type,
+      filename: media.filename,
+      ext: media.ext,
+      width: media.width,
+      height: media.height
+    })
+    .from(noteMedia)
     .innerJoin(media, eq(noteMedia.mediaId, media.id))
     .where(inArray(noteMedia.noteId, noteIds))
     .orderBy(noteMedia.sort)
@@ -66,20 +75,22 @@ export async function list(c: Context) {
   const result = rows.map(note => ({
     ...note,
     tags: tagRows.filter(t => t.noteId === note.id).map(({ noteId, ...tag }) => tag),
-    media: mediaRows.filter(m => m.noteId === note.id).map(({ noteId, ...m }) => ({
-      id: m.id,
-      url: toUrl(m.originalPath),
-      thumbnailUrl: toUrl(m.thumbnailPath),
-      previewUrl: toUrl(m.previewPath),
-      placeholder: m.placeholder,
-      type: m.type,
-      mimeType: m.mimeType,
-      filename: m.filename,
-      ext: m.ext,
-      width: m.width,
-      height: m.height,
-      sort: m.sort,
-    })),
+    media: mediaRows
+      .filter(m => m.noteId === note.id)
+      .map(({ noteId, ...m }) => ({
+        id: m.id,
+        url: toUrl(m.originalPath),
+        thumbnailUrl: toUrl(m.thumbnailPath),
+        previewUrl: toUrl(m.previewPath),
+        placeholder: m.placeholder,
+        type: m.type,
+        mimeType: m.mimeType,
+        filename: m.filename,
+        ext: m.ext,
+        width: m.width,
+        height: m.height,
+        sort: m.sort
+      }))
   }))
 
   return c.json(ok({ list: result, total, page, pageSize }, '获取成功'), HttpStatusCodes.OK)
@@ -88,14 +99,22 @@ export async function list(c: Context) {
 export async function create(c: Context) {
   const body = await c.req.json<{ content: string; isPublished?: boolean; tagIds?: number[]; mediaIds?: number[] }>()
 
-  const note = db.insert(notes).values({
-    content: body.content,
-    ...(body.isPublished !== undefined && { isPublished: body.isPublished }),
-  }).returning().get()
+  const note = db
+    .insert(notes)
+    .values({
+      content: body.content,
+      ...(body.isPublished !== undefined && { isPublished: body.isPublished })
+    })
+    .returning()
+    .get()
 
   if (body.tagIds?.length) {
-    const validTagIds = db.select({ id: tags.id }).from(tags)
-      .where(inArray(tags.id, body.tagIds)).all().map(t => t.id)
+    const validTagIds = db
+      .select({ id: tags.id })
+      .from(tags)
+      .where(inArray(tags.id, body.tagIds))
+      .all()
+      .map(t => t.id)
     for (const tagId of validTagIds) {
       db.insert(noteTags).values({ noteId: note.id, tagId }).run()
     }
@@ -103,8 +122,12 @@ export async function create(c: Context) {
 
   if (body.mediaIds?.length) {
     const validMediaIds = new Set(
-      db.select({ id: media.id }).from(media)
-        .where(inArray(media.id, body.mediaIds)).all().map(m => m.id),
+      db
+        .select({ id: media.id })
+        .from(media)
+        .where(inArray(media.id, body.mediaIds))
+        .all()
+        .map(m => m.id)
     )
     const ordered = body.mediaIds.filter(id => validMediaIds.has(id))
     for (let i = 0; i < ordered.length; i++) {
@@ -117,7 +140,7 @@ export async function create(c: Context) {
       type: 'new_note',
       title: '一条说说到来~',
       content: body.content.slice(0, 50),
-      meta: JSON.stringify({ noteId: note.id }),
+      meta: JSON.stringify({ noteId: note.id })
     }).catch(() => {})
   }
 
@@ -143,8 +166,12 @@ export async function update(c: Context) {
   if (body.tagIds !== undefined) {
     db.delete(noteTags).where(eq(noteTags.noteId, id)).run()
     if (body.tagIds.length) {
-      const validTagIds = db.select({ id: tags.id }).from(tags)
-        .where(inArray(tags.id, body.tagIds)).all().map(t => t.id)
+      const validTagIds = db
+        .select({ id: tags.id })
+        .from(tags)
+        .where(inArray(tags.id, body.tagIds))
+        .all()
+        .map(t => t.id)
       for (const tagId of validTagIds) {
         db.insert(noteTags).values({ noteId: id, tagId }).run()
       }
@@ -155,8 +182,12 @@ export async function update(c: Context) {
     db.delete(noteMedia).where(eq(noteMedia.noteId, id)).run()
     if (body.mediaIds.length) {
       const validMediaIds = new Set(
-        db.select({ id: media.id }).from(media)
-          .where(inArray(media.id, body.mediaIds)).all().map(m => m.id),
+        db
+          .select({ id: media.id })
+          .from(media)
+          .where(inArray(media.id, body.mediaIds))
+          .all()
+          .map(m => m.id)
       )
       const ordered = body.mediaIds.filter(id => validMediaIds.has(id))
       for (let i = 0; i < ordered.length; i++) {
@@ -179,7 +210,11 @@ export async function remove(c: Context) {
 
 export async function restore(c: Context) {
   const id = Number.parseInt(c.req.param('id')!)
-  const existing = db.select().from(notes).where(and(eq(notes.id, id), isNotNull(notes.deletedAt))).get()
+  const existing = db
+    .select()
+    .from(notes)
+    .where(and(eq(notes.id, id), isNotNull(notes.deletedAt)))
+    .get()
   if (!existing) {
     return c.json(fail(ErrorCode.INVALID_PARAMS, '说说不存在'), HttpStatusCodes.NOT_FOUND)
   }

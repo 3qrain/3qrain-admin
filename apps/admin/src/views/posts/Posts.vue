@@ -38,6 +38,7 @@ const query = ref({
 const totalPages = ref(1)
 const { postsPaginationMode: paginationMode } = storeToRefs(useAppStore())
 const showDeleted = ref(false)
+const t = +new Date()
 const categoryOptions = ref([{ label: '全部分类', value: 0 }])
 
 async function load(append = false) {
@@ -47,7 +48,7 @@ async function load(append = false) {
   loading.value = true
   try {
     !append && (posts.value = [])
-    const params: any = { pageSize: query.value.pageSize }
+    const params: any = { t, pageSize: query.value.pageSize }
     if (paginationMode.value === 'scroll') {
       params.offset = append ? posts.value.length : 0
     } else {
@@ -162,7 +163,7 @@ async function handleEmptyTrash() {
     toast.success('回收站已清空')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
-  } 
+  }
 }
 
 watch(

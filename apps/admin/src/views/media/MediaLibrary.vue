@@ -69,13 +69,14 @@ function openPreview(item: fileItem) {
 }
 
 const showUpload = ref(false)
+const t = +new Date()
 const health = ref({ unregistered: 0, missing: 0 })
 
 async function load(append = false) {
   loading.value = true
   try {
     !append && (files.value = [])
-    const params: any = { pageSize: pageSize.value }
+    const params: any = { t, pageSize: pageSize.value }
     if (paginationMode.value === 'scroll') {
       params.offset = append ? files.value.length : 0
     } else {
