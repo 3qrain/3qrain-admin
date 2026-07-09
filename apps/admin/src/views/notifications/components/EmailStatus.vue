@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { CheckCircle, XCircle, ChevronDown, ChevronUp, ShieldCheck } from '@lucide/vue'
+import { MailCheck, MailX, ChevronDown, ChevronUp, CircleOff } from '@lucide/vue'
 import type { NotificationItem } from '~/api/notifications/types'
 import type { Comment } from '~/api/comments/types'
 import { formatDate } from '~/utils/date'
@@ -101,8 +101,9 @@ function buildPreviewHtml() {
 function notRequiredMsg(emailStatus: NotificationType) {
   switch (emailStatus) {
     case 'new_comment':
-    case 'new_reply':
       return '无需发送邮件（管理员评论）'
+    case 'new_reply':
+      return '无需发送邮件（评论人id与被回复人id一致）'
     case 'friend_apply':
     case 'friend_approve':
     case 'friend_reject':
@@ -126,7 +127,7 @@ function togglePreview() {
     <h3 class="section-title">邮件发送</h3>
 
     <div v-if="item.emailStatus === 'not_required'" class="email-status not_required">
-      <ShieldCheck :size="16" />
+      <CircleOff style="height: 1.125rem; width: 1.125rem;" />
       <span>{{ notRequiredMsg(item.type) }}</span>
     </div>
 
@@ -136,18 +137,18 @@ function togglePreview() {
     </div>
 
     <div v-else-if="item.emailStatus === 'sent'" class="email-status ok">
-      <CheckCircle :size="16" />
+      <MailCheck style="height: 1.125rem; width: 1.125rem;" />
       <span>已发送</span>
       <span v-if="item.emailSentAt" class="email-time">{{ formatDate(item.emailSentAt) }}</span>
       <button v-if="item.emailStatus === 'sent'" class="preview-toggle" @click="togglePreview">
         {{ showPreview ? '收起' : '展开' }}邮件
-        <ChevronUp v-if="showPreview" :size="12" />
-        <ChevronDown v-else :size="12" />
+        <ChevronUp v-if="showPreview" style="height: .75rem; width: .75rem;" />
+        <ChevronDown v-else style="height: .75rem; width: .75rem;" />
       </button>
     </div>
 
     <div v-else-if="item.emailStatus === 'failed'" class="email-status fail">
-      <XCircle :size="16" />
+      <MailX style="height: 1.125rem; width: 1.125rem;" />
       <span>发送失败</span>
       <span v-if="item.emailError" class="email-error">{{ item.emailError }}</span>
     </div>
@@ -176,6 +177,7 @@ function togglePreview() {
 .email-status {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.375rem;
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;

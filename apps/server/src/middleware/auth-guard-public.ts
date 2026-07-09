@@ -25,7 +25,7 @@ export async function resolveUserSession(c: Context) {
   if (!parsed.success) return null
 
   const user = db.select().from(users).where(eq(users.id, parsed.data.userId)).get()
-  if (!user || user.isBanned) return null
+  if (!user) return null
 
   await redis.setex(
     `${SESSION_USER_PREFIX}${token}`,
@@ -43,6 +43,9 @@ export const authGuardPublic = createMiddleware(async (c, next) => {
   const user = await resolveUserSession(c)
   if (!user) {
     return c.json(fail(ErrorCode.UNAUTHORIZED, '未登录'), HttpStatusCodes.UNAUTHORIZED)
+  }
+  if (user.isBanned) {
+    return c.json(fail(ErrorCode.BANNED, '已被封禁'), HttpStatusCodes.FORBIDDEN)
   }
   await next()
 })

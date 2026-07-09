@@ -111,6 +111,7 @@ async function handleDelete(item: NotificationItem) {
 }
 
 function handleSelect(item: NotificationItem) {
+  if (!item.id) return
   selectedId.value = item.id
   emit('select', item)
   if (!item.isRead) handleMarkRead(item)
@@ -426,7 +427,7 @@ onMounted(() => load(false))
     opacity: 1;
   }
   .list-item.selected & {
-    opacity: 0.8;
+    opacity: 0.9;
   }
 }
 
@@ -446,6 +447,9 @@ onMounted(() => load(false))
 
   .list-item:not(.unread) & {
     opacity: 0.6;
+  }
+  .list-item.selected & {
+    opacity: 1;
   }
 }
 

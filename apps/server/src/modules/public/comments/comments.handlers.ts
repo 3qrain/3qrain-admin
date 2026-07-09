@@ -154,12 +154,17 @@ export async function create(c: Context) {
       postTitle = '说说#' + body.targetId
     }
 
+   
     await notify({
       scope: 'admin',
       type: isReply ? 'new_reply' : 'new_comment',
       title: postTitle + (isReply ? ' 有新回复' : ' 有新评论'),
       content: summary,
-      emailStatus: (user.role === 'system' || user.role === 'admin') ? 'not_required' : undefined,
+      // 新评论（一级评论）如果是管理员，则不发邮件
+      // 新回复（二级评论）如果评论人id和被回复人id相同，则不发邮件
+      emailStatus: isReply
+        ? (user.id === body.replyToUserId ? 'not_required' : undefined)
+        : (user.role === 'system' || user.role === 'admin' ? 'not_required' : undefined),
       meta: JSON.stringify({
         targetType: body.targetType,
         targetId: body.targetId,

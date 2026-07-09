@@ -7,6 +7,8 @@ export const ErrorCode = {
   ALREADY_INITIALIZED: "AUTH_ALREADY_INITIALIZED",
   /** 未登录 */
   UNAUTHORIZED: "AUTH_UNAUTHORIZED",
+  /** 被封禁 */
+  BANNED: "AUTH_BANNED",
   /** Token 过期 */
   TOKEN_EXPIRED: "AUTH_TOKEN_EXPIRED",
 
