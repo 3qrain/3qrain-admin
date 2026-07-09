@@ -5,6 +5,7 @@ import { friendLinks } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
+import { notify } from '~/services/notify'
 
 export async function create(c: Context) {
   const body = await c.req.json<{ siteName: string; siteUrl: string; description?: string; applicantEmail: string }>()
@@ -54,6 +55,20 @@ export async function approve(c: Context) {
   }
 
   db.update(friendLinks).set({ status: 'approved', approvedAt: new Date() }).where(eq(friendLinks.id, id)).run()
+
+  notify({
+    scope: 'admin',
+    type: 'friend_approve',
+    title: `${existing.siteName} 友链已通过`,
+    meta: JSON.stringify({
+      id,
+      siteName: existing.siteName,
+      siteUrl: existing.siteUrl,
+      applicantEmail: existing.applicantEmail,
+      approved: true
+    })
+  }).catch(() => {})
+
   return c.json(ok({}, '已通过'), HttpStatusCodes.OK)
 }
 
@@ -70,6 +85,22 @@ export async function reject(c: Context) {
     .set({ status: 'rejected', rejectReason: reason, rejectedAt: new Date() })
     .where(eq(friendLinks.id, id))
     .run()
+
+  notify({
+    scope: 'admin',
+    type: 'friend_reject',
+    title: `${existing.siteName} 友链已拒绝`,
+    content: reason,
+    meta: JSON.stringify({
+      id,
+      siteName: existing.siteName,
+      siteUrl: existing.siteUrl,
+      applicantEmail: existing.applicantEmail,
+      approved: false,
+      reason
+    })
+  }).catch(() => {})
+
   return c.json(ok({}, '已拒绝'), HttpStatusCodes.OK)
 }
 

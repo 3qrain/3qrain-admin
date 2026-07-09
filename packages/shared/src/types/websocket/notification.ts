@@ -3,6 +3,8 @@ export type NotificationType =
   | 'new_comment'
   | 'new_reply'
   | 'friend_apply'
+  | 'friend_approve'
+  | 'friend_reject'
   | 'new_post'
   | 'new_note'
   | 'system'

@@ -6,6 +6,7 @@ import { enqueue } from './queue'
 import { sendNewCommentEmail } from './new-comment'
 import { sendNewReplyEmail } from './new-reply'
 import { sendFriendApplyEmail } from './friend-apply'
+import { sendFriendApplyResultEmail } from './friend-apply-result'
 
 export function dispatchEmail(type: NotificationType, meta: string, notificationId: number) {
   let parsed: Record<string, any>
@@ -43,6 +44,17 @@ export function dispatchEmail(type: NotificationType, meta: string, notification
       enqueue(async () => {
         try {
           await sendFriendApplyEmail(parsed)
+          await markStatus('sent')
+        } catch (e: any) {
+          await markStatus('failed', e.message)
+        }
+      })
+      break
+    case 'friend_approve':
+    case 'friend_reject':
+      enqueue(async () => {
+        try {
+          await sendFriendApplyResultEmail(parsed)
           await markStatus('sent')
         } catch (e: any) {
           await markStatus('failed', e.message)

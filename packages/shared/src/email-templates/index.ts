@@ -14,3 +14,8 @@ export {
   renderReplyEmail,
   type ReplyData,
 } from './user/reply'
+
+export {
+  renderFriendApplyResultEmail,
+  type FriendApplyResultData,
+} from './user/friend-apply-result'
