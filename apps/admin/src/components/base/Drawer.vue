@@ -37,6 +37,7 @@ function onDragStart(e: TouchEvent | MouseEvent) {
 
   startY = getClientY(e)
   if (drawerRef.value) drawerRef.value.style.transition = 'none'
+  document.body.classList.add('drawer-dragging')
   document.addEventListener('touchmove', onDragMove, { passive: false })
   document.addEventListener('touchend', onDragEnd)
   document.addEventListener('mousemove', onDragMove)
@@ -53,6 +54,7 @@ function onDragMove(e: TouchEvent | MouseEvent) {
 }
 
 function onDragEnd(e: TouchEvent | MouseEvent) {
+  document.body.classList.remove('drawer-dragging')
   document.removeEventListener('touchmove', onDragMove)
   document.removeEventListener('touchend', onDragEnd)
   document.removeEventListener('mousemove', onDragMove)
@@ -163,5 +165,12 @@ function onDragEnd(e: TouchEvent | MouseEvent) {
 .drawer-enter-from,
 .drawer-leave-to {
   transform: translateY(100%);
+}
+</style>
+
+<style>
+body.drawer-dragging,
+body.drawer-dragging * {
+  cursor: grabbing !important;
 }
 </style>

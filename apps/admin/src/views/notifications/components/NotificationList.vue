@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { Bell, MessageCircle, MessageCircleReply, Panda, Settings, Trash2, RotateCw, UserRoundCheck, UserRoundX } from '@lucide/vue'
+import {
+  Bell,
+  MessageCircle,
+  MessageCircleReply,
+  Panda,
+  Settings,
+  Trash2,
+  RotateCw,
+  UserRoundCheck,
+  UserRoundX
+} from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import { getNotifications, markRead, deleteNotifications } from '~/api/notifications'
 import type { NotificationItem } from '~/api/notifications/types'
@@ -405,7 +415,8 @@ onMounted(() => load(false))
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #3b82f6, var(--color-base-100));
+  background: linear-gradient(135deg, var(--color-base-100), #3b82f6, var(--color-base-100));
+  // background: linear-gradient(135deg, #3b82f6, var(--color-base-100));
   // background: linear-gradient(135deg, var(--color-base-content), var(--color-base-100));
   opacity: 0;
   transition: opacity 0.6s;

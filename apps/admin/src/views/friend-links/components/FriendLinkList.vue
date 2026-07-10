@@ -450,12 +450,15 @@ defineExpose({
 
   &.pending {
     background: linear-gradient(135deg, var(--color-warning), var(--color-base-100));
+    // background: linear-gradient(135deg, var(--color-base-100), var(--color-warning), var(--color-base-100));
   }
   &.approved {
     background: linear-gradient(135deg, var(--color-base-content), var(--color-base-100));
+    // background: linear-gradient(135deg, var(--color-base-100), var(--color-base-content), var(--color-base-100));
   }
   &.rejected {
     background: linear-gradient(135deg, var(--color-error), var(--color-base-100));
+    // background: linear-gradient(135deg, var(--color-base-100), var(--color-error), var(--color-base-100));
   }
 
   .list-item.selected & {
