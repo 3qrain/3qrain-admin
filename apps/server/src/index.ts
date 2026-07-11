@@ -70,5 +70,6 @@ cron_cleanUpExpiredUploads()
 export default {
   fetch: app.fetch,
   websocket,
-  idleTimeout: 10,
+  // 邮件测试接口可能耗时较长，避免 Bun idle timeout 过短导致请求中断
+  idleTimeout: 30,
 }
