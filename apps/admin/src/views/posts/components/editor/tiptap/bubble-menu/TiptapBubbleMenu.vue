@@ -7,8 +7,8 @@ import {
   Strikethrough,
   Code,
   Link as LinkIcon,
-  Heading1,
   Heading2,
+  Heading3,
   TextAlignStart,
   TextAlignCenter,
   TextAlignEnd
@@ -58,17 +58,23 @@ const emit = defineEmits<{ (e: 'addLink'): void }>()
       <MenuButton :active="props.editor.isActive('link')" @click="emit('addLink')">
         <LinkIcon :size="15" />
       </MenuButton>
-      <MenuButton
+      <!-- <MenuButton
         :active="props.editor.isActive('heading', { level: 1 })"
         @click="props.editor.chain().focus().toggleHeading({ level: 1 }).run()"
       >
         <Heading1 :size="15" />
-      </MenuButton>
+      </MenuButton> -->
       <MenuButton
         :active="props.editor.isActive('heading', { level: 2 })"
         @click="props.editor.chain().focus().toggleHeading({ level: 2 }).run()"
       >
         <Heading2 :size="15" />
+      </MenuButton>
+            <MenuButton
+        :active="props.editor.isActive('heading', { level: 3 })"
+        @click="props.editor.chain().focus().toggleHeading({ level: 3 }).run()"
+      >
+        <Heading3 :size="15" />
       </MenuButton>
     </template>
   </BubbleMenu>

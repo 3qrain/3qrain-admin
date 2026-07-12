@@ -43,12 +43,12 @@ const emit = defineEmits<{ (e: 'addImage'): void }>()
       <TextAlignEnd :size="15" />
     </MenuButton>
     <span class="sep" />
-    <MenuButton
+    <!-- <MenuButton
       :active="props.editor.isActive('heading', { level: 1 })"
       @click="props.editor.chain().focus().toggleHeading({ level: 1 }).run()"
     >
       <Heading1 :size="16" />
-    </MenuButton>
+    </MenuButton> -->
     <MenuButton
       :active="props.editor.isActive('heading', { level: 2 })"
       @click="props.editor.chain().focus().toggleHeading({ level: 2 }).run()"
