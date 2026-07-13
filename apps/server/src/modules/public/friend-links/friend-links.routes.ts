@@ -10,6 +10,27 @@ export const createFriendLinkSchema = z.object({
   applicantEmail: z.email('联系邮箱格式有误').or(z.literal('')).nullable().optional(),
 })
 
+const friendLinkItemSchema = z.object({
+  id: z.number(),
+  siteName: z.string(),
+  siteUrl: z.string(),
+  avatarUrl: z.string().nullable(),
+  description: z.string().nullable(),
+})
+
+export const listApprovedRoute = createRoute({
+  tags: ['Public/FriendLinks'],
+  summary: '获取已通过友链列表',
+  method: 'get',
+  path: '/friend-links',
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.array(friendLinkItemSchema)) } },
+      description: '获取成功',
+    },
+  },
+})
+
 export const createFriendLinkRoute = createRoute({
   tags: ['Public/FriendLinks'],
   summary: '申请友链',

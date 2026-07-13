@@ -4,6 +4,7 @@ import * as handlers from './friend-links.handlers'
 
 const friendLinksRouter = createApp()
 
+friendLinksRouter.openapi(routes.listApprovedRoute, handlers.listApproved)
 friendLinksRouter.openapi(routes.createFriendLinkRoute, handlers.create)
 
 export default friendLinksRouter

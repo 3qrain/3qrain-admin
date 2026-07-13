@@ -6,6 +6,19 @@ import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { createFriendLinkSchema } from './friend-links.routes'
+import { eq } from 'drizzle-orm'
+
+export async function listApproved(c: Context) {
+  const rows = db.select({
+    id: friendLinks.id,
+    siteName: friendLinks.siteName,
+    siteUrl: friendLinks.siteUrl,
+    avatarUrl: friendLinks.avatarUrl,
+    description: friendLinks.description,
+  }).from(friendLinks).where(eq(friendLinks.status, 'approved')).all()
+
+  return c.json(ok(rows, '获取成功'), HttpStatusCodes.OK)
+}
 
 export async function create(c: Context) {
   const parsed = createFriendLinkSchema.safeParse(await c.req.json())
