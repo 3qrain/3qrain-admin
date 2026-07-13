@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { User as UserIcon } from '@lucide/vue'
+import { Menu, User as UserIcon, X } from '@lucide/vue'
 
 const store = useAppStore()
 const userApi = useUserApi()
 const oauth = useOAuth()
+const route = useRoute()
 const showLoginModal = ref(false)
+const mobileOpen = ref(false)
+
+const navItems = [
+  { to: '/', label: '首页' },
+  { to: '/posts', label: '文章' },
+  { to: '/notes', label: '说说' },
+  { to: '/friends', label: '友链' },
+]
 
 watch(() => store.user, (v) => { if (v) showLoginModal.value = false })
 const showProfileModal = ref(false)
@@ -44,6 +53,10 @@ async function logout() {
     showProfileModal.value = false
   } catch { /* ignore */ }
 }
+
+watch(() => route.fullPath, () => {
+  mobileOpen.value = false
+})
 </script>
 
 <template>
@@ -51,14 +64,21 @@ async function logout() {
     <div class="header-inner">
       <NuxtLink to="/" class="brand">
         <img v-if="store.site.avatar" :src="store.site.avatar" alt="" class="avatar" />
+        <span v-else class="avatar-fallback">3</span>
+        <span class="brand-copy">
+          <strong>{{ store.site.name || '3qrain' }}</strong>
+          <small>blog</small>
+        </span>
       </NuxtLink>
 
       <nav class="nav">
-        <NuxtLink to="/posts" class="nav-link">文章</NuxtLink>
-        <NuxtLink to="/notes" class="nav-link">说说</NuxtLink>
+        <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-link">
+          {{ item.label }}
+        </NuxtLink>
       </nav>
 
       <div class="actions">
+        <ThemeToggle />
         <ClientOnly>
           <button v-if="store.user" class="user-trigger" @click="openProfile">
             <img :src="store.user.avatarUrl" alt="" class="user-avatar" />
@@ -72,8 +92,20 @@ async function logout() {
             </button>
           </template>
         </ClientOnly>
+        <button class="menu-trigger" :aria-label="mobileOpen ? '关闭导航' : '打开导航'" @click="mobileOpen = !mobileOpen">
+          <X v-if="mobileOpen" :size="18" :stroke-width="1.75" />
+          <Menu v-else :size="18" :stroke-width="1.75" />
+        </button>
       </div>
     </div>
+
+    <Transition name="drawer">
+      <nav v-if="mobileOpen" class="mobile-nav">
+        <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" class="mobile-link">
+          {{ item.label }}
+        </NuxtLink>
+      </nav>
+    </Transition>
   </header>
 
   <BaseModal v-model:open="showLoginModal">
@@ -123,17 +155,21 @@ async function logout() {
   left: 0;
   right: 0;
   z-index: 50;
-  height: 4rem;
+  height: 4.5rem;
   display: flex;
   align-items: center;
+  border-bottom: 1px solid color-mix(in oklab, var(--color-border) 72%, transparent);
+  background: color-mix(in oklab, var(--color-base-100) 78%, transparent);
+  backdrop-filter: blur(1.25rem);
 
   &-inner {
     width: 100%;
-    max-width: 75rem;
+    max-width: var(--site-max);
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1rem;
     display: flex;
     align-items: center;
+    justify-content: space-between;
   }
 }
 
@@ -146,11 +182,11 @@ async function logout() {
   flex-shrink: 0;
 }
 
-.avatar {
+.avatar,
+.avatar-fallback {
   width: 2.125rem;
   height: 2.125rem;
   border-radius: 50%;
-  object-fit: cover;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   .brand:hover & {
@@ -158,66 +194,86 @@ async function logout() {
   }
 }
 
-.brand-name {
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+.avatar {
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-weight: 800;
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+
+  strong {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  small {
+    margin-top: 0.125rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-subtle);
+  }
 }
 
 .nav {
-  flex: 1;
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-base-100) 72%, transparent);
 }
 
 .nav-link {
   position: relative;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 650;
   color: var(--color-base-content);
-  opacity: 0.4;
+  opacity: 0.52;
   text-decoration: none;
-  padding: 0.25rem 0;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
   transition: opacity 0.25s;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -0.125rem;
-    width: 100%;
-    height: 0.125rem;
-    border-radius: 0.0625rem;
-    background: var(--color-primary);
-    transform: scaleX(0);
-    transform-origin: center;
-    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  }
 
   &:hover { opacity: 0.7; }
 
   &.router-link-active {
     opacity: 1;
-
-    &::after { transform: scaleX(1); }
+    background: var(--color-base-content);
+    color: var(--color-base-100);
   }
 }
 
 /* ---- Actions ---- */
 .actions {
   flex-shrink: 0;
-  width: 2.125rem;
+  min-width: 6.5rem;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 0.25rem;
 }
 
 .trigger,
-.user-trigger {
+.user-trigger,
+.menu-trigger {
   width: 2.125rem;
   height: 2.125rem;
-  border-radius: 50%;
+  border-radius: 999px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -228,11 +284,16 @@ async function logout() {
   transition: opacity 0.15s;
 }
 
-.trigger {
+.trigger,
+.menu-trigger {
   color: var(--color-base-content);
   opacity: 0.35;
 
   &:hover { opacity: 0.7; }
+}
+
+.menu-trigger {
+  display: none;
 }
 
 .user-avatar {
@@ -242,11 +303,26 @@ async function logout() {
   object-fit: cover;
 }
 
+.mobile-nav {
+  display: none;
+}
+
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+}
+
 /* ---- Modal Card ---- */
 .login-card,
 .profile-card {
   background: var(--color-base-100, #fff);
-  border-radius: 1rem;
+  border-radius: 0.5rem;
   padding: 1.75rem 2rem;
   width: 20rem;
   box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.15);
@@ -373,5 +449,59 @@ async function logout() {
   &:disabled { opacity: 0.5; cursor: default; }
 }
 
+@media (max-width: 720px) {
+  .header {
+    height: 4rem;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .brand-copy small {
+    display: none;
+  }
+
+  .actions {
+    min-width: 0;
+  }
+
+  .menu-trigger {
+    display: flex;
+  }
+
+  .mobile-nav {
+    display: flex;
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    top: 4.5rem;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: color-mix(in oklab, var(--color-base-100) 94%, transparent);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .mobile-link {
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-muted);
+
+    &.router-link-active {
+      color: var(--color-base-content);
+      background: var(--color-base-200);
+    }
+  }
+
+  .login-card,
+  .profile-card {
+    width: min(20rem, calc(100vw - 2rem));
+  }
+}
 
 </style>

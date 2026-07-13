@@ -43,7 +43,13 @@ onMounted(async () => {
 
 .main {
   flex: 1;
-  padding-top: 5rem;
+  padding-top: 5.5rem;
   width: 100%;
+}
+
+@media (max-width: 720px) {
+  .main {
+    padding-top: 4.75rem;
+  }
 }
 </style>
