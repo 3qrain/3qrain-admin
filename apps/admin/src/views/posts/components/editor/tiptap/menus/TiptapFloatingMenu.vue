@@ -2,7 +2,6 @@
 import { FloatingMenu } from '@tiptap/vue-3/menus'
 import type { Editor } from '@tiptap/vue-3'
 import {
-  Heading1,
   Heading2,
   Heading3,
   List,
@@ -43,12 +42,6 @@ const emit = defineEmits<{ (e: 'addImage'): void }>()
       <TextAlignEnd :size="15" />
     </MenuButton>
     <span class="sep" />
-    <!-- <MenuButton
-      :active="props.editor.isActive('heading', { level: 1 })"
-      @click="props.editor.chain().focus().toggleHeading({ level: 1 }).run()"
-    >
-      <Heading1 :size="16" />
-    </MenuButton> -->
     <MenuButton
       :active="props.editor.isActive('heading', { level: 2 })"
       @click="props.editor.chain().focus().toggleHeading({ level: 2 }).run()"
@@ -101,7 +94,7 @@ const emit = defineEmits<{ (e: 'addImage'): void }>()
   align-items: center;
   gap: .125rem;
   padding: .25rem;
-  border-radius: .625rem;
+  border-radius: .5rem;
   background: var(--color-base-100);
   border: .0625rem solid var(--color-border);
   box-shadow: 0 .25rem .75rem var(--color-border);

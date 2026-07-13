@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
-import TiptapFloatingMenu from './floating-menu/TiptapFloatingMenu.vue'
-import TiptapBubbleMenu from './bubble-menu/TiptapBubbleMenu.vue'
+import TiptapFloatingMenu from './menus/TiptapFloatingMenu.vue'
+import TiptapBubbleMenu from './menus/TiptapBubbleMenu.vue'
 import type { Editor } from '@tiptap/vue-3'
+import { ImageBlock, mediaToImageBlockAttrs } from './nodes/image-block'
+import MediaPickerModal from './nodes/image-block/MediaPickerModal.vue'
+import type { MediaItem } from '~/api/media'
+import { CodeBlock } from './nodes/code-block'
 
 const props = defineProps<{ initialContent?: object }>()
 const emit = defineEmits<{ (e: 'dirty'): void }>()
+const showMediaPicker = ref(false)
 
 const editor = useEditor({
   extensions: [
-    StarterKit.configure({ heading: { levels: [1, 2, 3] }, dropcursor: { color: 'var(--color-primary)' }}),
-    TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    Image.configure({
-      inline: true,
-      resize: {
-        enabled: true,
-        directions: ['left', 'right'],
-        minWidth: 50,
-        minHeight: 50,
-        alwaysPreserveAspectRatio: true
-      }
+    StarterKit.configure({
+      heading: { levels: [1, 2, 3] },
+      codeBlock: false,
+      dropcursor: { color: 'var(--color-primary)' }
     }),
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    ImageBlock,
+    CodeBlock,
   ],
   content: props.initialContent,
   onUpdate: () => emit('dirty')
@@ -47,10 +47,17 @@ function addLink(e?: Editor) {
 }
 
 function addImage(e?: Editor) {
-  const ed = e || editor.value
+  if (!e && !editor.value) return
+  showMediaPicker.value = true
+}
+
+function insertMediaImage(item: MediaItem) {
+  const ed = editor.value
   if (!ed) return
-  const url = prompt('图片地址')
-  if (url) ed.chain().focus().setImage({ src: url }).run()
+  ed.chain().focus().insertContent({
+    type: 'imageBlock',
+    attrs: mediaToImageBlockAttrs(item)
+  }).run()
 }
 
 onBeforeUnmount(() => editor.value?.destroy())
@@ -61,6 +68,7 @@ defineExpose({ getContent, editor })
   <TiptapFloatingMenu v-if="editor" :editor="editor" @add-image="addImage()" />
   <TiptapBubbleMenu v-if="editor" :editor="editor" @add-link="addLink()" />
   <EditorContent :editor="editor" class="tiptap-content" />
+  <MediaPickerModal v-model:open="showMediaPicker" @select="insertMediaImage" />
 </template>
 
 <style scoped lang="less">
