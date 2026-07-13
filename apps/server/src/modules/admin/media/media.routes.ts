@@ -29,8 +29,11 @@ export const listMediaRoute = createRoute({
   request: {
     query: z.object({
       keyword: z.string().optional(),
+      type: z.enum(['image', 'video', 'audio', 'file']).optional(),
       page: z.string().optional().default("1"),
       pageSize: z.string().optional().default("24"),
+      offset: z.string().optional(),
+      t: z.string().optional(),
     }),
   },
   responses: {

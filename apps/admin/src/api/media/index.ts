@@ -29,7 +29,17 @@ export interface HealthResult {
   missing: number;
 }
 
-export async function getMedia(params: { keyword?: string; page?: number; pageSize?: number; signal?: AbortSignal } = {}) {
+export async function getMedia(
+  params: {
+    keyword?: string
+    type?: 'image' | 'video' | 'audio' | 'file'
+    page?: number
+    pageSize?: number
+    offset?: number
+    t?: number
+    signal?: AbortSignal
+  } = {}
+) {
   const { signal, ...rest } = params;
   const { data } = await apiClient.get<{ data: MediaListResult }>("/admin/media", { params: rest, signal });
   return data.data;

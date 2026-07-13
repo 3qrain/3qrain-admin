@@ -23,6 +23,7 @@ export async function list(c: Context) {
 
   const conditions = []
   if (query.keyword) conditions.push(like(media.filename, `%${query.keyword}%`))
+  if (query.type) conditions.push(eq(media.type, query.type))
   if (query.t) conditions.push(lt(media.createdAt, new Date(Number(query.t))))
   const where = conditions.length > 0 ? and(...conditions) : undefined
 

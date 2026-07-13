@@ -19,7 +19,7 @@ const activeIndex = computed(() => modes.findIndex(m => m.key === theme.value))
   <div class="theme-toggle">
     <span class="indicator" :style="{ '--i': activeIndex }" />
     <button
-      v-for="(m, i) in modes"
+      v-for="m in modes"
       :key="m.key"
       class="btn"
       :class="{ on: theme === m.key }"
