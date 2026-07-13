@@ -7,7 +7,7 @@ import TiptapFloatingMenu from './menus/TiptapFloatingMenu.vue'
 import TiptapBubbleMenu from './menus/TiptapBubbleMenu.vue'
 import type { Editor } from '@tiptap/vue-3'
 import { ImageBlock, mediaToImageBlockAttrs } from './nodes/image-block'
-import MediaPickerModal from './nodes/image-block/MediaPickerModal.vue'
+import MediaPickerModal from '~/components/media/MediaPickerModal.vue'
 import type { MediaItem } from '~/api/media'
 import { CodeBlock } from './nodes/code-block'
 
@@ -68,7 +68,7 @@ defineExpose({ getContent, editor })
   <TiptapFloatingMenu v-if="editor" :editor="editor" @add-image="addImage()" />
   <TiptapBubbleMenu v-if="editor" :editor="editor" @add-link="addLink()" />
   <EditorContent :editor="editor" class="tiptap-content" />
-  <MediaPickerModal v-model:open="showMediaPicker" @select="insertMediaImage" />
+  <MediaPickerModal v-model:open="showMediaPicker" type="image" title="选择图片" @select="insertMediaImage" />
 </template>
 
 <style scoped lang="less">
