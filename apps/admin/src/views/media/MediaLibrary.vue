@@ -30,6 +30,7 @@ const files = ref<fileItem[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(36)
+const t = ref<number>(Date.now())
 const totalPages = ref(1)
 const keyword = ref('')
 const loading = ref(true)
@@ -69,14 +70,13 @@ function openPreview(item: fileItem) {
 }
 
 const showUpload = ref(false)
-const t = +new Date()
 const health = ref({ unregistered: 0, missing: 0 })
 
 async function load(append = false) {
   loading.value = true
   try {
     !append && (files.value = [])
-    const params: any = { t, pageSize: pageSize.value }
+    const params: any = { t: t.value, pageSize: pageSize.value }
     if (paginationMode.value === 'scroll') {
       params.offset = append ? files.value.length : 0
     } else {
@@ -152,6 +152,7 @@ function search() {
 function onUploadsComplete() {
   router.replace({ query: {} })
   page.value = 1
+  t.value = Date.now()
   load()
   checkHealth()
 }
@@ -161,6 +162,7 @@ watch(paginationMode, val => {
   if (val === 'scroll') {
     router.replace({ query: {} })
   }
+  t.value = Date.now()
   load()
 })
 

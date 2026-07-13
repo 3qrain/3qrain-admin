@@ -28,7 +28,7 @@ const pageSize = ref(10)
 const totalPages = ref(1)
 const { notesPaginationMode: paginationMode } = storeToRefs(useAppStore())
 const showDeleted = ref(false)
-const t = +new Date()
+const t = ref<number>(Date.now())
 
 const route = useRoute()
 const router = useRouter()
@@ -54,7 +54,7 @@ async function load(append = false) {
   loading.value = true
   try {
     !append && (notes.value = [])
-    const params: any = { t, pageSize: pageSize.value, deleted: showDeleted.value || undefined }
+    const params: any = { t: t.value, pageSize: pageSize.value, deleted: showDeleted.value || undefined }
     if (paginationMode.value === 'scroll') {
       params.offset = append ? notes.value.length : 0
     } else {
@@ -81,6 +81,7 @@ function goPage(p: number) {
 
 function onPublished() {
   page.value = 1
+  t.value = Date.now()
   load()
 }
 
