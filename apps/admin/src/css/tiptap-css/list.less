@@ -1,51 +1,26 @@
 .tiptap ul,
 .tiptap ol {
-  padding-left: 0;
+  padding-left: 1.5em;
   margin: 0.5rem 0;
-  list-style: none;
 }
+
+.tiptap ul {
+  list-style: disc;
+}
+
+.tiptap ol {
+  list-style: decimal;
+}
+
 .tiptap li {
   margin: 0.125rem 0;
 }
 
-/* ── 所有列表标记符：统一主题色；有序列表额外加粗 ── */
-.tiptap ul > li > :first-child::before {
-  color: var(--theme-accent);
-}
-.tiptap ol > li > :first-child::before {
-  color: var(--theme-accent);
+.tiptap li::marker {
+  color: var(--color-primary);
   font-weight: 600;
 }
 
-/* ── 无序列表：• ◦ ▪ 无限循环（由 JS 注入 data-ul-mod=0/1/2） ── */
-.tiptap [data-ul-mod="0"] > li > :first-child::before {
-  content: "• ";
-}
-.tiptap [data-ul-mod="1"] > li > :first-child::before {
-  content: "◦ ";
-}
-.tiptap [data-ul-mod="2"] > li > :first-child::before {
-  content: "▪ ";
-}
-
-/* ── 有序列表：1. a. i. 无限循环（由 JS 注入 data-ol-mod=0/1/2） ── */
-.tiptap ol {
-  counter-reset: tiptap-counter;
-}
-.tiptap ol > li {
-  counter-increment: tiptap-counter;
-}
-.tiptap [data-ol-mod="0"] > li > :first-child::before {
-  content: counter(tiptap-counter, decimal) ". ";
-}
-.tiptap [data-ol-mod="1"] > li > :first-child::before {
-  content: counter(tiptap-counter, lower-alpha) ". ";
-}
-.tiptap [data-ol-mod="2"] > li > :first-child::before {
-  content: counter(tiptap-counter, lower-roman) ". ";
-}
-
-/* 嵌套列表缩进 */
 .tiptap :is(ul, ol) :is(ul, ol) {
   padding-left: 1.5em;
 }

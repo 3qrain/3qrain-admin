@@ -2,6 +2,12 @@ import { Node, VueNodeViewRenderer, mergeAttributes } from '@tiptap/vue-3'
 import ImageBlockView from './ImageBlockView.vue'
 import type { ImageBlockAttrs } from './types'
 
+function parseNumber(value: string | null) {
+  if (!value) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 export const ImageBlock = Node.create({
   name: 'imageBlock',
 
@@ -17,17 +23,50 @@ export const ImageBlock = Node.create({
 
   addAttributes() {
     return {
-      mediaId: { default: null },
-      src: { default: '' },
-      thumbnailUrl: { default: null },
-      previewUrl: { default: null },
-      placeholder: { default: null },
-      intrinsicWidth: { default: null },
-      intrinsicHeight: { default: null },
-      displayWidth: { default: null },
-      align: { default: 'center' },
-      alt: { default: '' },
-      caption: { default: '' }
+      mediaId: {
+        default: null,
+        parseHTML: element => parseNumber(element.getAttribute('data-media-id'))
+      },
+      url: {
+        default: '',
+        parseHTML: element => element.getAttribute('data-url') || element.querySelector('img')?.getAttribute('src') || ''
+      },
+      thumbnailUrl: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-thumbnail-url')
+      },
+      previewUrl: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-preview-url')
+      },
+      placeholder: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-placeholder')
+      },
+      intrinsicWidth: {
+        default: null,
+        parseHTML: element => parseNumber(element.getAttribute('data-intrinsic-width'))
+      },
+      intrinsicHeight: {
+        default: null,
+        parseHTML: element => parseNumber(element.getAttribute('data-intrinsic-height'))
+      },
+      displayWidth: {
+        default: null,
+        parseHTML: element => parseNumber(element.getAttribute('data-display-width'))
+      },
+      align: {
+        default: 'center',
+        parseHTML: element => element.getAttribute('data-align') || 'center'
+      },
+      alt: {
+        default: '',
+        parseHTML: element => element.querySelector('img')?.getAttribute('alt') || ''
+      },
+      caption: {
+        default: '',
+        parseHTML: element => element.querySelector('figcaption')?.textContent || ''
+      }
     }
   },
 
@@ -39,6 +78,7 @@ export const ImageBlock = Node.create({
     const attrs = {
       'data-type': 'image-block',
       'data-media-id': HTMLAttributes.mediaId,
+      'data-url': HTMLAttributes.url,
       'data-thumbnail-url': HTMLAttributes.thumbnailUrl,
       'data-preview-url': HTMLAttributes.previewUrl,
       'data-placeholder': HTMLAttributes.placeholder,
@@ -51,7 +91,7 @@ export const ImageBlock = Node.create({
     return [
       'figure',
       mergeAttributes(attrs),
-      ['img', { src: HTMLAttributes.src, alt: HTMLAttributes.alt || '' }],
+      ['img', { src: HTMLAttributes.previewUrl || HTMLAttributes.thumbnailUrl || HTMLAttributes.url, alt: HTMLAttributes.alt || '' }],
       HTMLAttributes.caption ? ['figcaption', {}, HTMLAttributes.caption] : ['figcaption', {}, '']
     ]
   },
@@ -59,7 +99,7 @@ export const ImageBlock = Node.create({
   addCommands() {
     return ({
       setImageBlock:
-        (attrs: Partial<ImageBlockAttrs> & { src: string }) =>
+        (attrs: Partial<ImageBlockAttrs> & { url: string }) =>
         ({ commands }: any) =>
           commands.insertContent({
             type: this.name,

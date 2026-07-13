@@ -4,7 +4,7 @@ export type ImageBlockAlign = 'left' | 'center' | 'right' | 'full'
 
 export interface ImageBlockAttrs {
   mediaId: number | null
-  src: string
+  url: string
   thumbnailUrl: string | null
   previewUrl: string | null
   placeholder: string | null
@@ -19,7 +19,7 @@ export interface ImageBlockAttrs {
 export function mediaToImageBlockAttrs(media: MediaItem): ImageBlockAttrs {
   return {
     mediaId: media.id,
-    src: media.url,
+    url: media.url,
     thumbnailUrl: media.thumbnailUrl,
     previewUrl: media.previewUrl,
     placeholder: media.placeholder,

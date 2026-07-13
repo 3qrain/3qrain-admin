@@ -74,8 +74,8 @@ onBeforeUnmount(stopResize)
         contenteditable="false"
       >
         <img
-          v-if="attrs.src"
-          :src="attrs.previewUrl || attrs.thumbnailUrl || attrs.src"
+          v-if="attrs.url"
+          :src="attrs.previewUrl || attrs.thumbnailUrl || attrs.url"
           :alt="attrs.alt"
           draggable="false"
           @load="loaded = true"
