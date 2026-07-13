@@ -59,7 +59,7 @@ async function load(append = false) {
     if (query.value.categoryId) params.categoryId = query.value.categoryId
     if (showDeleted.value) params.deleted = true
 
-    const result = await withMinDuration(() => getPosts(params, controller?.signal))
+    const result = await withMinDuration(() => getPosts(params, controller?.signal), 0)
 
     posts.value = append ? [...posts.value, ...result.list] : result.list
     total.value = result.total

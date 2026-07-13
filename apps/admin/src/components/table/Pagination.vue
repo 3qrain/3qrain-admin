@@ -2,7 +2,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { ChevronLeft, ChevronRight, LoaderCircle } from '@lucide/vue'
-import Loading from '~/components/base/Loading.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -93,7 +92,10 @@ watch(
   <div class="pagination">
     <!-- 按钮模式 -->
     <template v-if="mode === 'button'">
-      <Loading v-if="loading" />
+      <!-- <Loading v-if="loading" /> -->
+      <span v-if="loading" class="loader">
+        <LoaderCircle class="loader-loading" />
+      </span>
       <nav v-if="totalPages > 1 && loading === false" class="pager">
         <button class="pg-btn" :disabled="currentPage <= 1" @click="goTo(currentPage - 1)">
           <ChevronLeft style="width: 1.125rem; height: 1.125rem" />
@@ -113,7 +115,7 @@ watch(
     <!-- 滚动模式 -->
     <div v-else-if="mode === 'scroll'" ref="sentinel" class="scroll-sentinel">
       <span v-if="loading" class="loader">
-        <LoaderCircle class="scroll-loading" />
+        <LoaderCircle class="loader-loading" />
       </span>
       <span v-else-if="currentPage >= totalPages && totalPages > 1" class="ended">没有更多了</span>
     </div>
@@ -123,6 +125,8 @@ watch(
 <style scoped lang="less">
 .pagination {
   // min-height: 2rem;
+  display: flex;
+  justify-content: center;
 }
 /* ---- 按钮分页 ---- */
 .pager {
@@ -194,27 +198,37 @@ watch(
   user-select: none;
 }
 
+.loader {
+  margin: 0 auto;
+  padding: 2rem 0;
+  .loader-loading {
+    opacity: .1;
+    animation: rotate 1s linear infinite, fadeIn .3s ease-in-out;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: .1;
+    }
+  }
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
 /* ---- 滚动加载 ---- */
 .scroll-sentinel {
   display: flex;
   justify-content: center;
   font-size: 0.8125rem;
   color: var(--color-base-content);
-  .loader {
-    padding: 2rem 0;
-    .scroll-loading {
-      opacity: 0.1;
-      animation: rotate 1s linear infinite;
-    }
-    @keyframes rotate {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
-    }
-  }
 
   .ended {
     padding: 2rem 0;

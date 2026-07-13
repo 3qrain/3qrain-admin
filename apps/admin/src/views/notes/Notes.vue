@@ -60,7 +60,7 @@ async function load(append = false) {
     } else {
       params.page = page.value
     }
-    const result = await withMinDuration(() => getNotes(params))
+    const result = await withMinDuration(() => getNotes(params), 0)
     notes.value = append ? [...notes.value, ...result.list] : result.list
     total.value = result.total
     totalPages.value = Math.ceil(result.total / result.pageSize)
