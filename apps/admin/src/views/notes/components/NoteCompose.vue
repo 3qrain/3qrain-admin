@@ -40,6 +40,8 @@ const publishing = ref(false)
 const fileInput = ref<HTMLInputElement>()
 const textareaRef = ref<HTMLTextAreaElement>()
 const showMediaPicker = ref(false)
+const draggingIndex = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
 
 const appStore = useAppStore()
 const mediaResults = new Map<string, any>()
@@ -196,6 +198,41 @@ function removeImage(index: number) {
   images.value.splice(index, 1)
 }
 
+function startImageDrag(index: number, e: DragEvent) {
+  draggingIndex.value = index
+  dragOverIndex.value = index
+  e.dataTransfer?.setData('text/plain', String(index))
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+}
+
+function enterImageDrag(index: number) {
+  if (draggingIndex.value === null) return
+  dragOverIndex.value = index
+}
+
+function moveImageDrag(e: DragEvent) {
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+}
+
+function dropImage(index: number, e: DragEvent) {
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+  if (draggingIndex.value === null || draggingIndex.value === index) {
+    endImageDrag()
+    return
+  }
+
+  const nextImages = [...images.value]
+  const [moved] = nextImages.splice(draggingIndex.value, 1)
+  nextImages.splice(index, 0, moved)
+  images.value = nextImages
+  endImageDrag()
+}
+
+function endImageDrag() {
+  draggingIndex.value = null
+  dragOverIndex.value = null
+}
+
 function toggleTag(id: number) {
   const idx = selectedTagIds.value.indexOf(id)
   if (idx >= 0) selectedTagIds.value.splice(idx, 1)
@@ -285,6 +322,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  endImageDrag()
   uppy?.destroy()
   images.value.forEach(img => {
     if (img.preview.startsWith('blob:')) URL.revokeObjectURL(img.preview)
@@ -297,7 +335,22 @@ onUnmounted(() => {
     <textarea ref="textareaRef" v-model="content" class="compose-input" placeholder="说点什么..." @input="autoResize" />
 
     <div v-if="images.length > 0" class="compose-images">
-      <div v-for="(img, i) in images" :key="i" :class="['compose-img', img.status === 'error' && 'errored']">
+      <div
+        v-for="(img, i) in images"
+        :key="img.mediaId || img.uppyFileId || img.preview"
+        :class="[
+          'compose-img',
+          img.status === 'error' && 'errored',
+          draggingIndex === i && 'dragging',
+          dragOverIndex === i && draggingIndex !== i && 'drag-over'
+        ]"
+        draggable="true"
+        @dragstart="startImageDrag(i, $event)"
+        @dragenter.prevent="enterImageDrag(i)"
+        @dragover.prevent="moveImageDrag"
+        @drop.prevent="dropImage(i, $event)"
+        @dragend="endImageDrag"
+      >
         <img :src="img.preview" alt="" />
         <div v-if="img.status === 'uploading'" class="img-overlay">
           <div class="img-progress" :style="{ width: `${img.progress}%` }" />
@@ -393,11 +446,27 @@ onUnmounted(() => {
   height: 5rem;
   border-radius: 0.375rem;
   overflow: hidden;
+  cursor: move;
+  user-select: none;
+  outline: 0.125rem solid transparent;
+  outline-offset: 0.125rem;
+  transition: opacity 0.12s, scale 0.12s, outline-color 0.12s;
+
+  &.dragging {
+    opacity: 0.45;
+    scale: 0.96;
+  }
+
+  &.drag-over {
+    outline-color: var(--color-primary);
+    scale: 1.03;
+  }
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    pointer-events: none;
   }
 }
 
