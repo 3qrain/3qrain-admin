@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## 项目概况
 
@@ -195,7 +195,7 @@ VITE_API_BASE_URL=/api
 - **静态文件**：`/storage/*` → `data/uploads/`，serveStatic rewrite
 - **上传 (Uppy + TUS)**：前端 `@uppy/core` + `@uppy/dashboard` + `@uppy/tus`，后端 `@tus/server` + `@tus/file-store`，TUS 协议切片续传，详见下方上传章节
 - **媒体库**：`admin/media/` 模块化，列表/删除/健康检查，onUploadFinish 自动写入 media 表+生成缩略图
-- **example 目录**：参考项目组件库，已 gitignore，CLAUDE EXAMPLE.md 有总结
+- **example 目录**：参考项目组件库，已 gitignore，Codex EXAMPLE.md 有总结
 - **Tiptap 编辑器**：`views/posts/components/editor/tiptap/`，含 BubbleMenu + FloatingMenu 组件化，content/contentHtml/contentText 三存，getContent() 仅在保存时调用
 - **base 组件**：`components/base/` — Button(5 variant/loading/active/icon)/Input/Select/ToggleGroup
 - **边框变量**：`--color-border: color-mix(in oklab, var(--color-base-content) 12%, transparent)`，全局 border 统一用此变量
