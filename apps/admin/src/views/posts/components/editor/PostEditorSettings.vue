@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { Image, Trash2 } from '@lucide/vue'
 import Input from '~/components/base/Input.vue'
 import Select from '~/components/base/Select.vue'
+import Button from '~/components/base/Button.vue'
+import MediaPickerModal from '~/components/media/MediaPickerModal.vue'
 import type { Category, Tag } from '~/api/tags/types'
+import type { MediaItem } from '~/api/media'
 
 const slug = defineModel<string>('slug', { default: '' })
 const summary = defineModel<string>('summary', { default: '' })
@@ -17,10 +21,21 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ (e: "change"): void }>();
+const showCoverPicker = ref(false)
 
 const categoryOptions = computed(() =>
   props.categories.map(c => ({ label: c.name, value: c.id }))
 );
+
+function selectCover(item: MediaItem) {
+  cover.value = item.previewUrl || item.thumbnailUrl || item.url
+  emit('change')
+}
+
+function clearCover() {
+  cover.value = ''
+  emit('change')
+}
 </script>
 
 <template>
@@ -44,7 +59,20 @@ const categoryOptions = computed(() =>
 
       <label class="field">
         <span>封面</span>
-        <Input v-model="cover" placeholder="https://..." @input="emit('change')" />
+        <div class="cover-box" :class="{ empty: !cover }">
+          <img v-if="cover" :src="cover" alt="文章封面" />
+          <div v-else class="cover-empty">
+            <Image :size="22" />
+            <small>未设置封面</small>
+          </div>
+        </div>
+        <div class="cover-actions">
+          <Button size="sm" variant="secondary" @click="showCoverPicker = true">选择图片</Button>
+          <Button v-if="cover" size="sm" variant="ghost" icon @click="clearCover">
+            <Trash2 :size="14" />
+          </Button>
+        </div>
+        <Input v-model="cover" placeholder="也可以粘贴图片 URL" @input="emit('change')" />
       </label>
 
       <label class="field row">
@@ -65,6 +93,13 @@ const categoryOptions = computed(() =>
         </div>
       </div>
     </div>
+    <MediaPickerModal
+      v-model:open="showCoverPicker"
+      type="image"
+      title="选择封面"
+      description="选择一张图片作为文章封面。"
+      @select="selectCover"
+    />
   </div>
 </template>
 
@@ -133,6 +168,48 @@ const categoryOptions = computed(() =>
 }
 
 .area { resize: vertical; }
+
+.cover-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: .0625rem solid var(--color-border);
+  border-radius: .5rem;
+  background: var(--color-base-200);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &.empty {
+    border-style: dashed;
+  }
+}
+
+.cover-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .375rem;
+  color: var(--color-base-content);
+  opacity: 0.35;
+
+  small {
+    font-size: .75rem;
+  }
+}
+
+.cover-actions {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+}
 
 .chip-list { display: flex; flex-wrap: wrap; gap: .375rem; }
 
