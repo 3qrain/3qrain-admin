@@ -10,6 +10,7 @@ import { ImageBlock, mediaToImageBlockAttrs } from './nodes/image-block'
 import MediaPickerModal from '~/components/media/MediaPickerModal.vue'
 import type { MediaItem } from '~/api/media'
 import { CodeBlock } from './nodes/code-block'
+import { TextIndent } from './extensions/text-indent'
 
 const props = defineProps<{ initialContent?: object }>()
 const emit = defineEmits<{ (e: 'dirty'): void }>()
@@ -23,6 +24,7 @@ const editor = useEditor({
       dropcursor: { color: 'var(--color-primary)' }
     }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    TextIndent,
     ImageBlock,
     CodeBlock,
   ],

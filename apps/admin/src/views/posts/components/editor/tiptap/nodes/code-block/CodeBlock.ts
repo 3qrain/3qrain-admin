@@ -54,7 +54,8 @@ export const CodeBlock = Node.create({
 
   addKeyboardShortcuts() {
     return {
-      'Mod-Alt-c': () => this.editor.commands.toggleCodeBlock()
+      'Mod-Alt-c': () => this.editor.commands.toggleCodeBlock(),
+      Tab: () => this.editor.isActive(this.name) ? this.editor.commands.insertContent('  ') : false
     }
   },
 
