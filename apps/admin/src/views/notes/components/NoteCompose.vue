@@ -3,13 +3,15 @@ import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { toast } from 'vue-sonner'
 import Uppy from '@uppy/core'
 import Tus from '@uppy/tus'
-import { ImagePlus, X, Eye, EyeOff } from '@lucide/vue'
+import { ImagePlus, Images, X, Eye, EyeOff } from '@lucide/vue'
 import Button from '~/components/base/Button.vue'
+import MediaPickerModal from '~/components/media/MediaPickerModal.vue'
 import { useAppStore } from '~/stores/app'
 import { TUS_CHUNK_SIZE } from '~/stores/uppy'
 import { createNote, updateNote } from '~/api/notes'
 import type { Note } from '~/api/notes/types'
 import type { Tag } from '~/api/tags/types'
+import type { MediaItem } from '~/api/media'
 import { withMinDuration } from '~/utils/async'
 
 interface ComposeImage {
@@ -37,6 +39,7 @@ const isPublished = ref(true)
 const publishing = ref(false)
 const fileInput = ref<HTMLInputElement>()
 const textareaRef = ref<HTMLTextAreaElement>()
+const showMediaPicker = ref(false)
 
 const appStore = useAppStore()
 const mediaResults = new Map<string, any>()
@@ -141,6 +144,21 @@ function initFromNote() {
 
 function selectImages() {
   fileInput.value?.click()
+}
+
+function addMediaImages(items: MediaItem[]) {
+  const existingIds = new Set(images.value.filter(img => img.mediaId).map(img => img.mediaId))
+  const nextImages = items
+    .filter(item => !existingIds.has(item.id))
+    .map(item => ({
+      mediaId: item.id,
+      preview: item.thumbnailUrl || item.previewUrl || item.url,
+      progress: 100,
+      status: 'existing' as const
+    }))
+
+  if (!nextImages.length) return
+  images.value.push(...nextImages)
 }
 
 const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif']
@@ -298,6 +316,9 @@ onUnmounted(() => {
         <button class="tool-btn" title="添加图片" @click="selectImages">
           <ImagePlus style="width: 1.125rem; height: 1.125rem" />
         </button>
+        <button class="tool-btn" title="从媒体库选择" @click="showMediaPicker = true">
+          <Images style="width: 1.125rem; height: 1.125rem" />
+        </button>
         <button
           :class="['tool-btn', !isPublished && 'off']"
           :title="isPublished ? '公开' : '隐藏'"
@@ -326,6 +347,15 @@ onUnmounted(() => {
         {{ tag.name }}
       </button>
     </div>
+
+    <MediaPickerModal
+      v-model:open="showMediaPicker"
+      type="image"
+      multiple
+      title="选择说说图片"
+      description="从媒体库选择图片添加到这条说说。"
+      @confirm="addMediaImages"
+    />
   </div>
 </template>
 
