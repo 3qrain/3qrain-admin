@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Menu, CloudUpload, Bell } from '@lucide/vue'
+import { Menu, Bell } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import Drawer from '~/components/base/Drawer.vue'
 import UppyUploader from '~/components/uppy-uploader/UppyUploader.vue'
+import UploadIndicator from '~/components/uppy-uploader/UploadIndicator.vue'
 import { apiClient } from '~/lib/axios'
 import { useGlobalStore, type DrawerPanel } from '~/stores/global.ts'
 import { useAppStore } from '~/stores/app'
@@ -97,15 +98,15 @@ onUnmounted(() => {
             <Menu style="width: 1.375rem; height: 1.375rem" />
           </button>
         </div>
+        <div class="header-center">
+          <UploadIndicator size="lg" @click="openPanel('upload')" />
+        </div>
         <div class="header-right">
           <button class="header-btn notify-btn" @click="router.push('/notifications')">
             <Bell style="width: 1.375rem; height: 1.375rem" />
             <span v-if="appStore.unreadCount > 0" class="notify-badge">
               {{ appStore.unreadCount > 99 ? '99+' : appStore.unreadCount }}
             </span>
-          </button>
-          <button class="header-btn" @click="openPanel('upload')">
-            <CloudUpload style="width: 1.375rem; height: 1.375rem" />
           </button>
         </div>
       </header>
@@ -152,6 +153,7 @@ onUnmounted(() => {
 }
 
 .header {
+  position: relative;
   padding: 0 0.5rem;
   height: 3.75rem;
   display: flex;
@@ -164,6 +166,15 @@ onUnmounted(() => {
     display: flex;
     justify-content: start;
     align-items: center;
+  }
+  .header-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
   }
   .header-right {
     display: flex;

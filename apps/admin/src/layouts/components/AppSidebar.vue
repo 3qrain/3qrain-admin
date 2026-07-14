@@ -1,9 +1,12 @@
 <script lang="ts" setup>
 import { menuRoutes } from '~/router/routes'
 import ThemeToggle from '~/components/theme/ThemeToggle.vue'
+import UploadIndicator from '~/components/uppy-uploader/UploadIndicator.vue'
 import { useAppStore } from '~/stores/app'
+import { useGlobalStore } from '~/stores/global'
 
 const appStore = useAppStore()
+const globalStore = useGlobalStore()
 
 defineProps<{
   mobile?: boolean
@@ -15,6 +18,10 @@ const emit = defineEmits<{
 
 function handleClick() {
   emit('close')
+}
+
+function openUpload() {
+  globalStore.drawerPanel = 'upload'
 }
 </script>
 
@@ -53,7 +60,10 @@ function handleClick() {
     </nav>
 
     <div class="sidebar-footer">
-      <ThemeToggle />
+      <div class="theme-slot">
+        <ThemeToggle />
+      </div>
+      <UploadIndicator size="sm" @click="openUpload" />
     </div>
   </div>
 </template>
@@ -159,8 +169,20 @@ function handleClick() {
 }
 
 .sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   flex-shrink: 0;
   padding: 1rem 0.75rem;
   border-top: 0.0625rem solid var(--color-border);
+}
+
+.theme-slot {
+  flex: 1;
+  min-width: 0;
+
+  :deep(.theme-toggle) {
+    width: 100%;
+  }
 }
 </style>

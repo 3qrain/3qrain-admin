@@ -8,6 +8,7 @@ import Tus from '@uppy/tus'
 import { expireTime_localstorage } from '@3qrain/shared'
 
 export const TUS_CHUNK_SIZE = 1024 * 1024 * 100  // Tus分块大小，100MB
+export type UploadStatus = 'idle' | 'uploading' | 'done' | 'error'
 
 export const useUppyStore = defineStore('uppy', () => {
   sweepLocalStorage()
@@ -17,20 +18,51 @@ export const useUppyStore = defineStore('uppy', () => {
     // 使用局域网 HTTP 地址访问时会报："Screen recorder access not supported"
     .use(ScreenCapture)
     .use(Tus, { endpoint: '/api/admin/upload/', removeFingerprintOnSuccess: true, chunkSize: TUS_CHUNK_SIZE })
-  const uploading = ref(false)
+  const uploadStatus = ref<UploadStatus>('idle')
+  const uploadProgress = ref(0)
+  let resetTimer: ReturnType<typeof setTimeout> | null = null
 
   function mountDashboard(target: string | HTMLElement, theme: 'light' | 'dark' | 'auto' = 'auto') {
     const existing = uppy.getPlugin('Dashboard')
     if (existing) uppy.removePlugin(existing)
     uppy.use(Dashboard, { inline: true, target, theme })
   }
-  
-  uppy.on('upload', () => {
-    uploading.value = true
-  })
-  uppy.on
 
-  return { uppy, mountDashboard }
+  function clearResetTimer() {
+    if (!resetTimer) return
+    clearTimeout(resetTimer)
+    resetTimer = null
+  }
+
+  function scheduleReset() {
+    clearResetTimer()
+    resetTimer = setTimeout(() => {
+      uploadStatus.value = 'idle'
+      uploadProgress.value = 0
+      resetTimer = null
+    }, 2200)
+  }
+
+  uppy.on('upload', () => {
+    clearResetTimer()
+    if (uploadStatus.value !== 'uploading') uploadProgress.value = 0
+    uploadStatus.value = 'uploading'
+  })
+  uppy.on('progress', progress => {
+    uploadProgress.value = Math.max(0, Math.min(100, Math.round(progress || 0)))
+    if (uploadStatus.value === 'idle') uploadStatus.value = 'uploading'
+  })
+  uppy.on('upload-error', () => {
+    uploadStatus.value = 'error'
+    scheduleReset()
+  })
+  uppy.on('complete', result => {
+    uploadProgress.value = 100
+    uploadStatus.value = result.failed?.length ? 'error' : 'done'
+    scheduleReset()
+  })
+
+  return { uppy, mountDashboard, uploadStatus, uploadProgress }
 })
 
 function sweepLocalStorage(): void {
