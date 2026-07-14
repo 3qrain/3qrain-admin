@@ -33,7 +33,7 @@ const languages = [
         </option>
       </select>
     </div>
-    <pre><NodeViewContent as="code" /></pre>
+    <pre><NodeViewContent as="code" :class="`language-${props.node.attrs.language || 'text'}`" :data-language="props.node.attrs.language || 'text'" /></pre>
   </NodeViewWrapper>
 </template>
 
@@ -81,17 +81,47 @@ select {
 
 pre {
   margin: 0;
-  padding: 1rem;
+  padding: 0;
   overflow-x: auto;
   background: transparent;
 }
 
 code {
   display: block;
-  min-height: 4rem;
+  padding: 1rem;
   font-family: "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
   font-size: 0.875rem;
   line-height: 1.7;
   white-space: pre;
+
+  :deep(.hljs-keyword),
+  :deep(.hljs-selector-tag),
+  :deep(.hljs-built_in) {
+    color: #c678dd;
+  }
+
+  :deep(.hljs-string),
+  :deep(.hljs-attr),
+  :deep(.hljs-symbol) {
+    color: #98c379;
+  }
+
+  :deep(.hljs-title),
+  :deep(.hljs-name),
+  :deep(.hljs-section) {
+    color: #61afef;
+  }
+
+  :deep(.hljs-number),
+  :deep(.hljs-literal),
+  :deep(.hljs-variable) {
+    color: #d19a66;
+  }
+
+  :deep(.hljs-comment),
+  :deep(.hljs-quote) {
+    color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+    font-style: italic;
+  }
 }
 </style>

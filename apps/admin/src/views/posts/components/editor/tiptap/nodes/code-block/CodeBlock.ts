@@ -1,62 +1,69 @@
-import { Node, VueNodeViewRenderer, mergeAttributes } from '@tiptap/vue-3'
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+import { VueNodeViewRenderer, mergeAttributes } from '@tiptap/vue-3'
+import { common, createLowlight } from 'lowlight'
 import CodeBlockView from './CodeBlockView.vue'
 
-export const CodeBlock = Node.create({
-  name: 'codeBlock',
+const lowlight = createLowlight(common)
 
-  group: 'block',
+lowlight.registerAlias({
+  xml: ['vue']
+})
 
-  content: 'text*',
+function parseLanguage(element: HTMLElement, prefix: string | null | undefined) {
+  const code = element.querySelector('code')
+  const dataLanguage = code?.getAttribute('data-language')
+  if (dataLanguage) return dataLanguage
 
-  marks: '',
+  if (!prefix) return null
 
-  code: true,
+  const classNames = [...(code?.classList || [])]
+  return classNames
+    .find(className => className.startsWith(prefix))
+    ?.replace(prefix, '') || null
+}
 
-  defining: true,
-
-  addAttributes() {
+export const CodeBlock = CodeBlockLowlight.extend({
+  addOptions() {
     return {
-      language: {
-        default: 'text',
-        parseHTML: element => element.querySelector('code')?.getAttribute('data-language') || 'text',
-        renderHTML: attributes => ({
-          'data-language': attributes.language || 'text',
-          class: attributes.language ? `language-${attributes.language}` : null
-        })
+      ...this.parent?.(),
+      lowlight,
+      languageClassPrefix: 'language-',
+      exitOnTripleEnter: true,
+      exitOnArrowDown: true,
+      defaultLanguage: 'text',
+      enableTabIndentation: true,
+      tabSize: 2,
+      HTMLAttributes: {
+        'data-type': 'code-block'
       }
     }
   },
 
-  parseHTML() {
-    return [{ tag: 'pre' }]
+  addAttributes() {
+    return {
+      language: {
+        default: this.options.defaultLanguage,
+        parseHTML: element => parseLanguage(element as HTMLElement, this.options.languageClassPrefix),
+        rendered: false
+      }
+    }
   },
 
   renderHTML({ node, HTMLAttributes }) {
+    const language = node.attrs.language || this.options.defaultLanguage || 'text'
+
     return [
       'pre',
-      mergeAttributes({ 'data-type': 'code-block' }),
-      ['code', mergeAttributes(HTMLAttributes, { 'data-language': node.attrs.language || 'text' }), 0]
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      [
+        'code',
+        {
+          class: language ? `${this.options.languageClassPrefix}${language}` : null,
+          'data-language': language
+        },
+        0
+      ]
     ]
-  },
-
-  addCommands() {
-    return ({
-      setCodeBlock:
-        (attrs?: { language?: string }) =>
-        ({ commands }: any) =>
-          commands.setNode(this.name, attrs),
-      toggleCodeBlock:
-        (attrs?: { language?: string }) =>
-        ({ editor, commands }: any) =>
-          editor.isActive(this.name) ? commands.setParagraph() : commands.setNode(this.name, attrs)
-    } as any)
-  },
-
-  addKeyboardShortcuts() {
-    return {
-      'Mod-Alt-c': () => this.editor.commands.toggleCodeBlock(),
-      Tab: () => this.editor.isActive(this.name) ? this.editor.commands.insertContent('  ') : false
-    }
   },
 
   addNodeView() {
