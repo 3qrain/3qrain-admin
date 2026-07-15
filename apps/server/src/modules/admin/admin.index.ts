@@ -11,6 +11,7 @@ import notesRouter from './notes/notes.index'
 import commentsRouter from './comments/comments.index'
 import notificationsRouter from './notifications/notifications.index'
 import friendLinksRouter from './friend-links/friend-links.index'
+import dashboardRouter from './dashboard/dashboard.index'
 import { tusHandler } from './upload/tus'
 import { upgradeWebSocket } from 'hono/bun'
 import { adminWsHandler } from '~/services/ws'
@@ -24,6 +25,7 @@ adminRouter.route("/", accountRouter);
 adminRouter.route("/", categoriesRouter);
 adminRouter.route("/", tagsRouter);
 adminRouter.route("/", postsRouter);
+adminRouter.route('/', dashboardRouter)
 
 adminRouter.route("/", mediaRouter);
 adminRouter.route("/", visitorsRouter);

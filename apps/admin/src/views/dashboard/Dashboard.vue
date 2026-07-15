@@ -1,57 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  ArrowRight,
-  Bell,
-  BookOpen,
-  Eye,
-  FileText,
-  Image,
-  Link2,
-  MessageCircle,
-  MessagesSquare,
-  PenLine,
-  RefreshCw,
-  Users
-} from '@lucide/vue'
+import { ArrowRight, Bell, Eye, FileText, Link2, MessageCircle, MessagesSquare, PenLine, RefreshCw } from '@lucide/vue'
 import Button from '~/components/base/Button.vue'
-import Badge from '~/components/base/Badge.vue'
 import Skeleton from '~/components/base/Skeleton.vue'
-import { getPosts } from '~/api/posts'
-import { getNotes } from '~/api/notes'
-import { getComments, type CommentQuery } from '~/api/comments'
-import { getMedia } from '~/api/media'
-import { getVisitors } from '~/api/visitors'
-import { getFriendLinkCounts } from '~/api/friend-links'
-import { getUnreadCount } from '~/api/notifications'
+import { getDashboard } from '~/api/dashboard'
 import { useAppStore } from '~/stores/app'
-import type { Post } from '~/api/posts/types'
-import type { Note } from '~/api/notes/types'
-import type { Comment } from '~/api/comments/types'
+import type { DashboardData, DashboardRecentComment } from '~/api/dashboard/types'
 
 const router = useRouter()
 const appStore = useAppStore()
 
 const loading = ref(true)
-const partialError = ref(false)
-const recentPosts = ref<Post[]>([])
-const recentNotes = ref<Note[]>([])
-const recentComments = ref<Comment[]>([])
-
-const totals = reactive({
-  posts: 0,
-  publishedPosts: 0,
-  draftPosts: 0,
-  notes: 0,
-  comments: 0,
-  pendingComments: 0,
-  media: 0,
-  visitors: 0,
-  approvedLinks: 0,
-  pendingLinks: 0,
-  unreadNotifications: 0
-})
+const error = ref(false)
+const dashboard = ref<DashboardData | null>(null)
 
 const adminName = computed(() => appStore.adminUser?.username || '站长')
 
@@ -72,153 +34,99 @@ const today = computed(() =>
   }).format(new Date())
 )
 
-const archivedPosts = computed(() =>
-  Math.max(0, totals.posts - totals.publishedPosts - totals.draftPosts)
-)
+const overview = computed(() => dashboard.value?.overview)
 
-const stats = computed(() => [
+const pendingTotal = computed(() => {
+  if (!overview.value) return 0
+  return overview.value.comments.pending + overview.value.friendLinks.pending + overview.value.unreadNotifications
+})
+
+const headerSummary = computed(() => {
+  if (loading.value) return '正在整理站点状态'
+  if (error.value) return '仪表盘数据暂时不可用'
+  if (pendingTotal.value > 0) return `有 ${pendingTotal.value} 项内容等待处理`
+  return `站点运行正常，当前 ${overview.value?.onlineVisitors || 0} 人在线`
+})
+
+const keyMetrics = computed(() => [
   {
-    label: '文章',
-    value: totals.posts,
-    detail: `${totals.publishedPosts} 已发布 · ${totals.draftPosts} 草稿`,
-    icon: BookOpen,
-    tone: 'primary',
-    path: '/posts'
+    label: '当前在线',
+    value: overview.value?.onlineVisitors || 0,
+    suffix: '人',
+    live: true,
+    tone: 'success'
   },
   {
-    label: '说说',
-    value: totals.notes,
-    detail: '随手记录的短内容',
-    icon: MessagesSquare,
-    tone: 'secondary',
-    path: '/notes'
+    label: '内容',
+    value: (overview.value?.posts.total || 0) + (overview.value?.notes.total || 0),
+    suffix: '条',
+    tone: 'primary'
   },
   {
     label: '评论',
-    value: totals.comments,
-    detail: totals.pendingComments > 0 ? `${totals.pendingComments} 条待审核` : '暂无待审核',
-    icon: MessageCircle,
-    tone: totals.pendingComments > 0 ? 'warning' : 'success',
-    path: '/comments'
-  },
-  {
-    label: '媒体',
-    value: totals.media,
-    detail: '已入库的文件',
-    icon: Image,
-    tone: 'info',
-    path: '/media'
-  },
-  {
-    label: '访客账号',
-    value: totals.visitors,
-    detail: '已登录访客，非 UV',
-    icon: Users,
-    tone: 'success',
-    path: '/visitors'
-  },
-  {
-    label: '友链',
-    value: totals.approvedLinks,
-    detail: totals.pendingLinks > 0 ? `${totals.pendingLinks} 个申请待处理` : '暂无待处理申请',
-    icon: Link2,
-    tone: totals.pendingLinks > 0 ? 'warning' : 'accent',
-    path: '/friend-links'
+    value: overview.value?.comments.total || 0,
+    suffix: '条',
+    tone: 'secondary'
   }
 ])
 
-const attentionItems = computed(() => [
+const focusItems = computed(() => [
   {
     label: '待审核评论',
-    count: totals.pendingComments,
+    count: overview.value?.comments.pending || 0,
     icon: MessageCircle,
-    path: '/comments'
+    route: '/comments'
   },
   {
     label: '友链申请',
-    count: totals.pendingLinks,
+    count: overview.value?.friendLinks.pending || 0,
     icon: Link2,
-    path: '/friend-links'
+    route: '/friend-links'
   },
   {
     label: '未读通知',
-    count: totals.unreadNotifications,
+    count: overview.value?.unreadNotifications || 0,
     icon: Bell,
-    path: '/notifications'
+    route: '/notifications'
   },
   {
     label: '文章草稿',
-    count: totals.draftPosts,
+    count: overview.value?.posts.draft || 0,
     icon: FileText,
-    path: '/posts'
+    route: '/posts'
   }
 ])
 
-function resultValue<T>(result: PromiseSettledResult<T>): T | null {
-  return result.status === 'fulfilled' ? result.value : null
+const contentSummary = computed(() => [
+  { label: '已发布文章', value: overview.value?.posts.published || 0 },
+  { label: '说说', value: overview.value?.notes.total || 0 },
+  { label: '媒体', value: overview.value?.media || 0 },
+  { label: '访客账号', value: overview.value?.visitors || 0 }
+])
+
+const demoTrend = computed(() => {
+  const values = [46, 64, 38, 72, 57, 88, 76]
+  return values.map((value, index) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (6 - index))
+    return {
+      value,
+      label: new Intl.DateTimeFormat('zh-CN', { weekday: 'short' }).format(date)
+    }
+  })
+})
+
+function commentAction(comment: DashboardRecentComment) {
+  return comment.parentId ? '回复了评论' : '发表了评论'
 }
 
-async function loadDashboard() {
-  loading.value = true
-  partialError.value = false
-
-  const commentQuery: CommentQuery = { page: 1, pageSize: 4, parentOnly: true }
-  const results = await Promise.allSettled([
-    getPosts({ page: 1, pageSize: 5 }),
-    getPosts({ page: 1, pageSize: 1, status: 'published' }),
-    getPosts({ page: 1, pageSize: 1, status: 'draft' }),
-    getNotes({ page: 1, pageSize: 4 }),
-    getComments(commentQuery),
-    getComments({ page: 1, pageSize: 1, parentOnly: true, status: 'pending' }),
-    getMedia({ page: 1, pageSize: 1 }),
-    getVisitors(),
-    getFriendLinkCounts(),
-    getUnreadCount()
-  ])
-
-  const posts = resultValue(results[0])
-  const publishedPosts = resultValue(results[1])
-  const draftPosts = resultValue(results[2])
-  const notes = resultValue(results[3])
-  const comments = resultValue(results[4])
-  const pendingComments = resultValue(results[5])
-  const media = resultValue(results[6])
-  const visitors = resultValue(results[7])
-  const friendLinks = resultValue(results[8])
-  const unreadCount = resultValue(results[9])
-
-  if (posts) {
-    recentPosts.value = posts.list
-    totals.posts = posts.total
-  }
-  if (publishedPosts) totals.publishedPosts = publishedPosts.total
-  if (draftPosts) totals.draftPosts = draftPosts.total
-  if (notes) {
-    recentNotes.value = notes.list
-    totals.notes = notes.total
-  }
-  if (comments) {
-    recentComments.value = comments.list
-    totals.comments = comments.total
-  }
-  if (pendingComments) totals.pendingComments = pendingComments.total
-  if (media) totals.media = media.total
-  if (visitors) totals.visitors = visitors.filter(visitor => visitor.role === 'visitor').length
-  if (friendLinks) {
-    totals.approvedLinks = friendLinks.approved
-    totals.pendingLinks = friendLinks.pending
-    appStore.pendingFriendLinkCount = friendLinks.pending
-  }
-  if (unreadCount !== null) {
-    totals.unreadNotifications = unreadCount
-    appStore.unreadCount = unreadCount
-  }
-
-  partialError.value = results.some(result => result.status === 'rejected')
-  loading.value = false
+function commentTarget(comment: DashboardRecentComment) {
+  if (comment.targetType === 'post') return '文章'
+  if (comment.targetType === 'note') return '说说'
+  return comment.targetType
 }
 
-function relativeTime(value: string | number) {
+function relativeTime(value: string) {
   const timestamp = new Date(value).getTime()
   const diff = Date.now() - timestamp
   if (!Number.isFinite(timestamp)) return ''
@@ -229,21 +137,29 @@ function relativeTime(value: string | number) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric' }).format(new Date(timestamp))
 }
 
-function postStatus(post: Post) {
-  if (post.status === 'published') return { label: '已发布', variant: 'success' as const }
-  if (post.status === 'archived') return { label: '已归档', variant: 'neutral' as const }
-  return { label: '草稿', variant: 'warning' as const }
-}
-
-function commentTarget(comment: Comment) {
-  return comment.targetType === 'post' ? '文章' : comment.targetType === 'note' ? '说说' : comment.targetType
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('zh-CN').format(value)
 }
 
 function openWeb() {
   if (appStore.webUrl) window.open(appStore.webUrl, '_blank', 'noopener,noreferrer')
 }
 
-onMounted(loadDashboard)
+async function load() {
+  loading.value = true
+  error.value = false
+  try {
+    dashboard.value = await getDashboard()
+    appStore.unreadCount = dashboard.value.overview.unreadNotifications
+    appStore.pendingFriendLinkCount = dashboard.value.overview.friendLinks.pending
+  } catch {
+    error.value = true
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
 </script>
 
 <template>
@@ -252,7 +168,7 @@ onMounted(loadDashboard)
       <div class="welcome">
         <span class="date">{{ today }}</span>
         <h1>{{ greeting }}，{{ adminName }}</h1>
-        <p>今天也继续记录。</p>
+        <p>{{ headerSummary }}</p>
       </div>
       <div class="head-actions">
         <Button v-if="appStore.webUrl" variant="ghost" @click="openWeb">
@@ -270,218 +186,203 @@ onMounted(loadDashboard)
       </div>
     </header>
 
-    <div v-if="partialError" class="load-notice">
-      <span>部分数据暂时没有加载出来</span>
-      <button type="button" @click="loadDashboard">
-        <RefreshCw />
-        重新加载
-      </button>
+    <div v-if="error" class="error-state">
+      <div>
+        <strong>仪表盘暂时没有加载出来</strong>
+        <span>其他管理功能不受影响</span>
+      </div>
+      <Button variant="secondary" size="sm" @click="load">
+        <RefreshCw class="button-icon" />
+        重试
+      </Button>
     </div>
 
-    <section class="stats-grid" aria-label="内容概览">
-      <template v-if="loading">
-        <Skeleton v-for="index in 6" :key="index" class="stat-card stat-skeleton">
-          <span class="skeleton-icon" />
-          <span class="skeleton-line short" />
-          <span class="skeleton-line" />
-        </Skeleton>
-      </template>
-      <button
-        v-for="stat in stats"
-        v-else
-        :key="stat.label"
-        type="button"
-        class="stat-card"
-        :class="`tone-${stat.tone}`"
-        @click="router.push(stat.path)"
-      >
-        <span class="stat-icon"><component :is="stat.icon" /></span>
-        <span class="stat-content">
-          <span class="stat-label">{{ stat.label }}</span>
-          <strong>{{ stat.value }}</strong>
-          <small>{{ stat.detail }}</small>
-        </span>
-        <ArrowRight class="stat-arrow" />
-      </button>
-    </section>
-
-    <div class="dashboard-grid">
-      <div class="main-column">
-        <section class="panel recent-posts">
-          <div class="panel-head">
-            <div>
-              <h2>最近文章</h2>
-              <span v-if="!loading">{{ totals.publishedPosts }} 篇正在前台展示<span v-if="archivedPosts">，{{ archivedPosts }} 篇已归档</span></span>
-            </div>
-            <button class="text-action" type="button" @click="router.push('/posts')">
-              全部文章
-              <ArrowRight />
-            </button>
+    <template v-else>
+      <div class="insight-grid">
+        <section class="signal-panel reveal reveal-1">
+          <div class="signal-primary">
+            <span class="signal-label"><Eye /> 累计文章阅读</span>
+            <Skeleton v-if="loading" class="metric-skeleton large" />
+            <strong v-else>{{ formatNumber(overview?.totalViews || 0) }}</strong>
+            <small>{{ overview?.posts.published || 0 }} 篇文章正在前台展示</small>
           </div>
 
-          <div v-if="loading" class="post-list loading-list">
-            <Skeleton v-for="index in 4" :key="index" class="loading-row">
-              <span class="skeleton-line row-title" />
-              <span class="skeleton-line row-meta" />
-            </Skeleton>
-          </div>
-          <div v-else-if="recentPosts.length" class="post-list">
-            <button
-              v-for="post in recentPosts"
-              :key="post.id"
-              type="button"
-              class="post-row"
-              @click="router.push(`/posts/${post.id}`)"
+          <div class="signal-metrics">
+            <div
+              v-for="metric in keyMetrics"
+              :key="metric.label"
+              class="signal-metric"
+              :class="`metric-${metric.tone}`"
             >
-              <div class="post-main">
-                <div class="post-title-line">
-                  <h3>{{ post.title || '新文章' }}</h3>
-                  <Badge :variant="postStatus(post).variant">{{ postStatus(post).label }}</Badge>
-                </div>
-                <p v-if="post.summary">{{ post.summary }}</p>
-                <div class="post-meta">
-                  <span v-if="post.category">{{ post.category.name }}</span>
-                  <span><Eye />{{ post.viewCount }}</span>
-                  <span>{{ relativeTime(post.updatedAt || post.createdAt) }}</span>
-                </div>
-              </div>
-              <ArrowRight class="row-arrow" />
-            </button>
-          </div>
-          <div v-else class="empty-state">
-            <BookOpen />
-            <span>还没有文章</span>
-            <Button size="sm" @click="router.push('/posts/new')">写第一篇</Button>
+              <span>
+                <i v-if="metric.live" class="live-dot" />
+                {{ metric.label }}
+              </span>
+              <Skeleton v-if="loading" class="metric-skeleton" />
+              <strong v-else
+                >{{ metric.value }}<small>{{ metric.suffix }}</small></strong
+              >
+            </div>
           </div>
         </section>
 
-        <section class="panel recent-comments">
-          <div class="panel-head">
+        <section class="trend-panel reveal reveal-2">
+          <div class="section-head">
             <div>
-              <h2>最近评论</h2>
-              <span>来自文章和说说的留言</span>
+              <h2>近 7 天访问</h2>
+              <span>统计模块接入后显示真实数据</span>
             </div>
-            <button class="text-action" type="button" @click="router.push('/comments')">
-              评论管理
+            <span class="demo-badge">示意</span>
+          </div>
+
+          <div class="trend-chart" aria-label="近七天访问趋势示意图">
+            <div v-for="(item, index) in demoTrend" :key="item.label" class="trend-column">
+              <span class="trend-track">
+                <i
+                  :class="{ current: index === demoTrend.length - 1 }"
+                  :style="{ '--bar-height': `${item.value}%`, '--bar-delay': `${index * 45}ms` }"
+                />
+              </span>
+              <small>{{ item.label }}</small>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="workspace-grid">
+        <section class="comments-panel panel reveal reveal-3">
+          <div class="section-head bordered">
+            <div>
+              <h2>最新评论</h2>
+              <span>包含评论和回复</span>
+            </div>
+            <button type="button" class="section-action" @click="router.push('/comments')">
+              全部评论
               <ArrowRight />
             </button>
           </div>
 
-          <div v-if="loading" class="comment-list loading-list">
-            <Skeleton v-for="index in 3" :key="index" class="loading-row comment-loading">
+          <div v-if="loading" class="comment-list">
+            <Skeleton v-for="index in 5" :key="index" class="comment-skeleton">
               <span class="skeleton-avatar" />
-              <span class="skeleton-line row-title" />
-              <span class="skeleton-line row-meta" />
+              <span class="skeleton-line wide" />
+              <span class="skeleton-line short" />
             </Skeleton>
           </div>
-          <div v-else-if="recentComments.length" class="comment-list">
+          <div v-else-if="dashboard?.recentComments.length" class="comment-list">
             <button
-              v-for="comment in recentComments"
+              v-for="comment in dashboard.recentComments"
               :key="comment.id"
               type="button"
               class="comment-row"
               @click="router.push('/comments')"
             >
-              <span class="avatar">
+              <span class="comment-avatar">
                 <img v-if="comment.user.avatarUrl" :src="comment.user.avatarUrl" :alt="comment.user.username" />
-                <span v-else>{{ comment.user.username?.slice(0, 1) || '?' }}</span>
+                <span v-else>{{ comment.user.username.slice(0, 1) || '?' }}</span>
               </span>
-              <span class="comment-body">
-                <span class="comment-line">
+              <span class="comment-copy">
+                <span class="comment-title">
                   <strong>{{ comment.user.username || '访客' }}</strong>
-                  <Badge v-if="comment.status === 'pending'" variant="warning">待审核</Badge>
-                  <small>{{ relativeTime(comment.createdAt) }}</small>
+                  <span>{{ commentAction(comment) }}</span>
+                  <em v-if="comment.status === 'pending'">待审核</em>
                 </span>
                 <span class="comment-content">{{ comment.content }}</span>
-                <small>评论于{{ commentTarget(comment) }}</small>
+                <span class="comment-meta">来自{{ commentTarget(comment) }}</span>
               </span>
+              <time>{{ relativeTime(comment.createdAt) }}</time>
             </button>
           </div>
-          <div v-else class="empty-state compact">
-            <MessageCircle />
-            <span>最近还没有评论</span>
+          <div v-else class="empty-state">
+            <span class="empty-icon"><MessageCircle /></span>
+            <span>还没有评论</span>
           </div>
         </section>
-      </div>
 
-      <aside class="side-column">
-        <section class="panel attention-panel">
-          <div class="panel-head">
-            <div>
-              <h2>待处理</h2>
-              <span>需要你看一眼的内容</span>
+        <aside class="side-column">
+          <section class="focus-panel panel reveal reveal-4">
+            <div class="section-head bordered">
+              <div>
+                <h2>需要关注</h2>
+                <span>{{ pendingTotal ? `${pendingTotal} 项等待处理` : '目前没有待处理事项' }}</span>
+              </div>
             </div>
-          </div>
-          <div class="attention-list">
-            <template v-if="loading">
-              <Skeleton v-for="index in 4" :key="index" class="attention-row loading-attention">
-                <span class="skeleton-icon small" />
-                <span class="skeleton-line" />
+
+            <div class="focus-list">
+              <template v-if="loading">
+                <Skeleton v-for="index in 4" :key="index" class="focus-skeleton">
+                  <span class="skeleton-square" />
+                  <span class="skeleton-line wide" />
+                </Skeleton>
+              </template>
+              <button
+                v-for="item in focusItems"
+                v-else
+                :key="item.label"
+                type="button"
+                class="focus-row"
+                :class="{ 'has-count': item.count > 0 }"
+                @click="router.push(item.route)"
+              >
+                <span class="focus-icon"><component :is="item.icon" /></span>
+                <span>{{ item.label }}</span>
+                <strong :class="{ muted: item.count === 0 }">{{ item.count }}</strong>
+              </button>
+            </div>
+
+            <div class="content-summary">
+              <div v-for="item in contentSummary" :key="item.label">
+                <strong>{{ item.value }}</strong>
+                <span>{{ item.label }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="top-posts panel reveal reveal-5">
+            <div class="section-head bordered">
+              <div>
+                <h2>阅读较多</h2>
+                <span>按累计阅读排序</span>
+              </div>
+              <button type="button" class="icon-button" title="查看全部文章" @click="router.push('/posts')">
+                <ArrowRight />
+              </button>
+            </div>
+
+            <div v-if="loading" class="top-list">
+              <Skeleton v-for="index in 4" :key="index" class="top-skeleton">
+                <span class="skeleton-line wide" />
+                <span class="skeleton-line short" />
               </Skeleton>
-            </template>
-            <button
-              v-for="item in attentionItems"
-              v-else
-              :key="item.label"
-              type="button"
-              class="attention-row"
-              @click="router.push(item.path)"
-            >
-              <span class="attention-icon"><component :is="item.icon" /></span>
-              <span>{{ item.label }}</span>
-              <strong :class="{ clear: item.count === 0 }">{{ item.count || '—' }}</strong>
-              <ArrowRight />
-            </button>
-          </div>
-        </section>
-
-        <section class="panel notes-panel">
-          <div class="panel-head">
-            <div>
-              <h2>最近说说</h2>
-              <span>{{ totals.notes }} 条记录</span>
             </div>
-            <button class="icon-action" type="button" title="前往说说" @click="router.push('/notes')">
-              <ArrowRight />
-            </button>
-          </div>
-
-          <div v-if="loading" class="note-list loading-list">
-            <Skeleton v-for="index in 3" :key="index" class="loading-row">
-              <span class="skeleton-line row-title" />
-              <span class="skeleton-line row-meta" />
-            </Skeleton>
-          </div>
-          <div v-else-if="recentNotes.length" class="note-list">
-            <button
-              v-for="note in recentNotes"
-              :key="note.id"
-              type="button"
-              class="note-row"
-              @click="router.push('/notes')"
-            >
-              <span class="note-copy">{{ note.content }}</span>
-              <span class="note-meta">
-                <span>{{ relativeTime(note.createdAt) }}</span>
-                <span v-if="note.media.length">{{ note.media.length }} 张图片</span>
-                <Badge v-if="!note.isPublished" variant="neutral">隐藏</Badge>
-              </span>
-            </button>
-          </div>
-          <div v-else class="empty-state compact">
-            <MessagesSquare />
-            <span>还没有说说</span>
-          </div>
-        </section>
-      </aside>
-    </div>
+            <div v-else-if="dashboard?.topPosts.length" class="top-list">
+              <button
+                v-for="(post, index) in dashboard.topPosts"
+                :key="post.id"
+                type="button"
+                class="top-row"
+                :class="{ leading: index < 3 }"
+                @click="router.push(`/posts/${post.id}`)"
+              >
+                <span class="rank">{{ String(index + 1).padStart(2, '0') }}</span>
+                <span class="top-title">{{ post.title || '新文章' }}</span>
+                <span class="view-count"><Eye /> {{ formatNumber(post.viewCount) }}</span>
+              </button>
+            </div>
+            <div v-else class="empty-state compact">
+              <span>暂无已发布文章</span>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped lang="less">
 .dashboard-page {
   width: 100%;
-  max-width: 90rem;
+  max-width: 88rem;
   margin: 0 auto;
   color: var(--color-base-content);
 }
@@ -518,8 +419,8 @@ button {
 
   p {
     margin: 0.375rem 0 0;
-    font-size: 0.875rem;
-    opacity: 0.48;
+    font-size: 0.8125rem;
+    opacity: 0.44;
   }
 }
 
@@ -535,175 +436,183 @@ button {
   height: 0.9375rem;
 }
 
-.load-notice {
+.error-state {
+  min-height: 18rem;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-  padding: 0.625rem 0.75rem;
-  border: 0.0625rem solid color-mix(in oklab, var(--color-warning) 30%, transparent);
-  border-radius: 0.375rem;
-  background: color-mix(in oklab, var(--color-warning) 8%, transparent);
-  font-size: 0.75rem;
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    opacity: 0.65;
-
-    &:hover {
-      opacity: 1;
-    }
-
-    svg {
-      width: 0.75rem;
-      height: 0.75rem;
-    }
-  }
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.stat-card {
-  position: relative;
-  min-width: 0;
-  min-height: 7.75rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  overflow: hidden;
-  border: 0.0625rem solid var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-base-100);
-  color: var(--color-base-content);
-  text-align: left;
-}
-
-button.stat-card {
-  cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
-
-  &:hover {
-    border-color: color-mix(in oklab, var(--stat-color) 35%, var(--color-border));
-    background: color-mix(in oklab, var(--stat-color) 3%, var(--color-base-100));
-    transform: translateY(-0.0625rem);
-
-    .stat-arrow {
-      opacity: 0.55;
-      transform: translateX(0.125rem);
-    }
-  }
-}
-
-.stat-icon {
-  width: 2rem;
-  height: 2rem;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border-radius: 0.375rem;
-  background: color-mix(in oklab, var(--stat-color) 12%, transparent);
-  color: var(--stat-color);
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-  }
-}
-
-.stat-content {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-label {
-  margin-top: 0.125rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  opacity: 0.52;
-}
-
-.stat-content strong {
-  margin-top: 0.3rem;
-  font-size: 1.625rem;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-content small {
-  margin-top: 0.4rem;
-  overflow: hidden;
-  color: var(--color-base-content);
-  font-size: 0.6875rem;
-  line-height: 1.35;
-  opacity: 0.38;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stat-arrow {
-  position: absolute;
-  top: 1rem;
-  right: 0.75rem;
-  width: 0.8125rem;
-  height: 0.8125rem;
-  opacity: 0;
-  transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-.tone-primary { --stat-color: var(--color-primary); }
-.tone-secondary { --stat-color: var(--color-secondary); }
-.tone-warning { --stat-color: var(--color-warning); }
-.tone-success { --stat-color: var(--color-success); }
-.tone-info { --stat-color: var(--color-info); }
-.tone-accent { --stat-color: var(--color-accent); }
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.75fr) minmax(17rem, 0.75fr);
-  gap: 0.75rem;
-  align-items: start;
-}
-
-.main-column,
-.side-column {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.panel {
-  min-width: 0;
+  gap: 2rem;
   border: 0.0625rem solid var(--color-border);
   border-radius: 0.5rem;
   background: var(--color-base-100);
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  strong {
+    font-size: 0.875rem;
+  }
+
+  span {
+    font-size: 0.75rem;
+    opacity: 0.4;
+  }
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(22rem, 0.85fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.signal-panel,
+.trend-panel {
+  min-width: 0;
+  height: 13.5rem;
+  border-radius: 0.5rem;
   overflow: hidden;
 }
 
-.panel-head {
-  min-height: 4.25rem;
+.signal-panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(13rem, 1.1fr) minmax(0, 1fr);
+  background: var(--color-neutral);
+  color: var(--color-neutral-content);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 0.1875rem;
+    background: var(--color-primary);
+  }
+}
+
+.signal-primary {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 1.5rem;
+  border-right: 0.0625rem solid color-mix(in oklab, var(--color-neutral-content) 14%, transparent);
+
+  > strong {
+    margin-top: 0.75rem;
+    font-size: 2.75rem;
+    line-height: 1;
+    font-weight: 720;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+
+  > small {
+    margin-top: 0.75rem;
+    font-size: 0.6875rem;
+    opacity: 0.46;
+  }
+}
+
+.signal-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  opacity: 0.58;
+
+  svg {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+}
+
+.signal-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.signal-metric {
+  --metric-color: var(--color-neutral-content);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.875rem;
+  border-right: 0.0625rem solid color-mix(in oklab, var(--color-neutral-content) 10%, transparent);
+
+  &:last-child {
+    border-right: none;
+  }
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.6875rem;
+    white-space: nowrap;
+    opacity: 0.44;
+  }
+
+  > strong {
+    margin-top: 0.65rem;
+    font-size: 1.375rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: color-mix(in oklab, var(--metric-color) 84%, var(--color-neutral-content));
+
+    small {
+      margin-left: 0.2rem;
+      font-size: 0.625rem;
+      font-weight: 500;
+      opacity: 0.4;
+    }
+  }
+}
+
+.metric-success {
+  --metric-color: var(--color-success);
+}
+.metric-primary {
+  --metric-color: var(--color-primary);
+}
+.metric-secondary {
+  --metric-color: var(--color-secondary);
+}
+
+.live-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-success) 45%, transparent);
+  animation: live-pulse 2.4s ease-out infinite;
+}
+
+.trend-panel,
+.panel {
+  border: 0.0625rem solid var(--color-border);
+  background: var(--color-base-100);
+}
+
+.trend-panel {
+  padding: 1rem 1.125rem 0.75rem;
+}
+
+.section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.875rem 1rem;
-  border-bottom: 0.0625rem solid var(--color-border);
+
+  &.bordered {
+    min-height: 4rem;
+    padding: 0.875rem 1rem;
+    border-bottom: 0.0625rem solid var(--color-border);
+  }
 
   h2 {
     margin: 0;
@@ -712,172 +621,141 @@ button.stat-card {
     font-weight: 700;
   }
 
-  span {
+  div > span {
     display: block;
-    margin-top: 0.25rem;
+    margin-top: 0.2rem;
     font-size: 0.6875rem;
-    opacity: 0.36;
+    opacity: 0.34;
   }
 }
 
-.text-action,
-.icon-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-base-content);
-  cursor: pointer;
+.demo-badge {
+  padding: 0.125rem 0.375rem;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
   opacity: 0.42;
-  transition: opacity 0.14s ease;
+}
 
-  &:hover {
-    opacity: 0.8;
+.trend-chart {
+  height: 9.5rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.625rem;
+  align-items: end;
+  padding-top: 1.25rem;
+}
+
+.trend-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+
+  small {
+    font-size: 0.5625rem;
+    opacity: 0.3;
   }
+}
 
-  svg {
-    width: 0.8125rem;
-    height: 0.8125rem;
+.trend-track {
+  position: relative;
+  width: 100%;
+  max-width: 2.125rem;
+  height: 6.75rem;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 0.1875rem;
+  background: var(--color-base-200);
+
+  i {
+    width: 100%;
+    height: var(--bar-height);
+    border-radius: inherit;
+    background: color-mix(in oklab, var(--color-primary) 32%, var(--color-base-300));
+    transform-origin: bottom;
+    animation: bar-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--bar-delay);
+
+    &.current {
+      background: var(--color-primary);
+      box-shadow: 0 -0.125rem 0.75rem color-mix(in oklab, var(--color-primary) 22%, transparent);
+    }
   }
 }
 
-.text-action {
-  gap: 0.25rem;
-  padding: 0.25rem 0;
-  font-size: 0.6875rem;
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(19rem, 0.55fr);
+  gap: 0.75rem;
+  align-items: start;
 }
 
-.icon-action {
-  width: 1.75rem;
-  height: 1.75rem;
+.panel {
+  min-width: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 
-.post-list,
+.side-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .comment-list,
-.note-list,
-.attention-list {
+.focus-list,
+.top-list {
   display: flex;
   flex-direction: column;
 }
 
-.post-row,
-.comment-row,
-.note-row,
-.attention-row {
+.comment-row {
   width: 100%;
+  min-height: 4.25rem;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
   border: none;
   border-bottom: 0.0625rem solid var(--color-border);
   background: transparent;
   color: var(--color-base-content);
   text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
 
   &:last-child {
     border-bottom: none;
   }
-}
-
-button.post-row,
-button.comment-row,
-button.note-row,
-button.attention-row {
-  cursor: pointer;
-  transition: background 0.12s ease;
 
   &:hover {
     background: var(--color-base-200);
   }
-}
 
-.post-row {
-  min-height: 5.375rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.875rem 1rem;
-}
-
-.post-main {
-  min-width: 0;
-  flex: 1;
-}
-
-.post-title-line {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  h3 {
-    min-width: 0;
-    margin: 0;
-    overflow: hidden;
-    font-size: 0.875rem;
-    font-weight: 650;
-    text-overflow: ellipsis;
+  > time {
+    font-size: 0.625rem;
     white-space: nowrap;
+    opacity: 0.28;
   }
 }
 
-.post-main > p {
-  margin: 0.35rem 0 0;
-  overflow: hidden;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  opacity: 0.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.post-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-  font-size: 0.6875rem;
-  opacity: 0.34;
-
-  span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2rem;
-  }
-
-  svg {
-    width: 0.6875rem;
-    height: 0.6875rem;
-  }
-}
-
-.row-arrow {
-  width: 0.875rem;
-  height: 0.875rem;
-  flex-shrink: 0;
-  opacity: 0.14;
-}
-
-.comment-row {
-  min-height: 5.5rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-}
-
-.avatar,
-.skeleton-avatar {
+.comment-avatar {
   width: 2rem;
   height: 2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
   overflow: hidden;
   border-radius: 50%;
-  background: var(--color-base-300);
-  font-size: 0.75rem;
-  font-weight: 650;
-  opacity: 0.85;
+  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-200));
+  color: var(--color-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
 
   img {
     width: 100%;
@@ -886,83 +764,126 @@ button.attention-row {
   }
 }
 
-.comment-body {
+.comment-copy {
   min-width: 0;
   display: flex;
-  flex: 1;
   flex-direction: column;
-  gap: 0.25rem;
-
-  > small {
-    font-size: 0.625rem;
-    opacity: 0.3;
-  }
+  gap: 0.1875rem;
 }
 
-.comment-line {
+.comment-title {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.3rem;
+  min-width: 0;
 
   strong {
     min-width: 0;
     overflow: hidden;
     font-size: 0.75rem;
+    font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  small {
-    margin-left: auto;
+  > span {
     flex-shrink: 0;
     font-size: 0.625rem;
-    opacity: 0.3;
+    opacity: 0.34;
+  }
+
+  em {
+    flex-shrink: 0;
+    padding: 0.0625rem 0.3rem;
+    border-radius: 0.1875rem;
+    background: color-mix(in oklab, var(--color-warning) 16%, transparent);
+    color: color-mix(in oklab, var(--color-warning) 72%, var(--color-base-content));
+    font-size: 0.5625rem;
+    font-style: normal;
   }
 }
 
 .comment-content {
   overflow: hidden;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  opacity: 0.7;
+  font-size: 0.75rem;
+  opacity: 0.58;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.attention-row {
-  height: 3.25rem;
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr) auto 0.75rem;
+.comment-meta {
+  font-size: 0.5625rem;
+  opacity: 0.26;
+}
+
+.section-action {
+  display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0 1rem;
-  font-size: 0.75rem;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  opacity: 0.68;
+  transition: opacity 0.14s ease;
 
-  > strong {
-    min-width: 1.5rem;
-    padding: 0.125rem 0.35rem;
-    border-radius: 0.25rem;
-    background: color-mix(in oklab, var(--color-warning) 14%, transparent);
-    color: color-mix(in oklab, var(--color-warning) 78%, var(--color-base-content));
-    font-size: 0.6875rem;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-
-    &.clear {
-      background: var(--color-base-200);
-      color: var(--color-base-content);
-      opacity: 0.38;
-    }
+  &:hover {
+    opacity: 1;
   }
 
-  > svg {
+  svg {
     width: 0.75rem;
     height: 0.75rem;
-    opacity: 0.18;
   }
 }
 
-.attention-icon {
+.focus-row {
+  width: 100%;
+  height: 3rem;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 1rem;
+  border: none;
+  background: transparent;
+  color: var(--color-base-content);
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+
+  &:hover {
+    background: var(--color-base-200);
+  }
+
+  &.has-count {
+    > strong {
+      color: color-mix(in oklab, var(--color-warning) 72%, var(--color-base-content));
+    }
+
+    .focus-icon {
+      background: color-mix(in oklab, var(--color-warning) 14%, transparent);
+      color: color-mix(in oklab, var(--color-warning) 76%, var(--color-base-content));
+      opacity: 1;
+    }
+  }
+
+  > strong {
+    min-width: 1.5rem;
+    font-size: 0.75rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+
+    &.muted {
+      opacity: 0.2;
+    }
+  }
+}
+
+.focus-icon {
   width: 1.75rem;
   height: 1.75rem;
   display: inline-flex;
@@ -970,7 +891,126 @@ button.attention-row {
   justify-content: center;
   border-radius: 0.3125rem;
   background: var(--color-base-200);
-  opacity: 0.7;
+  opacity: 0.65;
+
+  svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+.content-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0.75rem;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-base-200);
+
+  > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.75rem;
+
+    &:nth-child(odd) {
+      border-right: 0.0625rem solid var(--color-border);
+    }
+
+    &:nth-child(-n + 2) {
+      border-bottom: 0.0625rem solid var(--color-border);
+    }
+  }
+
+  strong {
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  span {
+    overflow: hidden;
+    font-size: 0.625rem;
+    opacity: 0.36;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.top-row {
+  width: 100%;
+  height: 2.875rem;
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border: none;
+  border-bottom: 0.0625rem solid var(--color-border);
+  background: transparent;
+  color: var(--color-base-content);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--color-base-200);
+  }
+
+  &.leading .rank {
+    color: var(--color-primary);
+    font-weight: 700;
+    opacity: 0.78;
+  }
+}
+
+.rank {
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.24;
+}
+
+.top-title {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.625rem;
+  opacity: 0.35;
+
+  svg {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+}
+
+.icon-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-base-content);
+  cursor: pointer;
+  opacity: 0.3;
+  transition: opacity 0.14s ease;
+
+  &:hover {
+    opacity: 0.7;
+  }
 
   svg {
     width: 0.8125rem;
@@ -978,64 +1018,62 @@ button.attention-row {
   }
 }
 
-.note-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-}
-
-.note-copy {
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: 0.8125rem;
-  line-height: 1.55;
-  opacity: 0.72;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.note-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  font-size: 0.625rem;
-  opacity: 0.34;
-
-  :deep(.badge) {
-    padding-block: 0.0625rem;
-    font-size: 0.625rem;
-  }
-}
-
 .empty-state {
-  min-height: 15rem;
+  min-height: 13rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
   font-size: 0.75rem;
-  opacity: 0.42;
+  opacity: 0.36;
 
   &.compact {
     min-height: 8rem;
   }
+}
+
+.empty-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  background: var(--color-base-200);
 
   svg {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-
-  :deep(.btn) {
-    margin-top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
   }
 }
 
-.loading-row {
+.metric-skeleton,
+.skeleton-line,
+.skeleton-avatar,
+.skeleton-square {
+  display: block;
+  background: currentColor;
+  opacity: 0.12;
+}
+
+.metric-skeleton {
+  width: 3rem;
+  height: 1.375rem;
+  margin-top: 0.65rem;
+  border-radius: 0.1875rem;
+
+  &.large {
+    width: 8rem;
+    height: 2.75rem;
+    margin-top: 0.75rem;
+  }
+}
+
+.comment-skeleton,
+.focus-skeleton,
+.top-skeleton {
   position: relative;
-  min-height: 5.375rem;
-  padding: 1rem;
   border-bottom: 0.0625rem solid var(--color-border);
 
   &:last-child {
@@ -1043,79 +1081,122 @@ button.attention-row {
   }
 }
 
-.comment-loading {
-  padding-left: 3.75rem;
-
-  .skeleton-avatar {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-  }
+.comment-skeleton {
+  min-height: 4.25rem;
+  padding: 0.8rem 1rem 0.8rem 3.75rem;
 }
 
-.skeleton-line,
-.skeleton-icon,
+.focus-skeleton {
+  min-height: 3rem;
+  padding: 0.85rem 1rem 0.85rem 3.375rem;
+}
+
+.top-skeleton {
+  min-height: 2.875rem;
+  padding: 0.7rem 1rem;
+}
+
+.skeleton-avatar,
+.skeleton-square {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .skeleton-avatar {
-  display: block;
-  background: var(--color-base-300);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+}
+
+.skeleton-square {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.3125rem;
 }
 
 .skeleton-line {
-  width: 100%;
-  height: 0.625rem;
-  border-radius: 0.1875rem;
+  width: 45%;
+  height: 0.5rem;
+  border-radius: 0.125rem;
+
+  &.wide {
+    width: 70%;
+  }
 
   &.short {
-    width: 45%;
+    width: 28%;
+    margin-top: 0.5rem;
   }
 }
 
-.loading-row .row-title {
-  width: 62%;
+.reveal {
+  animation: reveal-up 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.loading-row .row-meta {
-  width: 34%;
-  margin-top: 0.875rem;
-  opacity: 0.65;
+.reveal-2 {
+  animation-delay: 40ms;
+}
+.reveal-3 {
+  animation-delay: 80ms;
+}
+.reveal-4 {
+  animation-delay: 120ms;
+}
+.reveal-5 {
+  animation-delay: 160ms;
 }
 
-.stat-skeleton {
-  flex-direction: column;
-}
-
-.skeleton-icon {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.375rem;
-
-  &.small {
-    width: 1.75rem;
-    height: 1.75rem;
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
   }
 }
 
-.stat-skeleton .skeleton-line {
-  max-width: 6rem;
-}
-
-.loading-attention {
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
-}
-
-@media (width <= 75rem) {
-  .stats-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .stat-card {
-    min-height: 6.75rem;
+@keyframes bar-rise {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
   }
 }
 
-@media (width <= 56rem) {
-  .dashboard-grid {
+@keyframes live-pulse {
+  60% {
+    box-shadow: 0 0 0 0.25rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (width <= 78rem) {
+  .insight-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signal-panel {
+    grid-template-columns: minmax(13rem, 0.8fr) minmax(24rem, 1.2fr);
+  }
+}
+
+@media (width <= 68rem) {
+  .signal-panel {
+    grid-template-columns: minmax(10rem, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .signal-primary {
+    padding: 1.25rem;
+
+    > strong {
+      font-size: 2.25rem;
+    }
+  }
+}
+
+@media (width <= 58rem) {
+  .workspace-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1126,10 +1207,6 @@ button.attention-row {
 }
 
 @media (width <= 48rem) {
-  .dashboard-page {
-    max-width: 42rem;
-  }
-
   .dashboard-head {
     align-items: flex-start;
     margin-bottom: 1.25rem;
@@ -1148,57 +1225,70 @@ button.attention-row {
     }
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .signal-panel {
+    height: auto;
+    min-height: 12.5rem;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .stat-card {
-    min-height: 7rem;
-    padding: 0.875rem;
+  .signal-primary {
+    padding: 1.25rem;
+    border-right: none;
+    border-bottom: 0.0625rem solid color-mix(in oklab, var(--color-neutral-content) 14%, transparent);
   }
 
-  .stat-content small {
-    max-width: 8rem;
+  .signal-primary > strong {
+    font-size: 2rem;
+  }
+
+  .signal-metric {
+    padding: 1rem 0.875rem;
+  }
+
+  .trend-panel {
+    height: 12.5rem;
+  }
+
+  .trend-chart {
+    height: 8.5rem;
+  }
+
+  .trend-track {
+    height: 5.75rem;
   }
 
   .side-column {
     display: flex;
   }
+
+  .comment-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+
+    > time {
+      display: none;
+    }
+  }
 }
 
-@media (width <= 23rem) {
-  .stats-grid {
-    grid-template-columns: minmax(0, 1fr);
+@media (width <= 25rem) {
+  .signal-metric > span {
+    font-size: 0.625rem;
   }
 
-  .stat-card {
-    min-height: 5.75rem;
-    align-items: center;
+  .signal-metric > strong {
+    font-size: 1.125rem;
   }
 
-  .stat-label {
-    margin-top: 0;
+  .trend-chart {
+    gap: 0.375rem;
   }
+}
 
-  .stat-content strong {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    margin: 0;
-    font-size: 1.375rem;
-  }
-
-  .stat-content small {
-    margin-top: 0.25rem;
-  }
-
-  .post-row,
-  .comment-row {
-    padding-inline: 0.875rem;
-  }
-
-  .post-title-line :deep(.badge) {
-    display: none;
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .trend-track i,
+  .live-dot {
+    animation: none;
   }
 }
 </style>
