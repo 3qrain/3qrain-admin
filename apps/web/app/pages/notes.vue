@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { formatDate, formatRelativeTime } from '~/utils/date'
+import { formatDateOnly } from '~/utils/date'
 
 const route = useRoute()
 const router = useRouter()
+const store = useAppStore()
 
 const page = computed(() => Number(route.query.page) || 1)
 const pageSize = 12
@@ -22,57 +23,49 @@ function isImage(type: string, mimeType: string) {
   return type === 'image' || mimeType.startsWith('image/')
 }
 
-useHead({ title: '说说 - 3qrain' })
+useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
 </script>
 
 <template>
   <div class="notes page-shell">
-    <header class="page-hero">
+    <header class="page-intro">
       <span class="eyebrow">Moments</span>
-      <div>
-        <h1>说说</h1>
-        <p>{{ total }} 条碎片，留给路过的心情、照片和现场。</p>
-      </div>
+      <h1>说说</h1>
+      <p>一些短句、照片和当时的心情，共 {{ total }} 条。</p>
     </header>
 
     <BaseLoading v-if="status === 'pending'" />
 
     <template v-else-if="notes.length">
-      <div class="timeline">
+      <div class="note-list">
         <article v-for="note in notes" :key="note.id" class="note">
-          <div class="rail">
-            <span />
-          </div>
+          <time class="note-date">{{ formatDateOnly(note.createdAt) }}</time>
 
-          <div class="note-body soft-card">
-            <header class="note-head">
-              <time>{{ formatDate(note.createdAt) }}</time>
-              <span>{{ formatRelativeTime(note.createdAt) }}</span>
-            </header>
-
+          <div class="note-main">
             <p class="content">{{ note.content }}</p>
 
             <div v-if="note.media.length" class="media-grid" :class="`count-${Math.min(note.media.length, 4)}`">
               <a
-                v-for="m in note.media"
-                :key="m.id"
-                :href="m.url || m.thumbnailUrl || undefined"
+                v-for="media in note.media"
+                :key="media.id"
+                :href="media.url || media.thumbnailUrl || undefined"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="media-item"
+                :style="media.placeholder ? { backgroundImage: `url(${media.placeholder})` } : undefined"
               >
                 <img
-                  v-if="isImage(m.type, m.mimeType)"
-                  :src="m.thumbnailUrl || m.url || ''"
-                  :alt="note.content.slice(0, 20)"
+                  v-if="isImage(media.type, media.mimeType)"
+                  :src="media.thumbnailUrl || media.url || ''"
+                  :alt="note.content.slice(0, 24)"
                   loading="lazy"
                 />
-                <span v-else>{{ m.type }}</span>
+                <span v-else>{{ media.type }}</span>
               </a>
             </div>
 
             <div v-if="note.tags.length" class="tags">
-              <span v-for="tag in note.tags" :key="tag.id">#{{ tag.name }}</span>
+              <span v-for="tagItem in note.tags" :key="tagItem.id">#{{ tagItem.name }}</span>
             </div>
           </div>
         </article>
@@ -86,94 +79,61 @@ useHead({ title: '说说 - 3qrain' })
       />
     </template>
 
-    <p v-else class="empty">还没有说说。</p>
+    <p v-else class="empty">最近很安静。</p>
   </div>
 </template>
 
 <style scoped lang="less">
 .notes {
-  max-width: 48rem;
-  padding: 3rem 0 4rem;
+  max-width: 50rem;
+  padding: 4rem 0;
 }
 
-.page-hero {
-  padding-bottom: 2rem;
+.page-intro {
+  padding-bottom: 3rem;
 
   h1 {
     margin-top: 0.75rem;
-    font-size: clamp(2.5rem, 7vw, 5rem);
-    line-height: 0.95;
-    font-weight: 900;
+    font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
+    font-size: clamp(2.75rem, 7vw, 4.75rem);
+    line-height: 1;
     letter-spacing: 0;
   }
 
   p {
+    max-width: 30rem;
     margin-top: 1rem;
-    max-width: 28rem;
     color: var(--color-muted);
-    line-height: 1.8;
+    font-size: 0.875rem;
+    line-height: 1.75;
   }
 }
 
-.timeline {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+.note-list {
+  border-top: 1px solid var(--color-border);
 }
 
 .note {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 1.75rem;
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.rail {
-  position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 1.25rem;
-    bottom: -2rem;
-    left: 0.5625rem;
-    width: 1px;
-    background: var(--color-border);
-  }
-
-  span {
-    position: sticky;
-    top: 6rem;
-    display: block;
-    width: 1.125rem;
-    height: 1.125rem;
-    border: 0.25rem solid var(--color-base-100);
-    border-radius: 50%;
-    background: var(--color-primary);
-    box-shadow: 0 0 0 1px var(--color-border);
-  }
-}
-
-.note:last-child .rail::before {
-  display: none;
-}
-
-.note-body {
-  padding: 1.25rem;
-  border-radius: 0.5rem;
-}
-
-.note-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.note-date {
+  padding-top: 0.25rem;
   color: var(--color-subtle);
   font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.note-main {
+  min-width: 0;
 }
 
 .content {
-  margin-top: 0.75rem;
+  color: var(--color-base-content);
   font-size: 1rem;
   line-height: 1.9;
   white-space: pre-wrap;
@@ -182,55 +142,59 @@ useHead({ title: '说说 - 3qrain' })
 
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 
   &.count-1 {
-    grid-template-columns: minmax(12rem, 22rem);
+    grid-template-columns: minmax(12rem, 28rem);
   }
 
   &.count-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 34rem;
   }
 }
 
 .media-item {
+  position: relative;
   aspect-ratio: 1;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  background: var(--color-base-200);
-  color: var(--color-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8125rem;
-  font-weight: 800;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  background-color: var(--color-base-200);
+  background-position: center;
+  background-size: cover;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.22s ease;
+    transition: transform 0.25s ease, opacity 0.2s ease;
   }
 
   &:hover img {
-    transform: scale(1.04);
+    transform: scale(1.025);
   }
 }
 
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.625rem;
   margin-top: 1rem;
-  color: var(--color-subtle);
-  font-size: 0.75rem;
-  font-weight: 800;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .pagination {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
 }
 
 .empty {
@@ -241,30 +205,21 @@ useHead({ title: '说说 - 3qrain' })
 
 @media (max-width: 620px) {
   .notes {
-    padding-top: 2rem;
+    padding-top: 2.5rem;
+  }
+
+  .page-intro {
+    padding-bottom: 2.25rem;
   }
 
   .note {
-    grid-template-columns: 1rem minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 0.75rem;
-  }
-
-  .rail::before {
-    left: 0.4375rem;
-  }
-
-  .rail span {
-    width: 0.875rem;
-    height: 0.875rem;
-    border-width: 0.1875rem;
-  }
-
-  .note-body {
-    padding: 1rem;
+    padding: 1.5rem 0;
   }
 
   .media-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

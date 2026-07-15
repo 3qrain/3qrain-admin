@@ -1,17 +1,30 @@
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
-  --color-base-100: oklch(25.33% 0.016 252.42);
-  --color-base-200: oklch(23.26% 0.014 253.1);
-  --color-base-300: oklch(21.15% 0.012 254.09);
-  --color-base-content: oklch(97.807% 0.029 256.847);
-  --color-primary: oklch(58% 0.233 277.117);
-  --color-primary-content: oklch(96% 0.018 272.314);
-  --color-info: oklch(74% 0.16 232.661);
-  --color-info-content: oklch(29% 0.066 243.157);
-  --color-success: oklch(76% 0.177 163.223);
-  --color-success-content: oklch(37% 0.077 168.94);
-  --color-warning: oklch(82% 0.189 84.429);
-  --color-warning-content: oklch(41% 0.112 45.904);
-  --color-error: oklch(71% 0.194 13.428);
-  --color-error-content: oklch(27% 0.105 12.094);
+
+  --color-base-100: oklch(20.5% 0.012 255);
+  --color-base-200: oklch(23.5% 0.014 255);
+  --color-base-300: oklch(28% 0.016 255);
+  --color-base-content: oklch(93% 0.012 95);
+  --color-primary-content: oklch(18% 0.012 255);
+
+  --color-muted: oklch(72% 0.014 95);
+  --color-subtle: oklch(57% 0.014 95);
+  --color-border: oklch(93% 0.012 95 / 0.1);
+  --color-surface: oklch(23.5% 0.014 255 / 0.88);
+  --color-surface-muted: oklch(27% 0.016 255 / 0.82);
+  --color-header: oklch(20.5% 0.012 255 / 0.82);
+  --color-overlay: oklch(7% 0.01 255 / 0.64);
+
+  --color-info: oklch(72% 0.1 235);
+  --color-success: oklch(72% 0.12 157);
+  --color-warning: oklch(78% 0.13 78);
+  --color-error: oklch(70% 0.16 25);
+
+  --shadow-soft: 0 1rem 3rem oklch(5% 0.01 255 / 0.24);
+  --shadow-float: 0 1.25rem 4rem oklch(5% 0.01 255 / 0.4);
+
+  --swatch-spring: oklch(72% 0.11 145);
+  --swatch-summer: oklch(72% 0.1 210);
+  --swatch-autumn: oklch(70% 0.13 52);
+  --swatch-winter: oklch(74% 0.07 245);
 }

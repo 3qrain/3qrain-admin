@@ -3,6 +3,7 @@ import { ExternalLink, Send } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 
 const friendApi = useFriendLinkApi()
+const store = useAppStore()
 const { data: res, status, refresh } = await useAsyncData('friend-links', () => friendApi.getList())
 
 const links = computed(() => res.value?.data ?? [])
@@ -12,7 +13,7 @@ const form = reactive({
   siteUrl: '',
   avatarUrl: '',
   description: '',
-  applicantEmail: '',
+  applicantEmail: ''
 })
 
 function resetForm() {
@@ -31,77 +32,73 @@ async function submit() {
 
   submitting.value = true
   try {
-    const res = await friendApi.create({
+    const result = await friendApi.create({
       siteName: form.siteName.trim(),
       siteUrl: form.siteUrl.trim(),
       avatarUrl: form.avatarUrl.trim() || null,
       description: form.description.trim() || null,
-      applicantEmail: form.applicantEmail.trim() || null,
+      applicantEmail: form.applicantEmail.trim() || null
     })
-    if (res.success) {
+    if (result.success) {
       toast.success('申请已提交')
       resetForm()
       await refresh()
     } else {
-      toast.error(res.message || '提交失败')
+      toast.error(result.message || '提交失败')
     }
-  } catch (e: any) {
-    toast.error(e?.message || '提交失败')
+  } catch (error: any) {
+    toast.error(error?.message || '提交失败')
   } finally {
     submitting.value = false
   }
 }
 
-useHead({ title: '友链 - 3qrain' })
+useHead({ title: computed(() => `友链 - ${store.site.name || '3qrain'}`) })
 </script>
 
 <template>
   <div class="friends page-shell">
-    <header class="page-hero">
+    <header class="page-intro">
       <span class="eyebrow">Friends</span>
-      <div class="hero-line">
-        <h1>友链</h1>
-        <p>把互联网上认真生活和认真写作的人，放在一个容易抵达的地方。</p>
-      </div>
+      <h1>友链</h1>
+      <p>把互联网上认真生活、认真写作的人，放在一个容易抵达的地方。</p>
     </header>
 
-    <div class="content">
+    <div class="content-grid">
       <section class="links-section">
-        <div class="section-head">
+        <header class="section-head">
           <h2>邻居们</h2>
           <span>{{ links.length }} 个站点</span>
-        </div>
+        </header>
 
         <BaseLoading v-if="status === 'pending'" />
 
-        <div v-else-if="links.length" class="link-grid">
+        <div v-else-if="links.length" class="link-list">
           <a
-            v-for="link in links"
-            :key="link.id"
-            :href="link.siteUrl"
+            v-for="linkItem in links"
+            :key="linkItem.id"
+            :href="linkItem.siteUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="friend-card soft-card"
+            class="friend-link"
           >
-            <img v-if="link.avatarUrl" :src="link.avatarUrl" :alt="link.siteName" class="friend-avatar" />
-            <div v-else class="friend-avatar fallback">{{ link.siteName.slice(0, 1) }}</div>
-            <div class="friend-main">
-              <div class="friend-title">
-                <h3>{{ link.siteName }}</h3>
-                <ExternalLink :size="15" :stroke-width="1.8" />
-              </div>
-              <p>{{ link.description || link.siteUrl }}</p>
-            </div>
+            <img v-if="linkItem.avatarUrl" :src="linkItem.avatarUrl" :alt="linkItem.siteName" class="avatar" />
+            <span v-else class="avatar fallback">{{ linkItem.siteName.slice(0, 1) }}</span>
+            <span class="friend-copy">
+              <strong>{{ linkItem.siteName }}</strong>
+              <small>{{ linkItem.description || linkItem.siteUrl }}</small>
+            </span>
+            <ExternalLink class="external" :size="15" :stroke-width="1.6" />
           </a>
         </div>
 
         <p v-else class="empty">暂时还没有公开友链。</p>
       </section>
 
-      <aside class="apply soft-card">
+      <aside class="apply">
         <span class="eyebrow">Apply</span>
         <h2>申请加入</h2>
-        <p>如果你也在写博客，欢迎把站点留在这里。审核通过后会出现在友链列表里。</p>
+        <p>如果你也在写博客，可以把站点留在这里。审核通过后会出现在左侧列表。</p>
 
         <form class="form" @submit.prevent="submit">
           <label>
@@ -126,7 +123,7 @@ useHead({ title: '友链 - 3qrain' })
           </label>
 
           <button class="submit" :disabled="submitting" type="submit">
-            <Send :size="16" :stroke-width="1.8" />
+            <Send :size="15" :stroke-width="1.8" />
             <span>{{ submitting ? '提交中' : '提交申请' }}</span>
           </button>
         </form>
@@ -137,41 +134,34 @@ useHead({ title: '友链 - 3qrain' })
 
 <style scoped lang="less">
 .friends {
-  padding: 3rem 0 4rem;
+  padding: 4rem 0;
 }
 
-.page-hero {
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.hero-line {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 2rem;
-  margin-top: 0.75rem;
+.page-intro {
+  max-width: 45rem;
+  padding-bottom: 3.5rem;
 
   h1 {
-    font-size: clamp(2.5rem, 7vw, 5.5rem);
-    line-height: 0.95;
-    font-weight: 900;
+    margin-top: 0.75rem;
+    font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
+    font-size: clamp(2.75rem, 7vw, 4.75rem);
+    line-height: 1;
     letter-spacing: 0;
   }
 
   p {
-    max-width: 30rem;
+    max-width: 34rem;
+    margin-top: 1rem;
     color: var(--color-muted);
-    line-height: 1.85;
-    text-align: right;
+    font-size: 0.9rem;
+    line-height: 1.8;
   }
 }
 
-.content {
+.content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 22rem;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: clamp(3rem, 7vw, 6rem);
 }
 
 .section-head {
@@ -183,113 +173,113 @@ useHead({ title: '友链 - 3qrain' })
 
   h2 {
     font-size: 1.25rem;
-    font-weight: 900;
   }
 
   span {
     color: var(--color-subtle);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
   }
 }
 
-.link-grid {
+.link-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  border-top: 1px solid var(--color-border);
 }
 
-.friend-card {
+.friend-link {
   display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr);
-  gap: 0.875rem;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  color: inherit;
-  transition: transform 0.18s ease, border-color 0.18s ease;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 1rem;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:nth-child(odd) {
+    padding-right: 1rem;
+  }
+
+  &:nth-child(even) {
+    padding-left: 1rem;
+  }
 
   &:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--color-primary) 42%, var(--color-border));
+    strong,
+    .external {
+      color: var(--color-primary);
+    }
   }
 }
 
-.friend-avatar {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.5rem;
-  object-fit: cover;
+.avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.375rem;
   background: var(--color-base-200);
+  object-fit: cover;
 }
 
 .fallback {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--color-primary);
-  font-size: 1.25rem;
-  font-weight: 900;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
-.friend-main {
+.friend-copy {
+  display: block;
   min-width: 0;
-}
 
-.friend-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-
-  h3 {
+  strong,
+  small {
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.9375rem;
-    font-weight: 900;
   }
 
-  svg {
-    color: var(--color-subtle);
-    flex-shrink: 0;
+  strong {
+    font-size: 0.9rem;
+    transition: color 0.16s ease;
+  }
+
+  small {
+    margin-top: 0.25rem;
+    color: var(--color-muted);
+    font-size: 0.75rem;
   }
 }
 
-.friend-main p {
-  margin-top: 0.375rem;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.65;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.external {
+  color: var(--color-subtle);
+  transition: color 0.16s ease;
 }
 
 .apply {
-  position: sticky;
-  top: 6rem;
-  padding: 1.25rem;
-  border-radius: 0.5rem;
+  padding-left: 2rem;
+  border-left: 1px solid var(--color-border);
 
   h2 {
     margin-top: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: 900;
+    font-size: 1.4rem;
   }
 
   > p {
-    margin-top: 0.625rem;
+    margin-top: 0.6rem;
     color: var(--color-muted);
-    font-size: 0.875rem;
-    line-height: 1.7;
+    font-size: 0.825rem;
+    line-height: 1.75;
   }
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.8rem;
+  margin-top: 1.25rem;
 }
 
 label {
@@ -297,23 +287,23 @@ label {
   flex-direction: column;
   gap: 0.35rem;
 
-  span {
+  > span {
     color: var(--color-subtle);
-    font-size: 0.75rem;
-    font-weight: 800;
+    font-size: 0.7rem;
+    font-weight: 700;
   }
 }
 
 input,
 textarea {
   width: 100%;
+  padding: 0.65rem 0.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  background: color-mix(in oklab, var(--color-base-100) 88%, transparent);
-  color: var(--color-base-content);
+  border-radius: 0.3125rem;
   outline: none;
-  padding: 0.65rem 0.75rem;
-  font-size: 0.875rem;
+  background: var(--color-surface);
+  color: var(--color-base-content);
+  font-size: 0.825rem;
 
   &::placeholder {
     color: var(--color-subtle);
@@ -325,26 +315,27 @@ textarea {
 }
 
 textarea {
-  resize: vertical;
   min-height: 6rem;
+  resize: vertical;
 }
 
 .submit {
+  min-height: 2.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
+  gap: 0.45rem;
   border: none;
-  border-radius: 999px;
+  border-radius: 0.3125rem;
   background: var(--color-base-content);
   color: var(--color-base-100);
-  font-weight: 900;
+  font-size: 0.825rem;
+  font-weight: 700;
   cursor: pointer;
 
   &:disabled {
-    opacity: 0.5;
     cursor: default;
+    opacity: 0.5;
   }
 }
 
@@ -354,32 +345,35 @@ textarea {
   text-align: center;
 }
 
-@media (max-width: 920px) {
-  .content {
+@media (max-width: 900px) {
+  .content-grid {
     grid-template-columns: 1fr;
   }
 
   .apply {
-    position: static;
+    max-width: 38rem;
+    padding: 2rem 0 0;
+    border-top: 1px solid var(--color-border);
+    border-left: none;
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 620px) {
   .friends {
-    padding-top: 2rem;
+    padding-top: 2.5rem;
   }
 
-  .hero-line {
-    display: block;
-
-    p {
-      margin-top: 1rem;
-      text-align: left;
-    }
+  .page-intro {
+    padding-bottom: 2.75rem;
   }
 
-  .link-grid {
+  .link-list {
     grid-template-columns: 1fr;
+  }
+
+  .friend-link:nth-child(n) {
+    padding-right: 0;
+    padding-left: 0;
   }
 }
 </style>

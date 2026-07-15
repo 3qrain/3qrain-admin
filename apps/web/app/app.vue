@@ -13,7 +13,9 @@ useHead({
         (function () {
           try {
             var r = localStorage.getItem('${APP_STORAGE_KEY}')
-            var t = r ? JSON.parse(r).theme : 'system'
+            var state = r ? JSON.parse(r) : {}
+            var t = state.theme || 'system'
+            var s = state.season || 'autumn'
 
             if (!t || t === 'system') {
               t = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -22,6 +24,7 @@ useHead({
             }
 
             document.documentElement.dataset.theme = t
+            document.documentElement.dataset.season = s
           } catch (e) {}
         })()
       `

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { formatDate } from '~/utils/date'
+import { ArrowRight, X } from '@lucide/vue'
+import { formatDateOnly } from '~/utils/date'
 
 const route = useRoute()
 const router = useRouter()
+const store = useAppStore()
 
 const page = computed(() => Number(route.query.page) || 1)
 const pageSize = 8
@@ -25,49 +27,44 @@ function clearFilter() {
   router.push({ query: { page: undefined } })
 }
 
-useHead({ title: '文章 - 3qrain' })
+useHead({ title: computed(() => `文章 - ${store.site.name || '3qrain'}`) })
 </script>
 
 <template>
   <div class="posts page-shell">
-    <header class="page-hero">
+    <header class="page-intro">
       <span class="eyebrow">Writing</span>
-      <div class="hero-line">
+      <div class="intro-line">
         <h1>文章</h1>
-        <p>{{ total }} 篇公开文章，按时间慢慢阅读。</p>
+        <p>长一点的思考与记录，共 {{ total }} 篇。</p>
       </div>
-      <button v-if="activeFilter" class="filter-chip" @click="clearFilter">
-        {{ category ? `分类: ${category}` : `标签: ${tag}` }} / 清除
+      <button v-if="activeFilter" type="button" class="filter-chip" @click="clearFilter">
+        <span>{{ category ? `分类：${category}` : `标签：${tag}` }}</span>
+        <X :size="14" :stroke-width="1.8" />
       </button>
     </header>
 
     <BaseLoading v-if="status === 'pending'" />
 
     <template v-else-if="posts.length">
-      <div class="list">
-        <NuxtLink v-for="post in posts" :key="post.id" :to="`/posts/${post.slug}`" class="item">
+      <div class="post-list">
+        <NuxtLink v-for="post in posts" :key="post.id" :to="`/posts/${post.slug}`" class="post-item">
           <div class="date-block">
-            <time>{{ formatDate(post.createdAt).slice(0, 10) }}</time>
-            <span v-if="post.isPinned">Pinned</span>
+            <time>{{ formatDateOnly(post.createdAt) }}</time>
+            <span v-if="post.isPinned">置顶</span>
           </div>
 
           <div class="item-main">
-            <div class="title-row">
-              <h2>{{ post.title }}</h2>
-              <span>{{ post.viewCount }} 阅读</span>
-            </div>
-            <p>{{ post.summary || '这篇文章还没有摘要，正文里应该藏着重点。' }}</p>
-
+            <h2>{{ post.title }}</h2>
+            <p>{{ post.summary || '暂时没有摘要，正文里见。' }}</p>
             <div class="meta">
               <span v-if="post.category" class="category">{{ post.category.name }}</span>
-              <span v-for="tagItem in post.tags" :key="tagItem.id" class="tag">#{{ tagItem.name }}</span>
+              <span v-for="tagItem in post.tags" :key="tagItem.id">#{{ tagItem.name }}</span>
+              <span>{{ post.viewCount }} 阅读</span>
             </div>
           </div>
 
-          <div class="cover">
-            <img v-if="post.cover" :src="post.cover" :alt="post.title" />
-            <span v-else>{{ post.category?.name || 'Post' }}</span>
-          </div>
+          <ArrowRight class="item-arrow" :size="19" :stroke-width="1.5" />
         </NuxtLink>
       </div>
 
@@ -85,214 +82,185 @@ useHead({ title: '文章 - 3qrain' })
 
 <style scoped lang="less">
 .posts {
-  padding: 3rem 0 4rem;
+  max-width: 60rem;
+  padding: 4rem 0;
 }
 
-.page-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--color-border);
+.page-intro {
+  padding-bottom: 3rem;
 }
 
-.hero-line {
+.intro-line {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 2rem;
+  margin-top: 0.75rem;
 
   h1 {
-    font-size: clamp(2.5rem, 7vw, 5.5rem);
-    line-height: 0.95;
-    font-weight: 900;
+    font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
+    font-size: clamp(2.75rem, 7vw, 4.75rem);
+    line-height: 1;
     letter-spacing: 0;
   }
 
   p {
-    max-width: 18rem;
+    max-width: 20rem;
+    padding-bottom: 0.25rem;
     color: var(--color-muted);
-    line-height: 1.8;
+    font-size: 0.875rem;
+    line-height: 1.75;
     text-align: right;
   }
 }
 
 .filter-chip {
-  align-self: flex-start;
-  padding: 0.45rem 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-base-100);
-  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 0.45rem 0.625rem;
+  border: none;
+  border-radius: 0.3125rem;
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
+.post-list {
+  border-top: 1px solid var(--color-border);
 }
 
-.item {
+.post-item {
   display: grid;
-  grid-template-columns: 8rem minmax(0, 1fr) 9rem;
+  grid-template-columns: 8rem minmax(0, 1fr) 1.5rem;
   gap: 1.5rem;
-  padding: 1.5rem 0;
+  align-items: start;
+  padding: 1.75rem 0;
   border-bottom: 1px solid var(--color-border);
-  color: inherit;
 }
 
 .date-block {
   display: flex;
+  align-items: flex-start;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
+  padding-top: 0.3rem;
   color: var(--color-subtle);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 
   span {
-    width: fit-content;
-    padding: 0.18rem 0.45rem;
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--color-primary) 13%, transparent);
     color: var(--color-primary);
     font-size: 0.6875rem;
-    font-weight: 800;
+    font-weight: 700;
   }
 }
 
 .item-main {
   min-width: 0;
-}
-
-.title-row {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 1rem;
 
   h2 {
-    font-size: clamp(1.25rem, 2vw, 1.75rem);
-    line-height: 1.3;
-    font-weight: 900;
+    font-size: clamp(1.25rem, 2.4vw, 1.65rem);
+    line-height: 1.35;
     letter-spacing: 0;
+    transition: color 0.16s ease;
   }
 
-  span {
-    margin-top: 0.25rem;
-    color: var(--color-subtle);
-    font-size: 0.75rem;
-    white-space: nowrap;
+  > p {
+    display: -webkit-box;
+    max-width: 43rem;
+    margin-top: 0.55rem;
+    overflow: hidden;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    line-height: 1.75;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
-}
-
-.item-main p {
-  margin-top: 0.625rem;
-  max-width: 42rem;
-  color: var(--color-muted);
-  line-height: 1.8;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.875rem;
-  font-size: 0.75rem;
-  font-weight: 750;
+  gap: 0.65rem;
+  margin-top: 0.8rem;
   color: var(--color-subtle);
-}
+  font-size: 0.7rem;
 
-.category {
-  color: var(--color-primary);
-}
-
-.cover {
-  aspect-ratio: 1.2;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  background:
-    linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent),
-    var(--color-base-200);
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.24s ease;
-  }
-
-  span {
-    height: 100%;
-    display: flex;
-    align-items: end;
-    padding: 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 900;
+  .category {
     color: var(--color-primary);
+    font-weight: 700;
   }
 }
 
-.item:hover {
-  .title-row h2 {
+.item-arrow {
+  margin-top: 0.35rem;
+  color: var(--color-subtle);
+  opacity: 0;
+  transform: translateX(-0.25rem);
+  transition: opacity 0.16s ease, transform 0.16s ease, color 0.16s ease;
+}
+
+.post-item:hover {
+  h2 {
     color: var(--color-primary);
   }
 
-  .cover img {
-    transform: scale(1.04);
+  .item-arrow {
+    color: var(--color-primary);
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
 .pagination {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
 }
 
 .empty {
-  padding: 6rem 0;
+  padding: 5rem 0;
   text-align: center;
   color: var(--color-subtle);
 }
 
-@media (max-width: 820px) {
-  .hero-line {
+@media (max-width: 680px) {
+  .posts {
+    padding-top: 2.5rem;
+  }
+
+  .intro-line {
     display: block;
 
     p {
       margin-top: 1rem;
+      padding: 0;
       text-align: left;
     }
   }
 
-  .item {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .page-intro {
+    padding-bottom: 2.25rem;
+  }
+
+  .post-item {
+    grid-template-columns: minmax(0, 1fr) 1.25rem;
+    gap: 0.75rem;
+    padding: 1.4rem 0;
   }
 
   .date-block {
+    grid-column: 1 / -1;
     flex-direction: row;
     align-items: center;
+    padding: 0;
   }
 
-  .cover {
-    aspect-ratio: 2.6;
-    order: -1;
-  }
-}
-
-@media (max-width: 560px) {
-  .posts {
-    padding-top: 2rem;
-  }
-
-  .title-row {
-    display: block;
-
-    span {
-      display: inline-block;
-      margin-top: 0.5rem;
-    }
+  .item-arrow {
+    opacity: 0.45;
+    transform: none;
   }
 }
 </style>

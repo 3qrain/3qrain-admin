@@ -1,44 +1,47 @@
 <script setup lang="ts">
 const store = useAppStore()
-const year = new Date().getFullYear()
+const year = useState('site-current-year', () => new Date().getFullYear())
 </script>
 
 <template>
   <footer class="footer">
     <div class="footer-inner">
-      <div>
+      <div class="footer-brand">
         <p class="name">{{ store.site.name || '3qrain' }}</p>
-        <p class="desc">{{ store.site.bio || '写作、记录与一点点生活现场。' }}</p>
+        <p class="desc">人生若只如初见</p>
       </div>
       <div class="links">
         <NuxtLink to="/posts">文章</NuxtLink>
         <NuxtLink to="/notes">说说</NuxtLink>
         <NuxtLink to="/friends">友链</NuxtLink>
       </div>
-      <p class="copy">© {{ year }} 3qrain blog</p>
+      <p class="copy">© {{ year }} · 3qrain</p>
     </div>
   </footer>
 </template>
 
 <style scoped lang="less">
 .footer {
-  padding: 4rem 1rem 2.5rem;
+  padding: 5rem 1rem 2.25rem;
 }
 
 .footer-inner {
   width: min(var(--site-max), 100%);
   margin: 0 auto;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border);
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1rem 2rem;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 2rem;
+  align-items: end;
+}
+
+.footer-brand {
+  max-width: 28rem;
 }
 
 .name {
-  font-size: 0.875rem;
-  font-weight: 800;
+  font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .desc,
@@ -65,7 +68,8 @@ const year = new Date().getFullYear()
 }
 
 .copy {
-  grid-column: 1 / -1;
+  margin: 0;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
@@ -75,6 +79,7 @@ const year = new Date().getFullYear()
 
   .footer-inner {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
 
   .links {

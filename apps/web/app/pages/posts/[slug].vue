@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowLeft } from '@lucide/vue'
 import { onMounted } from 'vue'
 import { formatDate } from '~/utils/date'
 
@@ -21,10 +22,10 @@ if (error.value || !res.value?.success) {
 const post = ref(res.value!.data)
 
 useHead({
-  title: computed(() => `${post.value.title} - 3qrain`),
+  title: computed(() => `${post.value.title} - ${appStore.site.name || '3qrain'}`),
   meta: [
-    { name: 'description', content: post.value.summary || post.value.title },
-  ],
+    { name: 'description', content: post.value.summary || post.value.title }
+  ]
 })
 
 onMounted(async () => {
@@ -32,41 +33,43 @@ onMounted(async () => {
     const { data } = await viewApi.record(post.value.id, 'post', appStore.genVisitorId())
     post.value.viewCount = data.viewCount
   } catch {
-    // ignore
+    // 阅读记录失败不影响正文展示。
   }
 })
 </script>
 
 <template>
   <article class="article">
-    <div class="page-shell">
-      <NuxtLink to="/posts" class="back">返回文章列表</NuxtLink>
+    <header :class="['article-intro', { 'has-cover': post.cover }]">
+      <div v-if="post.cover" class="cover-layer" aria-hidden="true">
+        <img :src="post.cover" alt="" />
+      </div>
 
-      <header class="article-header">
-        <div class="header-main">
+      <div class="intro-inner">
+        <NuxtLink to="/posts" class="back">
+          <ArrowLeft :size="16" :stroke-width="1.7" />
+          <span>文章</span>
+        </NuxtLink>
+
+        <div class="intro-content">
           <span class="eyebrow">{{ post.category?.name || 'Article' }}</span>
           <h1>{{ post.title }}</h1>
-          <p v-if="post.summary">{{ post.summary }}</p>
+          <p v-if="post.summary" class="summary">{{ post.summary }}</p>
 
           <div class="article-meta">
             <time>{{ formatDate(post.createdAt) }}</time>
-            <span>{{ post.viewCount }} 次阅读</span>
-            <span v-if="post.isPinned">置顶</span>
+            <span>{{ post.viewCount }} 阅读</span>
+            <span v-if="post.isPinned" class="pinned">置顶</span>
+          </div>
+
+          <div v-if="post.tags.length" class="tags">
+            <NuxtLink v-for="tagItem in post.tags" :key="tagItem.id" :to="`/posts?tag=${tagItem.slug}`">
+              #{{ tagItem.name }}
+            </NuxtLink>
           </div>
         </div>
-
-        <aside v-if="post.tags.length" class="tag-box soft-card">
-          <span>Tags</span>
-          <NuxtLink v-for="tag in post.tags" :key="tag.id" :to="`/posts?tag=${tag.slug}`">
-            #{{ tag.name }}
-          </NuxtLink>
-        </aside>
-      </header>
-
-      <div v-if="post.cover" class="article-cover">
-        <img :src="post.cover" :alt="post.title" />
       </div>
-    </div>
+    </header>
 
     <div class="reader">
       <div v-if="post.contentHtml" class="prose" v-html="post.contentHtml" />
@@ -79,107 +82,117 @@ onMounted(async () => {
 
 <style scoped lang="less">
 .article {
-  padding: 2rem 0 4rem;
+  padding-bottom: 4rem;
 }
 
-.back {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.25rem;
-  padding: 0 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  font-weight: 800;
-  transition: color 0.15s, border-color 0.15s;
-
-  &:hover {
-    color: var(--color-base-content);
-    border-color: color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
-  }
-}
-
-.article-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 14rem;
-  gap: 2rem;
-  align-items: end;
-  margin-top: 2.25rem;
-}
-
-.header-main {
-  max-width: 54rem;
-
-  h1 {
-    margin-top: 0.875rem;
-    font-size: clamp(2.25rem, 6vw, 5.2rem);
-    line-height: 1.02;
-    font-weight: 900;
-    letter-spacing: 0;
-  }
-
-  p {
-    margin-top: 1.25rem;
-    max-width: 42rem;
-    color: var(--color-muted);
-    font-size: 1.0625rem;
-    line-height: 1.9;
-  }
-}
-
-.article-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-  color: var(--color-subtle);
-  font-size: 0.8125rem;
-}
-
-.tag-box {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  span {
-    color: var(--color-subtle);
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-  }
-
-  a {
-    font-size: 0.875rem;
-    font-weight: 800;
-    color: var(--color-muted);
-
-    &:hover {
-      color: var(--color-primary);
-    }
-  }
-}
-
-.article-cover {
-  margin-top: 2.5rem;
-  border-radius: 0.5rem;
+.article-intro {
+  position: relative;
+  min-height: 27rem;
   overflow: hidden;
-  background: var(--color-base-200);
+}
+
+.cover-layer {
+  position: absolute;
+  inset: 0 0 0 42%;
+  opacity: 0.34;
+  mask-image: linear-gradient(to right, transparent, black 34%, black 78%, transparent);
 
   img {
-    display: block;
     width: 100%;
-    max-height: 36rem;
+    height: 100%;
     object-fit: cover;
   }
 }
 
+.intro-inner {
+  position: relative;
+  width: min(var(--reader-max), 100%);
+  margin: 0 auto;
+  display: flex;
+  min-height: 27rem;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem var(--reader-padding) 3.5rem;
+}
+
+.back {
+  position: absolute;
+  top: 2rem;
+  left: var(--reader-padding);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-subtle);
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: color 0.16s ease, transform 0.16s ease;
+
+  &:hover {
+    color: var(--color-primary);
+    transform: translateX(-0.2rem);
+  }
+}
+
+.intro-content {
+  position: relative;
+  max-width: 49rem;
+
+  h1 {
+    margin-top: 0.9rem;
+    font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+}
+
+.summary {
+  max-width: 39rem;
+  margin-top: 1.25rem;
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.85;
+}
+
+.article-meta,
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.article-meta {
+  margin-top: 1.25rem;
+  color: var(--color-subtle);
+  font-size: 0.75rem;
+}
+
+.pinned {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.tags {
+  margin-top: 0.8rem;
+
+  a {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.8;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
 .reader {
-  width: min(46rem, calc(100vw - 2rem));
-  margin: 3rem auto 0;
+  width: min(var(--reader-max), 100%);
+  margin: 2.5rem auto 0;
+  padding: 0 var(--reader-padding);
 }
 
 .empty {
@@ -190,7 +203,7 @@ onMounted(async () => {
 
 .prose {
   font-size: 1.03125rem;
-  line-height: 1.9;
+  line-height: 1.95;
   word-break: break-word;
 
   :deep(*) {
@@ -201,32 +214,32 @@ onMounted(async () => {
   :deep(h2),
   :deep(h3),
   :deep(h4) {
-    line-height: 1.35;
+    line-height: 1.4;
     letter-spacing: 0;
   }
 
   :deep(h1) {
-    font-size: 2rem;
-    font-weight: 900;
     margin: 3rem 0 1rem;
+    font-size: 2rem;
+    font-weight: 800;
   }
 
   :deep(h2) {
-    font-size: 1.625rem;
-    font-weight: 900;
     margin: 2.75rem 0 0.875rem;
+    font-size: 1.625rem;
+    font-weight: 800;
   }
 
   :deep(h3) {
-    font-size: 1.25rem;
-    font-weight: 850;
     margin: 2rem 0 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 800;
   }
 
   :deep(h4) {
-    font-size: 1.0625rem;
-    font-weight: 850;
     margin: 1.5rem 0 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 800;
   }
 
   :deep(p) {
@@ -246,24 +259,24 @@ onMounted(async () => {
   :deep(blockquote) {
     margin: 1.5rem 0;
     padding: 0.75rem 1rem;
-    border-left: 0.25rem solid var(--color-primary);
-    background: color-mix(in oklab, var(--color-primary) 7%, transparent);
+    border-left: 0.2rem solid var(--color-primary);
+    background: var(--color-accent-soft);
     color: var(--color-muted);
   }
 
   :deep(pre) {
     margin: 1.5rem 0;
     padding: 1rem;
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background: var(--color-base-200);
     overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
+    background: var(--color-base-200);
     font-size: 0.875rem;
     line-height: 1.7;
   }
 
   :deep(code) {
-    font-family: "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
     font-size: 0.9em;
   }
 
@@ -279,27 +292,48 @@ onMounted(async () => {
     padding-left: 1.5rem;
   }
 
+  :deep(ul) {
+    list-style: disc;
+  }
+
+  :deep(ol) {
+    list-style: decimal;
+  }
+
   :deep(li) {
     margin: 0.35rem 0;
   }
 
   :deep(hr) {
+    margin: 2.5rem 0;
     border: none;
     border-top: 1px solid var(--color-border);
-    margin: 2.5rem 0;
   }
 
   :deep(img) {
     display: block;
     max-width: 100%;
-    border-radius: 0.5rem;
+    height: auto;
     margin: 1.5rem auto;
+    border-radius: 0.375rem;
+  }
+
+  :deep(figure) {
+    margin: 1.75rem 0;
+  }
+
+  :deep(figcaption) {
+    margin-top: 0.625rem;
+    color: var(--color-subtle);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    text-align: center;
   }
 
   :deep(table) {
     width: 100%;
-    border-collapse: collapse;
     margin: 1.5rem 0;
+    border-collapse: collapse;
     font-size: 0.875rem;
   }
 
@@ -311,34 +345,29 @@ onMounted(async () => {
   }
 
   :deep(th) {
-    font-weight: 800;
     background: var(--color-base-200);
+    font-weight: 800;
   }
 }
 
-@media (max-width: 780px) {
-  .article-header {
-    grid-template-columns: 1fr;
+@media (max-width: 720px) {
+  .article-intro,
+  .intro-inner {
+    min-height: 24rem;
   }
 
-  .tag-box {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-}
-
-@media (max-width: 560px) {
-  .article {
-    padding-top: 1.5rem;
+  .cover-layer {
+    inset: 35% 0 0;
+    opacity: 0.25;
+    mask-image: linear-gradient(to bottom, transparent, black 38%, transparent);
   }
 
-  .header-main h1 {
-    font-size: 2.35rem;
+  .intro-content h1 {
+    font-size: 2.5rem;
   }
 
   .reader {
-    margin-top: 2rem;
+    margin-top: 1.75rem;
   }
 }
 </style>

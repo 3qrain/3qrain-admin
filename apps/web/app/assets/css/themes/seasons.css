@@ -1,0 +1,60 @@
+:root,
+[data-season='autumn'] {
+  --color-primary: oklch(57% 0.14 48);
+  --color-accent-soft: oklch(76% 0.1 62 / 0.15);
+  --rain-color: rgb(105 116 124);
+  --rain-opacity: 0.25;
+  --rain-density: 0.78;
+}
+
+[data-season='spring'] {
+  --color-primary: oklch(55% 0.12 146);
+  --color-accent-soft: oklch(75% 0.09 145 / 0.14);
+  --rain-color: rgb(103 132 126);
+  --rain-opacity: 0.22;
+  --rain-density: 0.72;
+}
+
+[data-season='summer'] {
+  --color-primary: oklch(55% 0.12 215);
+  --color-accent-soft: oklch(76% 0.08 210 / 0.15);
+  --rain-color: rgb(83 125 145);
+  --rain-opacity: 0.29;
+  --rain-density: 1;
+}
+
+[data-season='winter'] {
+  --color-primary: oklch(57% 0.08 246);
+  --color-accent-soft: oklch(78% 0.05 245 / 0.14);
+  --rain-color: rgb(126 145 163);
+  --rain-opacity: 0.18;
+  --rain-density: 0.55;
+}
+
+[data-theme='dark'][data-season='autumn'] {
+  --color-primary: oklch(70% 0.13 52);
+  --color-accent-soft: oklch(70% 0.11 52 / 0.13);
+  --rain-color: rgb(163 174 184);
+  --rain-opacity: 0.2;
+}
+
+[data-theme='dark'][data-season='spring'] {
+  --color-primary: oklch(71% 0.11 146);
+  --color-accent-soft: oklch(71% 0.09 146 / 0.12);
+  --rain-color: rgb(151 177 170);
+  --rain-opacity: 0.18;
+}
+
+[data-theme='dark'][data-season='summer'] {
+  --color-primary: oklch(72% 0.1 215);
+  --color-accent-soft: oklch(72% 0.08 215 / 0.13);
+  --rain-color: rgb(139 174 191);
+  --rain-opacity: 0.23;
+}
+
+[data-theme='dark'][data-season='winter'] {
+  --color-primary: oklch(74% 0.07 246);
+  --color-accent-soft: oklch(74% 0.06 246 / 0.12);
+  --rain-color: rgb(170 187 203);
+  --rain-opacity: 0.16;
+}

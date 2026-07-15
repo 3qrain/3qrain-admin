@@ -1,17 +1,31 @@
-:root {
+:root,
+[data-theme='light'] {
   color-scheme: light;
-  --color-base-100: oklch(100% 0 0);
-  --color-base-200: oklch(98% 0 0);
-  --color-base-300: oklch(95% 0 0);
-  --color-base-content: oklch(21% .006 285.885);
-  --color-primary: oklch(45% .24 277.023);
-  --color-primary-content: oklch(93% .034 272.788);
-  --color-info: oklch(74% .16 232.661);
-  --color-info-content: oklch(29% .066 243.157);
-  --color-success: oklch(76% .177 163.223);
-  --color-success-content: oklch(37% .077 168.94);
-  --color-warning: oklch(82% .189 84.429);
-  --color-warning-content: oklch(40.833% 0.11231 45.319);
-  --color-error: oklch(71% .194 13.428);
-  --color-error-content: oklch(27% .105 12.094);
+
+  --color-base-100: oklch(98.5% 0.004 95);
+  --color-base-200: oklch(96.4% 0.006 95);
+  --color-base-300: oklch(92.5% 0.008 95);
+  --color-base-content: oklch(24% 0.012 70);
+  --color-primary-content: oklch(98% 0.006 95);
+
+  --color-muted: oklch(48% 0.014 70);
+  --color-subtle: oklch(63% 0.012 70);
+  --color-border: oklch(24% 0.012 70 / 0.11);
+  --color-surface: oklch(99.2% 0.003 95 / 0.86);
+  --color-surface-muted: oklch(96.4% 0.006 95 / 0.82);
+  --color-header: oklch(98.5% 0.004 95 / 0.82);
+  --color-overlay: oklch(18% 0.01 70 / 0.38);
+
+  --color-info: oklch(61% 0.12 235);
+  --color-success: oklch(61% 0.13 157);
+  --color-warning: oklch(72% 0.15 78);
+  --color-error: oklch(62% 0.18 25);
+
+  --shadow-soft: 0 1rem 3rem oklch(24% 0.012 70 / 0.08);
+  --shadow-float: 0 1.25rem 4rem oklch(24% 0.012 70 / 0.14);
+
+  --swatch-spring: oklch(66% 0.12 145);
+  --swatch-summer: oklch(63% 0.12 210);
+  --swatch-autumn: oklch(62% 0.14 52);
+  --swatch-winter: oklch(66% 0.08 245);
 }

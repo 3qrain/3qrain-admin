@@ -1,21 +1,32 @@
-export function formatDate(ts: string | number) {
-  const d = new Date(ts)
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${h}:${m}`
+const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23'
+})
+
+const dateOnlyFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+})
+
+function getParts(formatter: Intl.DateTimeFormat, ts: string | number) {
+  return Object.fromEntries(
+    formatter.formatToParts(new Date(ts)).map(part => [part.type, part.value])
+  )
 }
 
-export function formatRelativeTime(ts: string | number) {
-  const time = typeof ts === 'string' ? new Date(ts).getTime() : ts
-  const now = Date.now()
-  const diff = now - time
-  const minute = 60 * 1000
-  const hour = 60 * minute
-  const day = 24 * hour
+export function formatDate(ts: string | number) {
+  const { year, month, day, hour, minute } = getParts(dateFormatter, ts)
+  return `${year}年${month}月${day}日 ${hour}:${minute}`
+}
 
-  if (diff < minute) return '刚刚'
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`
-  if (diff < 30 * day) return `${Math.floor(diff / day)} 天前`
-  return formatDate(ts)
+export function formatDateOnly(ts: string | number) {
+  const { year, month, day } = getParts(dateOnlyFormatter, ts)
+  return `${year}.${month}.${day}`
 }

@@ -1,4 +1,5 @@
 type Theme = 'system' | 'light' | 'dark'
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter'
 
 export const APP_STORAGE_KEY = '3qrain:web-app'
 
@@ -6,6 +7,7 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     visitorId: '',
     theme: 'system' as Theme,
+    season: 'autumn' as Season,
     site: { name: '3qrain', avatar: '', bio: '' },
     user: null as { id: number; username: string; email: string; avatarUrl: string; role: string } | null
   }),
@@ -18,5 +20,5 @@ export const useAppStore = defineStore('app', {
       return this.visitorId
     }
   },
-  persist: { key: APP_STORAGE_KEY, pick: ['visitorId', 'theme', 'site', 'user'] }
+  persist: { key: APP_STORAGE_KEY, pick: ['visitorId', 'theme', 'season'] }
 })

@@ -24,18 +24,31 @@ onMounted(async () => {
 
 <template>
   <div class="layout">
-    <LayoutAppHeader />
+    <ClientOnly>
+      <ThemeSeasonRain />
+    </ClientOnly>
 
-    <main class="main">
-      <slot />
-    </main>
+    <div class="layout-content">
+      <LayoutAppHeader />
 
-    <LayoutAppFooter />
+      <main class="main">
+        <slot />
+      </main>
+
+      <LayoutAppFooter />
+    </div>
   </div>
 </template>
 
 <style scoped lang="less">
 .layout {
+  position: relative;
+  min-height: 100vh;
+}
+
+.layout-content {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -43,13 +56,8 @@ onMounted(async () => {
 
 .main {
   flex: 1;
-  padding-top: 5.5rem;
+  padding-top: var(--header-height);
   width: 100%;
 }
 
-@media (max-width: 720px) {
-  .main {
-    padding-top: 4.75rem;
-  }
-}
 </style>

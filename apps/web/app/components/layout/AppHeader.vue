@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { Menu, User as UserIcon, X } from '@lucide/vue'
+import { CloudRain, Menu, User as UserIcon, X } from '@lucide/vue'
 
 const store = useAppStore()
 const userApi = useUserApi()
@@ -63,15 +63,14 @@ watch(() => route.fullPath, () => {
   <header class="header">
     <div class="header-inner">
       <NuxtLink to="/" class="brand">
-        <img v-if="store.site.avatar" :src="store.site.avatar" alt="" class="avatar" />
-        <span v-else class="avatar-fallback">3</span>
+        <span class="brand-mark"><CloudRain :size="18" :stroke-width="1.5" /></span>
         <span class="brand-copy">
           <strong>{{ store.site.name || '3qrain' }}</strong>
-          <small>blog</small>
+          <small>Seasonal journal</small>
         </span>
       </NuxtLink>
 
-      <nav class="nav">
+      <nav class="nav" aria-label="主导航">
         <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-link">
           {{ item.label }}
         </NuxtLink>
@@ -151,78 +150,66 @@ watch(() => route.fullPath, () => {
 <style scoped lang="less">
 .header {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  inset: 0 0 auto;
   z-index: 50;
-  height: 4.5rem;
+  height: var(--header-height);
   display: flex;
   align-items: center;
-  border-bottom: 1px solid color-mix(in oklab, var(--color-border) 72%, transparent);
-  background: color-mix(in oklab, var(--color-base-100) 78%, transparent);
+  background: var(--color-header);
   backdrop-filter: blur(1.25rem);
 
   &-inner {
-    width: 100%;
-    max-width: var(--site-max);
+    width: min(var(--site-max), calc(100vw - 2rem));
     margin: 0 auto;
-    padding: 0 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 2rem;
   }
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  text-decoration: none;
+  gap: 0.7rem;
   color: var(--color-base-content);
   flex-shrink: 0;
 }
 
-.avatar,
-.avatar-fallback {
-  width: 2.125rem;
-  height: 2.125rem;
-  border-radius: 50%;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  .brand:hover & {
-    transform: rotate(20deg);
-  }
-}
-
-.avatar {
-  object-fit: cover;
-}
-
-.avatar-fallback {
+.brand-mark {
+  width: 2rem;
+  height: 2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary);
-  color: var(--color-primary-content);
-  font-weight: 800;
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+  transition: transform 0.3s ease, background 0.3s ease;
+
+  .brand:hover & {
+    transform: translateY(0.125rem);
+    background: var(--color-surface-muted);
+  }
 }
 
 .brand-copy {
   display: flex;
   flex-direction: column;
-  line-height: 1.05;
+  line-height: 1;
 
   strong {
-    font-size: 0.9375rem;
-    font-weight: 800;
+    font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 1rem;
+    font-weight: 700;
     letter-spacing: 0;
   }
 
   small {
-    margin-top: 0.125rem;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
+    margin-top: 0.3rem;
+    font-size: 0.5625rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
     color: var(--color-subtle);
   }
@@ -231,37 +218,51 @@ watch(() => route.fullPath, () => {
 .nav {
   display: flex;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--color-base-100) 72%, transparent);
+  align-self: stretch;
+  gap: 1.75rem;
 }
 
 .nav-link {
   position: relative;
-  font-size: 0.875rem;
-  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--color-base-content);
-  opacity: 0.52;
-  text-decoration: none;
-  padding: 0.45rem 0.9rem;
-  border-radius: 999px;
-  transition: opacity 0.25s;
+  opacity: 0.46;
+  transition: color 0.2s ease, opacity 0.2s ease;
 
-  &:hover { opacity: 0.7; }
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0.85rem;
+    left: 0;
+    height: 0.125rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    color: var(--color-primary);
+    opacity: 0.86;
+  }
 
   &.router-link-active {
     opacity: 1;
-    background: var(--color-base-content);
-    color: var(--color-base-100);
+    color: var(--color-base-content);
+
+    &::after {
+      transform: scaleX(1);
+    }
   }
 }
 
-/* ---- Actions ---- */
 .actions {
   flex-shrink: 0;
-  min-width: 6.5rem;
+  min-width: 5.25rem;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -271,8 +272,8 @@ watch(() => route.fullPath, () => {
 .trigger,
 .user-trigger,
 .menu-trigger {
-  width: 2.125rem;
-  height: 2.125rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 999px;
   border: none;
   background: transparent;
@@ -287,9 +288,13 @@ watch(() => route.fullPath, () => {
 .trigger,
 .menu-trigger {
   color: var(--color-base-content);
-  opacity: 0.35;
+  opacity: 0.48;
 
-  &:hover { opacity: 0.7; }
+  &:hover {
+    color: var(--color-primary);
+    background: var(--color-accent-soft);
+    opacity: 1;
+  }
 }
 
 .menu-trigger {
@@ -297,8 +302,8 @@ watch(() => route.fullPath, () => {
 }
 
 .user-avatar {
-  width: 2.125rem;
-  height: 2.125rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -315,7 +320,7 @@ watch(() => route.fullPath, () => {
 .drawer-enter-from,
 .drawer-leave-to {
   opacity: 0;
-  transform: translateY(-0.5rem);
+  transform: translateY(-0.375rem);
 }
 
 /* ---- Modal Card ---- */
@@ -450,10 +455,6 @@ watch(() => route.fullPath, () => {
 }
 
 @media (max-width: 720px) {
-  .header {
-    height: 4rem;
-  }
-
   .nav {
     display: none;
   }
@@ -473,28 +474,29 @@ watch(() => route.fullPath, () => {
   .mobile-nav {
     display: flex;
     position: absolute;
-    left: 1rem;
-    right: 1rem;
-    top: 4.5rem;
+    left: 0;
+    right: 0;
+    top: var(--header-height);
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.5rem;
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background: color-mix(in oklab, var(--color-base-100) 94%, transparent);
+    gap: 0.125rem;
+    padding: 0.625rem max(1rem, calc((100vw - var(--site-max)) / 2));
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-header);
     box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(1.25rem);
   }
 
   .mobile-link {
     padding: 0.75rem 0.875rem;
-    border-radius: 0.5rem;
+    border-radius: 0.3125rem;
     font-size: 0.9375rem;
     font-weight: 700;
     color: var(--color-muted);
 
     &.router-link-active {
-      color: var(--color-base-content);
-      background: var(--color-base-200);
+      color: var(--color-primary);
+      background: var(--color-accent-soft);
     }
   }
 
