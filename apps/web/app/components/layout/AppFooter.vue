@@ -243,7 +243,7 @@ const year = useState('site-current-year', () => new Date().getFullYear())
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .footer {
     padding-top: 3rem;
   }

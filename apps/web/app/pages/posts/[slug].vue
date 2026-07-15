@@ -350,7 +350,7 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .article-intro,
   .intro-inner {
     min-height: 24rem;

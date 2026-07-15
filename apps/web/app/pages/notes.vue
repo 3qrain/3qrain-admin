@@ -553,7 +553,7 @@ useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
   color: var(--color-subtle);
 }
 
-@media (max-width: 620px) {
+@media (max-width: 768px) {
   .notes {
     padding-top: 2.5rem;
   }

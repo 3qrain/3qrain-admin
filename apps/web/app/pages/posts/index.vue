@@ -226,7 +226,7 @@ useHead({ title: computed(() => `文章 - ${store.site.name || '3qrain'}`) })
   color: var(--color-subtle);
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
   .posts {
     padding-top: 2.5rem;
   }

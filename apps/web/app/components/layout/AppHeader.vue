@@ -17,6 +17,11 @@ const navItems = [
   { to: '/friends', label: '友链' },
 ]
 
+function isNavActive(path: string) {
+  if (path === '/') return route.path === '/'
+  return route.path === path || route.path.startsWith(`${path}/`)
+}
+
 watch(() => store.user, (v) => { if (v) showLoginModal.value = false })
 const showProfileModal = ref(false)
 const savingProfile = ref(false)
@@ -71,7 +76,12 @@ watch(() => route.fullPath, () => {
       </NuxtLink>
 
       <nav class="nav" aria-label="主导航">
-        <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-link">
+        <NuxtLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          :class="['nav-link', { active: isNavActive(item.to) }]"
+        >
           {{ item.label }}
         </NuxtLink>
       </nav>
@@ -100,7 +110,12 @@ watch(() => route.fullPath, () => {
 
     <Transition name="drawer">
       <nav v-if="mobileOpen" class="mobile-nav">
-        <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" class="mobile-link">
+        <NuxtLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          :class="['mobile-link', { active: isNavActive(item.to) }]"
+        >
           {{ item.label }}
         </NuxtLink>
       </nav>
@@ -159,6 +174,7 @@ watch(() => route.fullPath, () => {
   backdrop-filter: blur(1.25rem);
 
   &-inner {
+    height: 100%;
     width: min(var(--site-max), calc(100vw - 2rem));
     margin: 0 auto;
     display: flex;
@@ -236,7 +252,7 @@ watch(() => route.fullPath, () => {
     content: '';
     position: absolute;
     right: 0;
-    bottom: 0.85rem;
+    top: calc(50% + 1rem);
     left: 0;
     height: 0.125rem;
     border-radius: 999px;
@@ -250,7 +266,7 @@ watch(() => route.fullPath, () => {
     opacity: 0.86;
   }
 
-  &.router-link-active {
+  &.active {
     opacity: 1;
     color: var(--color-base-content);
 
@@ -454,7 +470,7 @@ watch(() => route.fullPath, () => {
   &:disabled { opacity: 0.5; cursor: default; }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .nav {
     display: none;
   }
@@ -494,7 +510,7 @@ watch(() => route.fullPath, () => {
     font-weight: 700;
     color: var(--color-muted);
 
-    &.router-link-active {
+    &.active {
       color: var(--color-primary);
       background: var(--color-accent-soft);
     }

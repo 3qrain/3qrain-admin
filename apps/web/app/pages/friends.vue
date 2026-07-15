@@ -358,7 +358,7 @@ textarea {
   }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 768px) {
   .friends {
     padding-top: 2.5rem;
   }
