@@ -15,6 +15,7 @@
   --color-surface-muted: oklch(96.4% 0.006 95 / 0.82);
   --color-header: oklch(98.5% 0.004 95 / 0.82);
   --color-overlay: oklch(18% 0.01 70 / 0.38);
+  --color-overlay-content: oklch(98% 0.004 95);
 
   --color-info: oklch(61% 0.12 235);
   --color-success: oklch(61% 0.13 157);
