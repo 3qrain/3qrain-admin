@@ -8,6 +8,8 @@ export const useAppStore = defineStore('app', {
     visitorId: '',
     theme: 'system' as Theme,
     season: 'autumn' as Season,
+    onlineVisitors: 0,
+    wsConnected: false,
     site: { name: '3qrain', avatar: '', bio: '' },
     user: null as { id: number; username: string; email: string; avatarUrl: string; role: string } | null
   }),

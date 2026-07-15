@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import type { WSContext } from 'hono/ws'
 import Redis from 'ioredis'
-import type { WsChannelMessage, WsConnected, WsNotification, WsPing, WsPong } from '@3qrain/shared'
+import type { WsChannelMessage, WsConnected, WsNotification, WsOnlineCount, WsPing, WsPong } from '@3qrain/shared'
 import { config } from '~/env'
 /* ------------------------------------------------------------------ */
 /* 连接管理                                                            */
@@ -27,6 +27,19 @@ export function getVisitorCount(): number {
     if (info.role === 'visitor') ids.add(info.visitorId)
   }
   return ids.size
+}
+
+function broadcastVisitorCount() {
+  const message: WsOnlineCount = {
+    type: 'online_count',
+    data: { count: getVisitorCount() }
+  }
+  const payload = JSON.stringify(message)
+
+  for (const [raw, info] of connections) {
+    if (info.role !== 'visitor') continue
+    try { (raw as any).send(payload) } catch { /* ignore */ }
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -99,6 +112,7 @@ function makeHandler(role: ConnInfo['role']) {
 
         const connected: WsConnected = { type: 'connected' }
         ws.send(JSON.stringify(connected))
+        if (role === 'visitor') broadcastVisitorCount()
 
         // console.log(`[ws] ${role} connected (size=${connections.size}, admin=${countByRole('admin')}, visitor=${getVisitorCount()})`)
       },
@@ -106,6 +120,7 @@ function makeHandler(role: ConnInfo['role']) {
       onClose(_evt: Event, ws: WSContext) {
         const existed = connections.has(ws.raw)
         if (existed) connections.delete(ws.raw)
+        if (existed && role === 'visitor') broadcastVisitorCount()
         // console.log(`[ws] ${role} disconnected (existed=${existed}, size=${connections.size}, admin=${countByRole('admin')})`)
       },
 

@@ -5,40 +5,64 @@ export function useWebSocket() {
   if (import.meta.server) return
 
   const store = useAppStore()
+  const serverPort = useRuntimeConfig().public.serverPort
 
   onMounted(() => {
-    const visitorId = store.genVisitorId()
-    const serverPort = useRuntimeConfig().public.serverPort
-    const url = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.hostname}:${serverPort}/api/ws?visitorId=${visitorId}`
-    const ws = new WebSocket(url)
+    let ws: WebSocket | null = null
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let disposed = false
 
-    ws.onopen = () => console.log('[ws] connected')
-    ws.onclose = () => console.log('[ws] disconnected')
-    ws.onmessage = (e) => {
-      try {
-        const msg: WsServerMessage = JSON.parse(e.data)
-        if (msg.type === 'notification') {
-          toast(msg.data.title, {
-            description: msg.data.content,
-            action: {
-              label: '查看',
-              onClick: () => {
-                if (msg.data.meta) {
-                  try {
-                    const meta = JSON.parse(msg.data.meta)
-                    if (meta.slug) navigateTo(`/posts/${meta.slug}`)
-                    else if (meta.noteId) navigateTo('/notes')
-                  } catch { navigateTo('/notes') }
+    function connect() {
+      const visitorId = store.genVisitorId()
+      const url = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.hostname}:${serverPort}/api/ws?visitorId=${visitorId}`
+      ws = new WebSocket(url)
+
+      ws.onopen = () => {
+        store.wsConnected = false
+      }
+
+      ws.onclose = () => {
+        store.wsConnected = false
+        if (!disposed) reconnectTimer = setTimeout(connect, 3000)
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const msg: WsServerMessage = JSON.parse(event.data)
+          if (msg.type === 'online_count') {
+            store.onlineVisitors = msg.data.count
+            store.wsConnected = true
+            return
+          }
+
+          if (msg.type === 'notification') {
+            toast(msg.data.title, {
+              description: msg.data.content,
+              action: {
+                label: '查看',
+                onClick: () => {
+                  if (msg.data.meta) {
+                    try {
+                      const meta = JSON.parse(msg.data.meta)
+                      if (meta.slug) navigateTo(`/posts/${meta.slug}`)
+                      else if (meta.noteId) navigateTo('/notes')
+                    } catch { navigateTo('/notes') }
+                  }
                 }
-              },
-            },
-          })
-        }
-      } catch { /* ignore */ }
+              }
+            })
+          }
+        } catch { /* ignore */ }
+      }
     }
 
+    connect()
+
     onUnmounted(() => {
-      ws.close()
+      disposed = true
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      ws?.close()
+      store.wsConnected = false
     })
   })
 }

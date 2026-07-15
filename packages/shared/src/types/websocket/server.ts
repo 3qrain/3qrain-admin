@@ -8,9 +8,16 @@ export interface WsPong {
   type: 'pong'
 }
 
+export interface WsOnlineCount {
+  type: 'online_count'
+  data: {
+    count: number
+  }
+}
+
 export interface WsNotification {
   type: 'notification'
   data: NotificationPayload
 }
 
-export type WsServerMessage = WsConnected | WsPong | WsNotification
+export type WsServerMessage = WsConnected | WsPong | WsOnlineCount | WsNotification
