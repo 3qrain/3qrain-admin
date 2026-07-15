@@ -32,7 +32,9 @@ onMounted(async () => {
       <LayoutAppHeader />
 
       <main class="main">
-        <slot />
+        <LayoutRouteLoading>
+          <slot />
+        </LayoutRouteLoading>
       </main>
 
       <LayoutAppFooter />
