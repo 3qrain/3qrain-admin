@@ -293,12 +293,12 @@ export async function update(c: Context) {
 
   const post = await getPostWithRelations(id)
 
-  if (body.status === 'published') {
+  if (existing.status !== 'published' && post?.status === 'published') {
     broadcast({
       type: 'new_post',
-      title: `飘来一篇文章「${body.title}」`,
-      // content: body.summary || '',
-      meta: JSON.stringify({ slug: body.slug })
+      title: `飘来一篇文章「${post.title}」`,
+      // content: post.summary || '',
+      meta: JSON.stringify({ slug: post.slug })
     }).catch(() => {})
   }
 
