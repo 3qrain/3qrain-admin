@@ -7,9 +7,9 @@ import { useAppStore } from '~/stores/app'
 const theme = computed(() => useAppStore().theme)
 
 const modes: { key: Theme; icon: typeof Sun; label: string }[] = [
+  { key: 'system', icon: Monitor, label: '跟随系统' },
   { key: 'light', icon: Sun, label: '浅色' },
-  { key: 'dark', icon: Moon, label: '深色' },
-  { key: 'system', icon: Monitor, label: '跟随系统' }
+  { key: 'dark', icon: Moon, label: '深色' }
 ]
 
 const activeIndex = computed(() => modes.findIndex(m => m.key === theme.value))
@@ -33,11 +33,11 @@ const activeIndex = computed(() => modes.findIndex(m => m.key === theme.value))
 
 <style scoped lang="less">
 .theme-toggle {
-  --p: .25rem;
+  --p: 0.25rem;
   position: relative;
   display: flex;
   padding: var(--p);
-  border-radius: .625rem;
+  border-radius: 0.625rem;
   background: var(--color-base-300);
 }
 
@@ -47,9 +47,9 @@ const activeIndex = computed(() => modes.findIndex(m => m.key === theme.value))
   left: calc(var(--p) + var(--i, 0) * (100% - var(--p) * 2) / 3);
   width: calc((100% - var(--p) * 2) / 3);
   height: calc(100% - var(--p) * 2);
-  border-radius: .5rem;
+  border-radius: 0.5rem;
   background: var(--color-base-100);
-  box-shadow: 0 .0625rem .1875rem rgb(0 0 0 / 0.08);
+  box-shadow: 0 0.0625rem 0.1875rem rgb(0 0 0 / 0.08);
   transition: left 0.4s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
@@ -60,17 +60,21 @@ const activeIndex = computed(() => modes.findIndex(m => m.key === theme.value))
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: .375rem 0;
+  padding: 0.375rem 0;
   border: none;
-  border-radius: .5rem;
+  border-radius: 0.5rem;
   background: transparent;
   color: var(--color-base-content);
-  opacity: .4;
+  opacity: 0.4;
   cursor: pointer;
-  transition: opacity .15s;
+  transition: opacity 0.15s;
 
-  &:hover { opacity: .7; }
-  &.on { opacity: 1; }
+  &:hover {
+    opacity: 0.7;
+  }
+  &.on {
+    opacity: 1;
+  }
 }
 </style>
 
