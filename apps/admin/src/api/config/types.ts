@@ -1,5 +1,9 @@
 export interface SiteInfo {
   bio: string
+  motto: string
+  copyright: string
+  filingNumber: string
+  filingUrl: string
 }
 
 export interface Appearance {

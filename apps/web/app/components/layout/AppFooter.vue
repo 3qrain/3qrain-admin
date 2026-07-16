@@ -2,7 +2,6 @@
 import { Radio } from '@lucide/vue'
 
 const store = useAppStore()
-const year = useState('site-current-year', () => new Date().getFullYear())
 </script>
 
 <template>
@@ -11,7 +10,7 @@ const year = useState('site-current-year', () => new Date().getFullYear())
       <div class="footer-main">
         <div class="footer-brand">
           <p class="name">{{ store.site.name || '3qrain' }}</p>
-          <p class="desc">人生若只如初见</p>
+          <p v-if="store.site.motto" class="desc">{{ store.site.motto }}</p>
         </div>
         <nav class="links" aria-label="页脚导航">
           <NuxtLink to="/posts">文章</NuxtLink>
@@ -42,10 +41,16 @@ const year = useState('site-current-year', () => new Date().getFullYear())
         </div>
 
         <div class="legal">
-          <p class="copy">© {{ year }} · 3qrain</p>
-          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
-            ICP备2026000000号-1
+          <p v-if="store.site.copyright" class="copy">{{ store.site.copyright }}</p>
+          <a
+            v-if="store.site.filingNumber && store.site.filingUrl"
+            :href="store.site.filingUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ store.site.filingNumber }}
           </a>
+          <span v-else-if="store.site.filingNumber">{{ store.site.filingNumber }}</span>
         </div>
       </div>
     </div>
@@ -124,9 +129,13 @@ const year = useState('site-current-year', () => new Date().getFullYear())
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
 
-  a {
+  a,
+  span {
     color: var(--color-subtle);
     font-size: 0.75rem;
+  }
+
+  a {
     transition: color 0.15s ease;
 
     &:hover {

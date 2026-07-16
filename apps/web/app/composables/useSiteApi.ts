@@ -4,6 +4,10 @@ export interface SiteInfo {
   name: string
   avatar: string
   bio: string
+  motto: string
+  copyright: string
+  filingNumber: string
+  filingUrl: string
 }
 
 export function useSiteApi() {

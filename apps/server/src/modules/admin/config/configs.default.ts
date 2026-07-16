@@ -1,12 +1,11 @@
 import { count } from 'drizzle-orm'
 import { db } from '~/db'
 import { configs } from '~/db/schema'
+import { DEFAULT_SITE_INFO } from '~/constants/site-info'
 import type { FullConfig } from './configs.schema'
 
 export const getDefaultConfig = (): FullConfig => ({
-  siteInfo: {
-    bio: '',
-  },
+  siteInfo: { ...DEFAULT_SITE_INFO },
   appearance: {
     theme: 'system',
   },

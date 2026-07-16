@@ -177,7 +177,7 @@ onMounted(load)
     font-weight: 600;
     color: var(--color-primary);
     background: color-mix(in oklab, var(--color-primary) 12%, transparent);
-    padding: 0 0.4375rem;
+    padding: 0.2rem 0.4375rem;
     border-radius: 0.25rem;
     line-height: 1.25rem;
     vertical-align: middle;
