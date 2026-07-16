@@ -12,6 +12,7 @@ import {
   UserRoundX
 } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
+import Spinner from '~/components/base/Spinner.vue'
 import { getNotifications, markRead, deleteNotifications } from '~/api/notifications'
 import type { NotificationItem } from '~/api/notifications/types'
 import type { NotificationType } from '@3qrain/shared'
@@ -174,7 +175,9 @@ onMounted(() => load(false))
       </div>
     </div>
 
-    <div v-if="loading && list.length === 0" class="list-loading">加载中...</div>
+    <div v-if="loading && list.length === 0" class="list-loading">
+      <Spinner />
+    </div>
 
     <div v-else-if="!loading && list.length === 0" class="list-empty">
       <Bell :size="28" :stroke-width="1" />
@@ -334,6 +337,10 @@ onMounted(() => load(false))
   p {
     margin: 0;
   }
+}
+
+.list-loading {
+  opacity: 1;
 }
 
 .list-body {

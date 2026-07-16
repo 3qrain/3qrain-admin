@@ -1,7 +1,8 @@
 <!-- app-main区域内专用分页组件 -->
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { ChevronLeft, ChevronRight, LoaderCircle } from '@lucide/vue'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import Spinner from '~/components/base/Spinner.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -94,7 +95,7 @@ watch(
     <template v-if="mode === 'button'">
       <!-- <Loading v-if="loading" /> -->
       <span v-if="loading" class="loader">
-        <LoaderCircle class="loader-loading" />
+        <Spinner />
       </span>
       <nav v-if="totalPages > 1 && loading === false" class="pager">
         <button class="pg-btn" :disabled="currentPage <= 1" @click="goTo(currentPage - 1)">
@@ -115,7 +116,7 @@ watch(
     <!-- 滚动模式 -->
     <div v-else-if="mode === 'scroll'" ref="sentinel" class="scroll-sentinel">
       <span v-if="loading" class="loader">
-        <LoaderCircle class="loader-loading" />
+        <Spinner />
       </span>
       <span v-else-if="currentPage >= totalPages && totalPages > 1" class="ended">没有更多了</span>
     </div>
@@ -201,26 +202,6 @@ watch(
 .loader {
   margin: 0 auto;
   padding: 2rem 0;
-  .loader-loading {
-    opacity: .1;
-    animation: rotate 1s linear infinite, fadeIn .3s ease-in-out;
-  }
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: .1;
-    }
-  }
-  @keyframes rotate {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
 }
 
 /* ---- 滚动加载 ---- */

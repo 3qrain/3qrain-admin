@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner'
 import { LogOut, X, Globe } from '@lucide/vue'
 import Input from '~/components/base/Input.vue'
 import Button from '~/components/base/Button.vue'
-import Loading from '~/components/base/Loading.vue'
+import Skeleton from '~/components/base/Skeleton.vue'
 import Popover from '~/components/base/Popover.vue'
 import { useAppStore } from '~/stores/app'
 import { changePassword, getSessions, kickSession, kickAllSessions, logout } from '~/api/account'
@@ -31,7 +31,7 @@ function relativeTime(ts: number): string {
 
 async function loadSessions() {
   loadingSessions.value = true
-  try { sessions.value = await withMinDuration(() => getSessions()) }
+  try { sessions.value = await getSessions() }
   catch { toast.error('加载会话失败') }
   finally { loadingSessions.value = false }
 }
@@ -89,13 +89,34 @@ onMounted(loadSessions)
 
 <template>
   <div class="section">
-    <!-- 登录设备 -->
-    <h2 class="section-title">登录设备</h2>
-    <p class="section-desc">管理你的登录会话，保护账户安全。</p>
+    <!-- 修改密码 -->
+    <h2 class="section-title">修改密码</h2>
+    <p class="section-desc">修改密码后所有设备会被强制下线。</p>
 
-    <Loading v-if="loadingSessions" />
-    <div v-else-if="sessions.length > 0" class="sessions">
-      <div class="sessions-head">
+    <div class="form">
+      <label class="field">
+        <span>当前密码</span>
+        <Input v-model="form.oldPassword" type="password" placeholder="输入当前密码" />
+      </label>
+      <label class="field">
+        <span>新密码</span>
+        <Input v-model="form.newPassword" type="password" placeholder="输入新密码" />
+      </label>
+      <label class="field">
+        <span>确认新密码</span>
+        <Input v-model="form.confirmPassword" type="password" placeholder="再次输入新密码" />
+      </label>
+      <div class="actions">
+        <Button variant="danger" :loading="saving" @click="handleChangePassword">修改密码</Button>
+      </div>
+    </div>
+
+    <!-- 登录设备 -->
+    <div class="divider" />
+    <div class="sessions-section-head">
+      <h2 class="section-title">登录设备</h2>
+      <div class="sessions-section-meta">
+        <p class="section-desc">管理你的登录会话，保护账户安全。</p>
         <Popover v-if="sessions.length > 1">
           <Button variant="ghost" size="sm">踢掉全部其他设备</Button>
           <template #content="{ close }">
@@ -107,7 +128,14 @@ onMounted(loadSessions)
           </template>
         </Popover>
       </div>
+    </div>
 
+    <div v-if="loadingSessions" class="sessions-skeleton-reveal" aria-hidden="true">
+      <Skeleton class="sessions-skeleton">
+        <span v-for="index in 2" :key="index" class="skeleton-session" />
+      </Skeleton>
+    </div>
+    <div v-else-if="sessions.length > 0" class="sessions">
       <div v-for="s in sessions" :key="s.token" :class="['session', s.isCurrent && 'current']">
         <div class="session-info">
           <span class="session-label">{{ s.isCurrent ? '当前设备' : '其他设备' }}</span>
@@ -148,28 +176,6 @@ onMounted(loadSessions)
       </div>
     </div>
 
-    <!-- 修改密码 -->
-    <div class="divider" />
-    <h2 class="section-title">修改密码</h2>
-    <p class="section-desc">修改密码后所有设备会被强制下线。</p>
-
-    <div class="form">
-      <label class="field">
-        <span>当前密码</span>
-        <Input v-model="form.oldPassword" type="password" placeholder="输入当前密码" />
-      </label>
-      <label class="field">
-        <span>新密码</span>
-        <Input v-model="form.newPassword" type="password" placeholder="输入新密码" />
-      </label>
-      <label class="field">
-        <span>确认新密码</span>
-        <Input v-model="form.confirmPassword" type="password" placeholder="再次输入新密码" />
-      </label>
-      <div class="actions">
-        <Button variant="danger" :loading="saving" @click="handleChangePassword">修改密码</Button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -197,10 +203,42 @@ onMounted(loadSessions)
 }
 
 /* ---- Sessions ---- */
-.sessions-head {
+.sessions-section-head {
+  .section-desc {
+    margin: 0;
+  }
+}
+
+.sessions-section-meta {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.sessions-skeleton-reveal {
+  opacity: 0;
+  animation: sessions-skeleton-reveal 0.2s ease-out 0.08s forwards;
+}
+
+@keyframes sessions-skeleton-reveal {
+  to { opacity: 1; }
+}
+
+.sessions-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-session {
+  display: block;
+  width: 100%;
+  min-height: 5.25rem;
+  border-radius: 0.5rem;
+  background: var(--color-base-200);
 }
 
 .session {

@@ -4,13 +4,12 @@ import { Image as ImageIcon, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import Input from '~/components/base/Input.vue'
 import Button from '~/components/base/Button.vue'
-import Loading from '~/components/base/Loading.vue'
+import Skeleton from '~/components/base/Skeleton.vue'
 import MediaPickerModal from '~/components/media/MediaPickerModal.vue'
 import { getProfile, updateProfile } from '~/api/account'
 import { getConfig, updateConfig } from '~/api/config'
 import type { SiteInfo } from '~/api/config/types'
 import type { MediaItem } from '~/api/media'
-import { withMinDuration } from '~/utils/async'
 import { useAppStore } from '~/stores/app'
 
 const appStore = useAppStore()
@@ -30,7 +29,7 @@ const siteInfo = ref<SiteInfo>({
 async function load() {
   loading.value = true
   try {
-    const [p, config] = await withMinDuration(() => Promise.all([getProfile(), getConfig(['siteInfo'])]))
+    const [p, config] = await Promise.all([getProfile(), getConfig(['siteInfo'])])
     profile.value = { username: p.username, email: p.email, avatarUrl: p.avatarUrl }
     siteInfo.value = { ...siteInfo.value, ...config.siteInfo }
   } catch {
@@ -43,10 +42,10 @@ async function load() {
 async function save() {
   saving.value = true
   try {
-    await withMinDuration(() => Promise.all([
+    await Promise.all([
       updateProfile(profile.value),
       updateConfig('siteInfo', siteInfo.value),
-    ]))
+    ])
     appStore.adminUser = { ...appStore.adminUser, ...profile.value }
     toast.success('已保存')
   } catch (e: any) {
@@ -68,11 +67,53 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="section">
+  <div class="section" :aria-busy="loading">
     <h2 class="section-title">个人信息</h2>
     <p class="section-desc">管理你的资料和站点信息。</p>
 
-    <Loading v-if="loading" />
+    <div v-if="loading" class="profile-skeleton-reveal" aria-hidden="true">
+      <Skeleton class="form profile-skeleton">
+        <div class="avatar-row">
+          <span class="skeleton-block skeleton-avatar" />
+          <div class="skeleton-avatar-copy">
+            <span class="skeleton-block skeleton-line title" />
+            <span class="skeleton-block skeleton-line avatar-desc" />
+            <span class="skeleton-block skeleton-button secondary" />
+          </div>
+        </div>
+
+        <div v-for="index in 2" :key="index" class="skeleton-field">
+          <span class="skeleton-block skeleton-label" />
+          <span class="skeleton-block skeleton-input" />
+        </div>
+
+        <div class="skeleton-field">
+          <span class="skeleton-block skeleton-label" />
+          <span class="skeleton-block skeleton-textarea" />
+        </div>
+
+        <div class="form-group">
+          <div class="skeleton-group-head">
+            <span class="skeleton-block skeleton-line group-title" />
+            <span class="skeleton-block skeleton-line group-desc" />
+          </div>
+
+          <div v-for="index in 2" :key="`footer-${index}`" class="skeleton-field">
+            <span class="skeleton-block skeleton-label" />
+            <span class="skeleton-block skeleton-input" />
+          </div>
+
+          <div class="filing-fields">
+            <div v-for="index in 2" :key="`filing-${index}`" class="skeleton-field">
+              <span class="skeleton-block skeleton-label" />
+              <span class="skeleton-block skeleton-input" />
+            </div>
+          </div>
+        </div>
+
+        <span class="skeleton-block skeleton-button save" />
+      </Skeleton>
+    </div>
     <div v-else class="form">
       <div class="avatar-row">
         <img
@@ -119,12 +160,12 @@ onMounted(load)
 
       <div class="form-group">
         <div class="group-head">
-          <h3>页脚信息</h3>
-          <p>用于前台页脚的签名、版权和备案信息。</p>
+          <h2>页脚信息</h2>
+          <p>用于前台页脚的箴言、版权和备案信息。</p>
         </div>
 
         <label class="field">
-          <span>简短签名</span>
+          <span>箴言</span>
           <Input v-model="siteInfo.motto" placeholder="四时轮转，且惜流年" />
         </label>
 
@@ -182,6 +223,98 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.profile-skeleton-reveal {
+  opacity: 0;
+  animation: profile-skeleton-reveal 0.2s ease-out 0.08s forwards;
+}
+
+@keyframes profile-skeleton-reveal {
+  to { opacity: 1; }
+}
+
+.skeleton-block {
+  display: block;
+  border-radius: 0.25rem;
+  background: var(--color-base-200);
+}
+
+.skeleton-avatar {
+  width: 4rem;
+  height: 4rem;
+  flex: 0 0 4rem;
+  border-radius: 50%;
+}
+
+.skeleton-avatar-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.skeleton-line {
+  height: 0.75rem;
+
+  &.title {
+    width: 4.5rem;
+  }
+
+  &.avatar-desc {
+    width: min(15rem, 80%);
+    height: 0.625rem;
+    margin-top: 0.45rem;
+  }
+
+  &.group-title {
+    width: 4rem;
+  }
+
+  &.group-desc {
+    width: min(18rem, 72%);
+    height: 0.625rem;
+    margin-top: 0.45rem;
+  }
+}
+
+.skeleton-button {
+  width: 5.25rem;
+  height: 1.75rem;
+
+  &.secondary {
+    margin-top: 0.7rem;
+  }
+
+  &.save {
+    width: 4.25rem;
+    height: 2rem;
+    margin-top: 0.5rem;
+  }
+}
+
+.skeleton-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  min-width: 0;
+}
+
+.skeleton-label {
+  width: 2.5rem;
+  height: 0.625rem;
+}
+
+.skeleton-input {
+  width: 100%;
+  height: 2rem;
+}
+
+.skeleton-textarea {
+  width: 100%;
+  height: 4.75rem;
+}
+
+.skeleton-group-head {
+  padding-bottom: 0.05rem;
 }
 
 .avatar-row {
@@ -280,7 +413,7 @@ onMounted(load)
 }
 
 .group-head {
-  h3 {
+  h2 {
     font-size: 0.875rem;
     font-weight: 700;
   }
@@ -315,6 +448,10 @@ onMounted(load)
   }
 
   .avatar-field {
+    width: 100%;
+  }
+
+  .skeleton-avatar-copy {
     width: 100%;
   }
 

@@ -14,6 +14,7 @@ import type { FriendLink } from '~/api/friend-links/types'
 import { formatDate } from '~/utils/date'
 import Popover from '~/components/base/Popover.vue'
 import Button from '~/components/base/Button.vue'
+import Spinner from '~/components/base/Spinner.vue'
 import { toast } from 'vue-sonner'
 import { useAppStore } from '~/stores/app'
 
@@ -205,7 +206,9 @@ defineExpose({
 
     <FriendLinkFormModal v-model:open="showCreate" :edit-item="null" @saved="handleSaved" />
 
-    <div v-if="loading && list.length === 0" class="list-loading">加载中...</div>
+    <div v-if="loading && list.length === 0" class="list-loading">
+      <Spinner />
+    </div>
 
     <div v-else-if="!loading && list.length === 0" class="list-empty">
       <Link2 :size="28" :stroke-width="1" />
@@ -385,6 +388,10 @@ defineExpose({
   p {
     margin: 0;
   }
+}
+
+.list-loading {
+  opacity: 1;
 }
 
 .list-body {
