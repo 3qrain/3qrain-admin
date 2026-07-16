@@ -1,30 +1,70 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
+import { nextTick, onBeforeUnmount, ref } from 'vue'
 
-const visible = ref(false)
+const rendered = ref(false)
+const active = ref(false)
 const nuxtApp = useNuxtApp()
 
+let loadingRequested = false
 let showTimer: ReturnType<typeof setTimeout> | undefined
+let hideTimer: ReturnType<typeof setTimeout> | undefined
 let safetyTimer: ReturnType<typeof setTimeout> | undefined
 
 function clearTimers() {
   clearTimeout(showTimer)
+  clearTimeout(hideTimer)
   clearTimeout(safetyTimer)
+  showTimer = undefined
+  hideTimer = undefined
+  safetyTimer = undefined
+}
+
+async function revealLoading() {
+  rendered.value = true
+  await nextTick()
+
+  if (loadingRequested) {
+    active.value = true
+  }
 }
 
 function startLoading() {
   clearTimers()
-  showTimer = setTimeout(() => {
-    visible.value = true
-  }, 90)
+  loadingRequested = true
+
+  if (rendered.value) {
+    active.value = true
+  } else {
+    showTimer = setTimeout(revealLoading, 90)
+  }
+
   safetyTimer = setTimeout(() => {
-    visible.value = false
+    finishLoading()
   }, 15000)
 }
 
 function finishLoading() {
-  clearTimers()
-  visible.value = false
+  loadingRequested = false
+  clearTimeout(showTimer)
+  clearTimeout(safetyTimer)
+  showTimer = undefined
+  safetyTimer = undefined
+
+  if (!rendered.value) return
+  if (!active.value) {
+    if (!hideTimer) {
+      rendered.value = false
+    }
+    return
+  }
+
+  active.value = false
+  hideTimer = setTimeout(() => {
+    hideTimer = undefined
+    if (!loadingRequested) {
+      rendered.value = false
+    }
+  }, 180)
 }
 
 if (import.meta.client) {
@@ -43,21 +83,26 @@ if (import.meta.client) {
 
 <template>
   <div class="route-switch">
-    <div v-show="!visible" class="route-content">
-      <slot />
-    </div>
-
-    <Transition name="route-rain">
-      <div v-show="visible" class="route-loading" role="status" aria-label="页面加载中">
-        <div class="rain-mark" aria-hidden="true">
-          <i class="rain-drop rain-drop-left" />
-          <i class="rain-drop rain-drop-main" />
-          <i class="rain-drop rain-drop-right" />
-          <span class="rain-ripple rain-ripple-first" />
-          <span class="rain-ripple rain-ripple-second" />
-        </div>
+    <Transition name="route-content">
+      <div v-show="!rendered" class="route-content">
+        <slot />
       </div>
     </Transition>
+
+    <div
+      v-if="rendered"
+      :class="['route-loading', { active }]"
+      role="status"
+      aria-label="页面加载中"
+    >
+      <div class="rain-mark" aria-hidden="true">
+        <i class="rain-drop rain-drop-left" />
+        <i class="rain-drop rain-drop-main" />
+        <i class="rain-drop rain-drop-right" />
+        <span class="rain-ripple rain-ripple-first" />
+        <span class="rain-ripple rain-ripple-second" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -77,6 +122,17 @@ if (import.meta.client) {
   display: grid;
   place-items: center;
   min-height: calc(100vh - var(--header-height));
+  opacity: 0;
+  transition: opacity 0.18s ease;
+
+  &.active {
+    opacity: 1;
+
+    .rain-mark {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
 }
 
 .rain-mark {
@@ -84,6 +140,9 @@ if (import.meta.client) {
   width: 5.5rem;
   height: 4.5rem;
   color: var(--color-primary);
+  opacity: 0;
+  transform: translateY(-0.375rem) scale(0.98);
+  transition: opacity 0.16s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .rain-drop {
@@ -131,34 +190,20 @@ if (import.meta.client) {
   animation-delay: 0.34s;
 }
 
-.route-rain-enter-active {
-  transition: opacity 0.16s ease;
-
-  .rain-mark {
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+.route-content-enter-active {
+  transition: opacity 0.18s ease;
 }
 
-.route-rain-leave-active {
-  transition: opacity 0.12s ease;
-
-  .rain-mark {
-    transition: transform 0.32s ease, opacity 0.2s ease;
-  }
+.route-content-leave-active {
+  transition: opacity 0.1s ease;
 }
 
-.route-rain-enter-from,
-.route-rain-leave-to {
+.route-content-enter-from {
   opacity: 0;
 }
 
-.route-rain-enter-from .rain-mark {
-  transform: translateY(-0.5rem);
-}
-
-.route-rain-leave-to .rain-mark {
+.route-content-leave-to {
   opacity: 0;
-  transform: translateY(0.375rem) scale(1.04);
 }
 
 @keyframes rain-fall {
