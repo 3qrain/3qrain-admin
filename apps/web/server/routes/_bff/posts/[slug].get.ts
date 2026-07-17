@@ -1,6 +1,5 @@
 import type { ApiResponse } from '~~/app/types/api'
 import type { PostDetail } from '~~/app/composables/usePostApi'
-import { API_PREFIX } from '@3qrain/shared'
 import { preparePostContent } from '~~/server/utils/post-content'
 
 export default defineEventHandler(async event => {
@@ -10,7 +9,7 @@ export default defineEventHandler(async event => {
   }
 
   const response = await event.$fetch<ApiResponse<PostDetail>>(
-    `${API_PREFIX}/posts/${encodeURIComponent(slug)}`,
+    `/api/posts/${encodeURIComponent(slug)}`,
   )
 
   return {

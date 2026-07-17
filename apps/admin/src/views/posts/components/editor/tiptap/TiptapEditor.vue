@@ -121,20 +121,7 @@ defineExpose({ getContent, editor })
       opacity: 0.85;
     }
 
-    pre {
-      background: var(--color-base-200);
-      border-radius: .5rem;
-      padding: .75rem 1rem;
-      font-size: .8125rem;
-      overflow-x: auto;
-      code {
-        background: none;
-        padding: 0;
-        font-size: inherit;
-      }
-    }
-
-    code {
+    code:not(pre code) {
       background: var(--color-base-200);
       padding: .125rem .375rem;
       border-radius: .25rem;

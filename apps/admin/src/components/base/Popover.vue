@@ -20,13 +20,19 @@ const props = withDefaults(
     placement?: Placement
     trigger?: 'click' | 'hover'
     showArrow?: boolean
+    variant?: 'default' | 'menu'
   }>(),
   {
     placement: 'top-end',
     trigger: 'click',
     showArrow: true,
+    variant: 'default',
   },
 )
+
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+}>()
 
 const open = ref(false)
 
@@ -109,6 +115,7 @@ function openPopover() {
   if (open.value) return
 
   open.value = true
+  emit('update:open', true)
 
   nextTick(() => {
     updatePosition()
@@ -119,7 +126,9 @@ function openPopover() {
 
 
 function close() {
+  if (!open.value) return
   open.value = false
+  emit('update:open', false)
   stopAutoUpdate()
   removeGlobalEvents()
 }
@@ -265,7 +274,7 @@ defineExpose({
         <div
           v-if="open"
           ref="floatingRef"
-          class="popover"
+          :class="['popover', `is-${variant}`]"
           :data-side="currentPlacement.split('-')[0]"
           :style="floatingStyle"
           @mouseenter="clearHoverTimer"
@@ -317,6 +326,13 @@ defineExpose({
 
   box-shadow:
     0 .5rem 1.5rem rgb(0 0 0 / .12);
+}
+
+.popover.is-menu {
+  min-width: 13rem;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.16);
 }
 
 
