@@ -227,12 +227,21 @@ onUnmounted(() => {
 }
 
 /* Page transition */
-.page-fade-enter-active,
-.page-fade-leave-active {
-  transition: opacity 0.12s ease;
+.page-fade-enter-active {
+  transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.page-fade-enter-from,
+
+.page-fade-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(0.375rem);
+}
+
 .page-fade-leave-to {
   opacity: 0;
+  transform: translateY(-0.1875rem);
 }
 </style>
