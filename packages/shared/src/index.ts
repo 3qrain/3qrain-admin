@@ -1,5 +1,7 @@
 export * from './constants/error-code'
+export * from './constants/code-block'
 export * from './constants/uppy-tus'
 export * from './types/websocket'
 export * from './types/email'
+export * from './types/tiptap'
 export * from './email-templates'

@@ -1,20 +1,9 @@
 <script setup lang="ts">
 import { NodeViewContent, NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
 import { Code2 } from '@lucide/vue'
+import { CODE_BLOCK_LANGUAGES } from '@3qrain/shared'
 
 const props = defineProps(nodeViewProps)
-
-const languages = [
-  { label: 'Text', value: 'text' },
-  { label: 'TypeScript', value: 'ts' },
-  { label: 'JavaScript', value: 'js' },
-  { label: 'Vue', value: 'vue' },
-  { label: 'CSS', value: 'css' },
-  { label: 'HTML', value: 'html' },
-  { label: 'JSON', value: 'json' },
-  { label: 'Bash', value: 'bash' },
-  { label: 'SQL', value: 'sql' },
-]
 </script>
 
 <template>
@@ -28,7 +17,7 @@ const languages = [
         :value="props.node.attrs.language || 'text'"
         @change="props.updateAttributes({ language: ($event.target as HTMLSelectElement).value })"
       >
-        <option v-for="item in languages" :key="item.value" :value="item.value">
+        <option v-for="item in CODE_BLOCK_LANGUAGES" :key="item.value" :value="item.value">
           {{ item.label }}
         </option>
       </select>

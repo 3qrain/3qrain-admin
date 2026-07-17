@@ -15,6 +15,8 @@
   --color-header: oklch(20.5% 0.012 255 / 0.82);
   --color-overlay: oklch(7% 0.01 255 / 0.64);
   --color-overlay-content: oklch(98% 0.004 95);
+  --color-code-surface: oklch(17.5% 0.012 255);
+  --color-code-header: oklch(20.5% 0.014 255);
 
   --color-info: oklch(72% 0.1 235);
   --color-success: oklch(72% 0.12 157);
@@ -23,6 +25,7 @@
 
   --shadow-soft: 0 1rem 3rem oklch(5% 0.01 255 / 0.24);
   --shadow-float: 0 1.25rem 4rem oklch(5% 0.01 255 / 0.4);
+  --shadow-code: 0 0.125rem 0.75rem oklch(5% 0.01 255 / 0.16);
 
   --swatch-spring: oklch(72% 0.11 145);
   --swatch-summer: oklch(72% 0.1 210);

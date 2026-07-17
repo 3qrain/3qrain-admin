@@ -1,4 +1,5 @@
 import type { ApiResponse, PaginatedData } from '~/types/api'
+import type { TiptapDocument } from '@3qrain/shared'
 
 export interface PostItem {
   id: number
@@ -15,19 +16,20 @@ export interface PostItem {
 }
 
 export interface PostDetail extends PostItem {
-  contentHtml: string | null
+  content: TiptapDocument
   updatedAt: string
 }
 
 export function usePostApi() {
   const { $api } = useNuxtApp()
+  const requestFetch = useRequestFetch()
 
   function getList(query: { page?: number; pageSize?: number; category?: string; tag?: string }) {
     return $api<ApiResponse<PaginatedData<PostItem>>>('/posts', { query })
   }
 
   function getDetail(slug: string) {
-    return $api<ApiResponse<PostDetail>>(`/posts/${slug}`)
+    return requestFetch<ApiResponse<PostDetail>>(`/_bff/posts/${encodeURIComponent(slug)}`)
   }
 
   return { getList, getDetail }

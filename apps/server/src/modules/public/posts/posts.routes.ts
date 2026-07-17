@@ -48,7 +48,10 @@ export const listPostsRoute = createRoute({
 })
 
 const postDetailSchema = postItemSchema.extend({
-  contentHtml: z.string().nullable(),
+  content: z.object({
+    type: z.literal('doc'),
+    content: z.array(z.any()),
+  }),
   updatedAt: z.string(),
 })
 

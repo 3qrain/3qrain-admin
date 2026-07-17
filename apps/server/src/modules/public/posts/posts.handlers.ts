@@ -3,10 +3,22 @@ import { eq, and, desc, count, inArray, isNull } from 'drizzle-orm'
 import { db } from '~/db'
 import { posts, postTags, categories, tags } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
-import { ErrorCode } from '@3qrain/shared'
+import { ErrorCode, emptyTiptapDocument, type TiptapDocument } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 
 const publishedFilter = and(eq(posts.status, 'published'), isNull(posts.deletedAt))
+
+function parseContent(content: string): TiptapDocument {
+  try {
+    const parsed = JSON.parse(content)
+    if (parsed?.type === 'doc' && Array.isArray(parsed.content)) {
+      return parsed
+    }
+  } catch {
+    /* Invalid editor data falls back to an empty document. */
+  }
+  return emptyTiptapDocument
+}
 
 export async function list(c: Context) {
   const page = Number(c.req.query('page') || 1)
@@ -136,7 +148,7 @@ export async function detail(c: Context) {
     slug: post.slug || '',
     summary: post.summary,
     cover: post.cover,
-    contentHtml: post.contentHtml,
+    content: parseContent(post.content),
     isPinned: post.isPinned,
     categoryId: post.categoryId,
     viewCount: post.viewCount || 0,

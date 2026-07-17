@@ -3,15 +3,15 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['@pinia/nuxt'],
+  runtimeConfig: {
+    public: {
+      serverPort: 3010
+    }
+  },
   app: {
     pageTransition: {
       name: 'page',
       mode: 'out-in'
-    }
-  },
-  runtimeConfig: {
-    public: {
-      serverPort: 3010
     }
   },
   nitro: {
