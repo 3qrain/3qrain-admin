@@ -55,9 +55,9 @@ const statusText = computed(() => {
   <div class="bar">
     <div class="left">
       <Badge :variant="badgeVariant">
-        <Loader v-if="saveStatus === 'saving'" style="width: .8125rem; height: .8125rem;" class="spin" />
-        <Pencil v-else-if="saveStatus === 'unsaved'" style="width: .8125rem; height: .8125rem;" />
-        <Check v-else style="width: .8125rem; height: .8125rem;" />
+        <Loader v-if="saveStatus === 'saving'" style="width: 0.8125rem; height: 0.8125rem" class="spin" />
+        <Pencil v-else-if="saveStatus === 'unsaved'" style="width: 0.8125rem; height: 0.8125rem" />
+        <Check v-else style="width: 0.8125rem; height: 0.8125rem" />
         {{ badgeText }}
       </Badge>
     </div>
@@ -66,15 +66,15 @@ const statusText = computed(() => {
       <Badge :variant="statusBadge">{{ statusText }}</Badge>
 
       <Button v-if="!isArchived" variant="neutral" size="sm" :loading="saving" @click="emit('archive')">
-        <Archive style="width: .875rem; height: .875rem;" /> 归档
+        <Archive style="width: 0.875rem; height: 0.875rem" /> 归档
       </Button>
 
       <Button v-if="!isPublished" variant="success" size="sm" :loading="saving" @click="emit('publish')">
-        <Send style="width: .875rem; height: .875rem;" /> 发布
+        <Send style="width: 0.875rem; height: 0.875rem" /> 发布
       </Button>
 
       <Button variant="ghost" size="sm" icon :active="settingsOpen" @click="emit('toggleSettings')">
-        <Settings style="width: 1.25rem; height: 1.25rem;" />
+        <Settings style="width: 1.25rem; height: 1.25rem" />
       </Button>
     </div>
   </div>
@@ -88,12 +88,29 @@ const statusText = computed(() => {
   padding: 0 1.25rem;
   height: 3rem;
   flex-shrink: 0;
-  border-bottom: .0625rem solid var(--color-border);
+  border-bottom: 0.0625rem solid var(--color-border);
 }
 
-.left, .right { display: flex; align-items: center; gap: .5rem; }
+.left,
+.right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 
-.spin { animation: spin 1s linear infinite; }
+.spin {
+  animation: spin 1s linear infinite;
+}
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (width <= 48rem) {
+  .bar {
+    padding: 0;
+  }
+}
 </style>

@@ -69,6 +69,6 @@ defineExpose({ getContent });
 }
 
 @media (width <= 48rem) {
-  .wrap { padding-left: 1rem; padding-right: 1rem; }
+  .post-editor-content-wrap { padding: 1.5rem 0rem 1.25rem; }
 }
 </style>

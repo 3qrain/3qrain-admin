@@ -43,7 +43,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
       <button type="button" :title="copied ? '已复制' : '复制代码'" @click.stop="copyCode">
         <Check v-if="copied" :size="14" />
         <Copy v-else :size="14" />
-        <span>{{ copied ? '已复制' : '复制' }}</span>
+        <span style="font-size: .6875rem;">{{ copied ? '已复制' : '复制' }}</span>
       </button>
     </div>
 
