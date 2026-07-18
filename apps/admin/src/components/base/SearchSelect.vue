@@ -20,6 +20,8 @@ const props = withDefaults(defineProps<{
   variant?: 'default' | 'ghost'
   size?: 'sm' | 'md'
   fullWidth?: boolean
+  searchable?: boolean
+  width?: string
 }>(), {
   placeholder: '请选择',
   searchPlaceholder: '搜索',
@@ -29,6 +31,7 @@ const props = withDefaults(defineProps<{
   variant: 'default',
   size: 'sm',
   fullWidth: false,
+  searchable: true,
 })
 
 const model = defineModel<T>()
@@ -66,6 +69,7 @@ function select(option: SelectOption<T>, close: () => void) {
     <Popover
       :placement="placement"
       :show-arrow="false"
+      :width="width"
       variant="menu"
       @update:open="handleOpen"
     >
@@ -84,7 +88,7 @@ function select(option: SelectOption<T>, close: () => void) {
 
       <template #content="{ close }">
         <div class="search-select-content">
-          <label class="search-select-search">
+          <label v-if="searchable" class="search-select-search">
             <Search :size="13" aria-hidden="true" />
             <input
               ref="searchRef"
@@ -137,6 +141,7 @@ function select(option: SelectOption<T>, close: () => void) {
       text-align: left;
     }
   }
+
 }
 
 .search-select-trigger {
@@ -226,7 +231,7 @@ function select(option: SelectOption<T>, close: () => void) {
 }
 
 .search-select-content {
-  width: 13rem;
+  width: 100%;
   color: color-mix(in oklab, var(--color-base-content) 72%, transparent);
   font-size: 0.75rem;
 }

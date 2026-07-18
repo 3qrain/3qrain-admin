@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Mail, Panda } from '@lucide/vue'
+import { Mail, Panda, ArrowUpRight } from '@lucide/vue'
+import { useRouter } from 'vue-router'
 import Skeleton from '~/components/base/Skeleton.vue'
 import EmailStatus from './EmailStatus.vue'
 import type { NotificationItem } from '~/api/notifications/types'
@@ -8,11 +9,12 @@ import { getComments } from '~/api/comments'
 import type { Comment } from '~/api/comments/types'
 import { getPost } from '~/api/posts'
 import { formatDate } from '~/utils/date'
-import router from '~/router/index.ts'
+
 const props = defineProps<{
   item: NotificationItem | null
 }>()
 
+const router = useRouter()
 const comment = ref<Comment | null>(null)
 const postTitle = ref('')
 const postSlug = ref('')
@@ -94,7 +96,7 @@ watch(
       <div class="detail-section">
         <h3 class="section-title">通知内容</h3>
         <template v-if="item.type === 'new_comment' || item.type === 'new_reply'">
-          <div v-if="comment" class="comment-card">
+          <div v-if="comment" class="comment-card comment-card-link" @click="router.push({ name: 'comments' })">
             <div class="comment-author">
               <img v-if="comment.user.avatarUrl" :src="comment.user.avatarUrl" class="comment-avatar" />
               <span class="comment-username">{{ comment.user.username }}</span>
@@ -109,6 +111,7 @@ watch(
             <div class="comment-meta">
               <span>{{ (comment.targetType === 'post' ? '文章' : '说说') + '#' + comment.targetId }}</span>
               <span>{{ formatDate(comment.createdAt) }}</span>
+              <ArrowUpRight class="comment-link-icon" />
               <!-- <span v-if="comment.replyToUser">回复 {{ comment.replyToUser.username }}</span> -->
             </div>
           </div>
@@ -220,6 +223,15 @@ watch(
   border-radius: 0.5rem;
   animation: fadeIn 0.3s;
 }
+
+.comment-card-link {
+  cursor: pointer;
+
+  &:hover .comment-link-icon {
+    opacity: 0.8;
+    transform: translate(0.0625rem, -0.0625rem);
+  }
+}
 @keyframes fadeIn {
   0% {
     opacity: 0;
@@ -236,20 +248,28 @@ watch(
 }
 
 .comment-author {
+  min-width: 0;
+  overflow: hidden;
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   line-height: 1rem;
+  white-space: nowrap;
 }
 
 .comment-avatar {
   width: 1.25rem;
   height: 1.25rem;
+  flex-shrink: 0;
   border-radius: 50%;
 }
 
 .comment-username {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.8125rem;
   font-weight: 600;
 }
@@ -271,10 +291,20 @@ watch(
 
 .comment-meta {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
   font-size: 0.6875rem;
   color: var(--color-base-content);
   opacity: 0.4;
+}
+
+.comment-link-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: opacity 0.15s, transform 0.15s;
 }
 
 .comment-card-skeleton {

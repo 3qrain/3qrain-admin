@@ -9,13 +9,19 @@ import {
   Trash2,
   RotateCw,
   UserRoundCheck,
-  UserRoundX
+  UserRoundX,
+  Clock3,
+  LoaderCircle,
+  MailCheck,
+  MailX,
+  CircleOff
 } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import Spinner from '~/components/base/Spinner.vue'
+import SearchSelect from '~/components/base/SearchSelect.vue'
 import { getNotifications, markRead, deleteNotifications } from '~/api/notifications'
 import type { NotificationItem } from '~/api/notifications/types'
-import type { NotificationType } from '@3qrain/shared'
+import type { EmailStatus, NotificationType } from '@3qrain/shared'
 import { formatDate } from '~/utils/date'
 import { useAppStore } from '~/stores/app'
 
@@ -55,13 +61,21 @@ const categories = [
   { value: '', label: '全部类型' },
   { value: 'comment', label: '评论' },
   { value: 'friend_apply', label: '友链申请' },
-  { value: 'system', label: '系统' }
+  // { value: 'system', label: '系统' }
 ]
 
 const filters = [
   { value: 'unread', label: '未读' },
   { value: 'all', label: '全部' }
 ]
+
+const emailStatusMeta: Partial<Record<EmailStatus, { icon: typeof MailCheck; label: string }>> = {
+  pending: { icon: LoaderCircle, label: '邮件发送中' },
+  pending_review: { icon: Clock3, label: '等待评论审核' },
+  sent: { icon: MailCheck, label: '邮件已发送' },
+  failed: { icon: MailX, label: '邮件发送失败' },
+  not_required: { icon: CircleOff, label: '无需发送邮件' }
+}
 
 function typeIcon(type: NotificationType) {
   if (type === 'new_comment') return MessageCircle
@@ -169,9 +183,14 @@ onMounted(() => load(false))
         >
           <RotateCw class="refresh-btn-icon" :class="{ spinning: loading }" :size="14" :stroke-width="2" />
         </button>
-        <select v-model="activeCategory" class="category-select">
-          <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
-        </select>
+        <SearchSelect
+          v-model="activeCategory"
+          :options="categories"
+          variant="ghost"
+          placement="bottom-end"
+          :searchable="false"
+          width="8rem"
+        />
       </div>
     </div>
 
@@ -201,6 +220,15 @@ onMounted(() => load(false))
           <div v-if="item.content" class="item-preview">{{ item.content }}</div>
           <div class="item-meta">
             <span class="item-time">{{ formatDate(item.createdAt) }}</span>
+            <span
+              v-if="emailStatusMeta[item.emailStatus]"
+              class="item-email-status"
+              :class="item.emailStatus"
+              :title="emailStatusMeta[item.emailStatus]?.label"
+              :aria-label="emailStatusMeta[item.emailStatus]?.label"
+            >
+              <component :is="emailStatusMeta[item.emailStatus]?.icon" />
+            </span>
           </div>
         </div>
         <button class="item-trash" title="删除" @click.stop="handleDelete(item)">
@@ -311,16 +339,6 @@ onMounted(() => load(false))
     }
   }
 
-  .category-select {
-    padding: 0.25rem 0.5rem;
-    border: 0.0625rem solid var(--color-border);
-    border-radius: 0.25rem;
-    background: transparent;
-    font-size: 0.75rem;
-    color: var(--color-base-content);
-    opacity: 0.6;
-    cursor: pointer;
-  }
 }
 
 .list-loading,
@@ -485,13 +503,59 @@ onMounted(() => load(false))
 .item-meta {
   margin-top: 0.25rem;
   display: flex;
+  align-items: center;
   gap: 0.375rem;
 }
 
 .item-time {
+  width: 6.25rem;
+  flex-shrink: 0;
   font-size: 0.6875rem;
   color: var(--color-base-content);
   opacity: 0.3;
+}
+
+.item-email-status {
+  width: 0.875rem;
+  height: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-base-content);
+  transition: opacity 0.15s;
+
+  svg {
+    width: 0.8125rem;
+    height: 0.8125rem;
+    stroke-width: 1.75;
+  }
+
+  &.sent,
+  &.not_required {
+    opacity: 0.3;
+  }
+
+  &.pending,
+  &.pending_review {
+    color: #d97706;
+    opacity: 0.85;
+  }
+
+  &.failed {
+    color: #dc2626;
+    opacity: 0.9;
+  }
+
+  &.pending svg {
+    animation: email-status-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes email-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .item-trash {

@@ -81,7 +81,7 @@ function targetLabel() {
         </Button>
 
         <Button
-          v-if="!comment.deletedAt && !comment.parentId"
+          v-if="!comment.deletedAt && comment.status !== 'pending' && !comment.parentId"
           variant="ghost"
           size="sm"
           icon

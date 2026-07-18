@@ -21,6 +21,7 @@ const props = withDefaults(
     trigger?: 'click' | 'hover'
     showArrow?: boolean
     variant?: 'default' | 'menu'
+    width?: string
   }>(),
   {
     placement: 'top-end',
@@ -276,7 +277,7 @@ defineExpose({
           ref="floatingRef"
           :class="['popover', `is-${variant}`]"
           :data-side="currentPlacement.split('-')[0]"
-          :style="floatingStyle"
+          :style="[floatingStyle, width ? { width, minWidth: width } : undefined]"
           @mouseenter="clearHoverTimer"
           @mouseleave="hoverClose"
         >

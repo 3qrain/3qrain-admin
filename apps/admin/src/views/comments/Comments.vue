@@ -25,8 +25,8 @@ import { useAppStore } from '~/stores/app'
 import { storeToRefs } from 'pinia'
 
 const tabOptions = [
-  { label: '全部', value: '' },
-  { label: '待审核', value: 'pending' }
+  { label: '待审核', value: 'pending' },
+  { label: '全部', value: '' }
 ]
 
 const { commentsPaginationMode: paginationMode } = storeToRefs(useAppStore())
@@ -40,7 +40,7 @@ const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 10
 const t = +new Date()
-const tab = ref('')
+const tab = ref('pending')
 const keyword = ref('')
 const activeKeyword = ref('')
 const showDeleted = ref(false)
