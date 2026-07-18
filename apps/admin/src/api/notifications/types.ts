@@ -16,6 +16,11 @@ export interface NotificationItem {
 export interface NotificationListResult {
   list: NotificationItem[]
   total: number
+  counts: {
+    all: number
+    unread: number
+    read: number
+  }
   page: number
   pageSize: number
 }

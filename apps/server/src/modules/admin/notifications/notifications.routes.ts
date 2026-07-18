@@ -21,6 +21,11 @@ const notificationSchema = z.object({
 const notificationListSchema = z.object({
   list: z.array(notificationSchema),
   total: z.number(),
+  counts: z.object({
+    all: z.number(),
+    unread: z.number(),
+    read: z.number(),
+  }),
   page: z.number(),
   pageSize: z.number(),
 })

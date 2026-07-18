@@ -12,16 +12,33 @@ export async function list(c: Context) {
   const pageSize = Number(query.pageSize || 20)
   const actualOffset = query.offset !== undefined ? Number(query.offset) : (page - 1) * pageSize
 
-  const conditions = []
+  const baseConditions = []
   if (query.types) {
     const types = query.types.split(',').filter(Boolean)
-    if (types.length > 0) conditions.push(inArray(notifications.type, types))
+    if (types.length > 0) baseConditions.push(inArray(notifications.type, types))
   }
-  if (query.isRead) conditions.push(eq(notifications.isRead, Number(query.isRead)))
-  if (query.t) conditions.push(lt(notifications.createdAt, new Date(Number(query.t))))
-  const where = conditions.length > 0 ? and(...conditions) : undefined
+  if (query.t) baseConditions.push(lt(notifications.createdAt, new Date(Number(query.t))))
+  const baseWhere = baseConditions.length > 0 ? and(...baseConditions) : undefined
 
-  const total = db.select({ count: count() }).from(notifications).where(where).get()!.count
+  const countRows = db
+    .select({ isRead: notifications.isRead, count: count() })
+    .from(notifications)
+    .where(baseWhere)
+    .groupBy(notifications.isRead)
+    .all()
+  const counts = { all: 0, unread: 0, read: 0 }
+  for (const row of countRows) {
+    counts.all += row.count
+    if (row.isRead) counts.read = row.count
+    else counts.unread = row.count
+  }
+
+  const conditions = [...baseConditions]
+  if (query.isRead) conditions.push(eq(notifications.isRead, Number(query.isRead)))
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+  let total = counts.all
+  if (query.isRead === '0') total = counts.unread
+  if (query.isRead === '1') total = counts.read
 
   const rows = db
     .select()
@@ -32,7 +49,7 @@ export async function list(c: Context) {
     .offset(actualOffset)
     .all()
 
-  return c.json(ok({ list: rows, total, page, pageSize }, '获取成功'), HttpStatusCodes.OK)
+  return c.json(ok({ list: rows, total, counts, page, pageSize }, '获取成功'), HttpStatusCodes.OK)
 }
 
 export async function unreadCount(c: Context) {

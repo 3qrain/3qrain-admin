@@ -35,6 +35,7 @@ const listBodyId = 'app-notifications-list-body'
 const list = ref<NotificationItem[]>([])
 const loading = ref(false)
 const total = ref(0)
+const counts = ref({ all: 0, unread: 0, read: 0 })
 const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 20
@@ -98,6 +99,7 @@ async function load(append = false) {
     })
     list.value = append ? [...list.value, ...res.list] : res.list
     total.value = res.total
+    counts.value = res.counts
     totalPages.value = Math.ceil(res.total / pageSize)
   } finally {
     loading.value = false
@@ -115,11 +117,19 @@ async function handleMarkRead(item: NotificationItem) {
   await markRead(item.id)
   item.isRead = 1
   if (store.unreadCount > 0) store.unreadCount--
+  if (counts.value.unread > 0) counts.value.unread--
+  counts.value.read++
 }
 
 async function handleDelete(item: NotificationItem) {
   await deleteNotifications([item.id])
   if (!item.isRead && store.unreadCount > 0) store.unreadCount--
+  if (counts.value.all > 0) counts.value.all--
+  if (item.isRead) {
+    if (counts.value.read > 0) counts.value.read--
+  } else if (counts.value.unread > 0) {
+    counts.value.unread--
+  }
 
   const index = list.value.findIndex(n => n.id === item.id)
   if (index === -1) return
@@ -164,7 +174,7 @@ onMounted(() => load(false))
           :class="{ active: activeFilter === f.value }"
           @click="activeFilter = f.value as typeof activeFilter"
         >
-          {{ f.label }} {{ activeFilter === f.value ? (f.value === 'unread' ? store.unreadCount : total) : '' }}
+          {{ f.label }} {{ f.value === 'unread' ? counts.unread : counts.all }}
         </button>
       </div>
 
