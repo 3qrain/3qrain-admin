@@ -106,7 +106,8 @@ withDefaults(
 
 /* sizes */
 .sm {
-  padding: 0.3125rem 0.75rem;
+  height: 1.75rem;
+  padding: 0 0.75rem;
   font-size: 0.75rem;
 }
 .md {
@@ -116,7 +117,8 @@ withDefaults(
 
 .icon {
   &.sm {
-    padding: 0.3125rem;
+    width: 1.75rem;
+    padding: 0;
   }
   &.md {
     padding: 0.4375rem;

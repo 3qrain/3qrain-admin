@@ -16,7 +16,9 @@ const themeOptions = [
 
 <template>
   <div class="section">
-    <h2 class="section-title">外观</h2>
+    <div class="section-heading">
+      <h2 class="section-title">外观</h2>
+    </div>
     <p class="section-desc">自定义后台界面的显示主题。</p>
 
     <div class="form">
@@ -29,14 +31,17 @@ const themeOptions = [
 </template>
 
 <style scoped lang="less">
-.section {
-  max-width: 28rem;
+.section-heading {
+  display: flex;
+  align-items: center;
+  height: 2rem;
+  margin-bottom: 0.25rem;
 }
 
 .section-title {
   font-size: 1rem;
   font-weight: 700;
-  margin: 0 0 0.25rem;
+  margin: 0;
 }
 
 .section-desc {
@@ -64,9 +69,4 @@ const themeOptions = [
   }
 }
 
-@media (max-width: 48rem) {
-  .section {
-    max-width: 100%;
-  }
-}
 </style>

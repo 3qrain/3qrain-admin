@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Image as ImageIcon, Trash2 } from '@lucide/vue'
+import { computed, ref, onMounted } from 'vue'
+import { Image as ImageIcon, SaveCheck, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import Input from '~/components/base/Input.vue'
 import Textarea from '~/components/base/Textarea.vue'
@@ -26,6 +26,13 @@ const siteInfo = ref<SiteInfo>({
   filingNumber: '',
   filingUrl: ''
 })
+const savedProfile = ref({ ...profile.value })
+const savedSiteInfo = ref<SiteInfo>({ ...siteInfo.value })
+const hasChanges = computed(
+  () =>
+    JSON.stringify(profile.value) !== JSON.stringify(savedProfile.value) ||
+    JSON.stringify(siteInfo.value) !== JSON.stringify(savedSiteInfo.value)
+)
 
 async function load() {
   loading.value = true
@@ -33,6 +40,8 @@ async function load() {
     const [p, config] = await Promise.all([getProfile(), getConfig(['siteInfo'])])
     profile.value = { username: p.username, email: p.email, avatarUrl: p.avatarUrl }
     siteInfo.value = { ...siteInfo.value, ...config.siteInfo }
+    savedProfile.value = { ...profile.value }
+    savedSiteInfo.value = { ...siteInfo.value }
   } catch {
     toast.error('加载失败')
   } finally {
@@ -41,13 +50,16 @@ async function load() {
 }
 
 async function save() {
+  if (!hasChanges.value) return
+
+  const profilePayload = { ...profile.value }
+  const siteInfoPayload = { ...siteInfo.value }
   saving.value = true
   try {
-    await Promise.all([
-      updateProfile(profile.value),
-      updateConfig('siteInfo', siteInfo.value),
-    ])
-    appStore.adminUser = { ...appStore.adminUser, ...profile.value }
+    await Promise.all([updateProfile(profilePayload), updateConfig('siteInfo', siteInfoPayload)])
+    savedProfile.value = profilePayload
+    savedSiteInfo.value = siteInfoPayload
+    appStore.adminUser = { ...appStore.adminUser, ...profilePayload }
     toast.success('已保存')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '保存失败')
@@ -69,7 +81,19 @@ onMounted(load)
 
 <template>
   <div class="section" :aria-busy="loading">
-    <h2 class="section-title">个人信息</h2>
+    <div class="section-heading">
+      <h2 class="section-title">个人信息</h2>
+      <Button
+        variant="neutral"
+        size="sm"
+        :loading="saving"
+        :disabled="loading || !hasChanges"
+        @click="save"
+      >
+        <SaveCheck :size="14" />
+        保存
+      </Button>
+    </div>
     <p class="section-desc">管理你的资料和站点信息。</p>
 
     <div v-if="loading" class="profile-skeleton-reveal" aria-hidden="true">
@@ -111,18 +135,11 @@ onMounted(load)
             </div>
           </div>
         </div>
-
-        <span class="skeleton-block skeleton-button save" />
       </Skeleton>
     </div>
     <div v-else class="form">
       <div class="avatar-row">
-        <img
-          v-if="profile.avatarUrl"
-          :src="profile.avatarUrl"
-          alt="avatar"
-          class="avatar-preview"
-        />
+        <img v-if="profile.avatarUrl" :src="profile.avatarUrl" alt="avatar" class="avatar-preview" />
         <div v-else class="avatar-placeholder">{{ profile.username?.[0] || '?' }}</div>
         <div class="avatar-field">
           <strong>站点头像</strong>
@@ -151,16 +168,12 @@ onMounted(load)
 
       <label class="field">
         <span>简介</span>
-        <Textarea
-          v-model="siteInfo.bio"
-          :rows="3"
-          placeholder="一句话介绍自己"
-        />
+        <Textarea v-model="siteInfo.bio" :rows="3" placeholder="一句话介绍自己" />
       </label>
 
       <div class="form-group">
         <div class="group-head">
-          <h2>页脚信息</h2>
+          <h3>页脚信息</h3>
           <p>用于前台页脚的箴言、版权和备案信息。</p>
         </div>
 
@@ -186,12 +199,7 @@ onMounted(load)
           </label>
         </div>
       </div>
-
-      <div class="actions">
-        <Button :loading="saving" @click="save">保存</Button>
-      </div>
     </div>
-
     <MediaPickerModal
       v-model:open="showAvatarPicker"
       type="image"
@@ -203,14 +211,19 @@ onMounted(load)
 </template>
 
 <style scoped lang="less">
-.section {
-  max-width: 36rem;
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 2rem;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 .section-title {
   font-size: 1rem;
   font-weight: 700;
-  margin: 0 0 0.25rem;
+  margin: 0;
 }
 
 .section-desc {
@@ -231,7 +244,9 @@ onMounted(load)
 }
 
 @keyframes profile-skeleton-reveal {
-  to { opacity: 1; }
+  to {
+    opacity: 1;
+  }
 }
 
 .skeleton-block {
@@ -282,12 +297,6 @@ onMounted(load)
 
   &.secondary {
     margin-top: 0.7rem;
-  }
-
-  &.save {
-    width: 4.25rem;
-    height: 2rem;
-    margin-top: 0.5rem;
   }
 }
 
@@ -383,10 +392,6 @@ onMounted(load)
   }
 }
 
-.actions {
-  padding-top: 0.5rem;
-}
-
 .form-group {
   display: flex;
   flex-direction: column;
@@ -397,7 +402,7 @@ onMounted(load)
 }
 
 .group-head {
-  h2 {
+  h3 {
     font-size: 0.875rem;
     font-weight: 700;
   }
@@ -422,10 +427,6 @@ onMounted(load)
 }
 
 @media (max-width: 48rem) {
-  .section {
-    max-width: 100%;
-  }
-
   .avatar-row {
     flex-direction: column;
     align-items: flex-start;

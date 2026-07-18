@@ -90,7 +90,9 @@ onMounted(loadSessions)
 <template>
   <div class="section">
     <!-- 修改密码 -->
-    <h2 class="section-title">修改密码</h2>
+    <div class="section-heading">
+      <h2 class="section-title">修改密码</h2>
+    </div>
     <p class="section-desc">修改密码后所有设备会被强制下线。</p>
 
     <div class="form">
@@ -180,8 +182,15 @@ onMounted(loadSessions)
 </template>
 
 <style scoped lang="less">
-.section {
-  max-width: 32rem;
+.section-heading {
+  display: flex;
+  align-items: center;
+  height: 2rem;
+  margin-bottom: 0.25rem;
+
+  .section-title {
+    margin: 0;
+  }
 }
 
 .section-title {
@@ -368,9 +377,4 @@ onMounted(loadSessions)
   padding: 1rem 0;
 }
 
-@media (max-width: 48rem) {
-  .section {
-    max-width: 100%;
-  }
-}
 </style>
