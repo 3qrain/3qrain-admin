@@ -70,10 +70,12 @@ function serialize<T extends { slug: any; content: any }>(post: T): T {
 }
 
 // 同步文章标签关系
-async function syncPostTags(postId: number, tagIds: number[]) {
-  db.delete(postTags).where(eq(postTags.postId, postId)).run()
+type PostTagExecutor = Pick<typeof db, 'delete' | 'insert'>
+
+function syncPostTags(executor: PostTagExecutor, postId: number, tagIds: number[]) {
+  executor.delete(postTags).where(eq(postTags.postId, postId)).run()
   if (tagIds.length > 0) {
-    db.insert(postTags)
+    executor.insert(postTags)
       .values(tagIds.map(tagId => ({ postId, tagId })))
       .run()
   }
@@ -109,7 +111,7 @@ export async function list(c: Context) {
   }
 
   const postIds = rows.map(p => p.id)
-  const catIds = [...new Set(rows.map(p => p.categoryId).filter(Boolean))] as number[]
+  const catIds = Array.from(new Set(rows.map(p => p.categoryId).filter(Boolean))) as number[]
 
   const catMap = new Map(
     db
@@ -211,15 +213,16 @@ export async function create(c: Context) {
   }
 
   const { tagIds, ...data } = normalize(body)
-  const result = serialize(
-    db
+  const result = db.transaction(tx => {
+    const inserted = tx
       .insert(posts)
       .values({ ...data, viewCount: 0 })
       .returning()
       .get()
-  )
 
-  await syncPostTags(result.id, tagIds)
+    syncPostTags(tx, inserted.id, tagIds)
+    return serialize(inserted)
+  })
 
   const post = await getPostWithRelations(result.id)
 
@@ -285,11 +288,10 @@ export async function update(c: Context) {
     }
   }
 
-  db.update(posts).set(postData).where(eq(posts.id, id)).run()
-
-  if (tagIds !== undefined) {
-    await syncPostTags(id, tagIds)
-  }
+  db.transaction(tx => {
+    tx.update(posts).set(postData).where(eq(posts.id, id)).run()
+    if (tagIds !== undefined) syncPostTags(tx, id, tagIds)
+  })
 
   const post = await getPostWithRelations(id)
 

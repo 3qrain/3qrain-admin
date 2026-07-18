@@ -6,6 +6,7 @@ import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { broadcast } from '~/services/notify'
+import { createNoteSchema, updateNoteSchema } from './notes.routes'
 
 function toUrl(p: string | null) {
   return p ? `/storage${p}` : null
@@ -97,43 +98,53 @@ export async function list(c: Context) {
 }
 
 export async function create(c: Context) {
-  const body = await c.req.json<{ content: string; isPublished?: boolean; tagIds?: number[]; mediaIds?: number[] }>()
-
-  const note = db
-    .insert(notes)
-    .values({
-      content: body.content,
-      ...(body.isPublished !== undefined && { isPublished: body.isPublished })
-    })
-    .returning()
-    .get()
-
-  if (body.tagIds?.length) {
-    const validTagIds = db
-      .select({ id: tags.id })
-      .from(tags)
-      .where(inArray(tags.id, body.tagIds))
-      .all()
-      .map(t => t.id)
-    for (const tagId of validTagIds) {
-      db.insert(noteTags).values({ noteId: note.id, tagId }).run()
-    }
+  const parsed = createNoteSchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    return c.json(fail(ErrorCode.INVALID_PARAMS, parsed.error.issues[0].message), HttpStatusCodes.BAD_REQUEST)
   }
+  const body = parsed.data
 
-  if (body.mediaIds?.length) {
-    const validMediaIds = new Set(
-      db
-        .select({ id: media.id })
-        .from(media)
-        .where(inArray(media.id, body.mediaIds))
+  const note = db.transaction(tx => {
+    const inserted = tx
+      .insert(notes)
+      .values({
+        content: body.content,
+        ...(body.isPublished !== undefined && { isPublished: body.isPublished })
+      })
+      .returning()
+      .get()
+
+    if (body.tagIds?.length) {
+      const validTagIds = tx
+        .select({ id: tags.id })
+        .from(tags)
+        .where(inArray(tags.id, body.tagIds))
         .all()
-        .map(m => m.id)
-    )
-    const ordered = body.mediaIds.filter(id => validMediaIds.has(id))
-    for (let i = 0; i < ordered.length; i++) {
-      db.insert(noteMedia).values({ noteId: note.id, mediaId: ordered[i], sort: i }).run()
+        .map(t => t.id)
+      if (validTagIds.length) {
+        tx.insert(noteTags).values(validTagIds.map(tagId => ({ noteId: inserted.id, tagId }))).run()
+      }
     }
-  }
+
+    if (body.mediaIds?.length) {
+      const validMediaIds = new Set(
+        tx
+          .select({ id: media.id })
+          .from(media)
+          .where(inArray(media.id, body.mediaIds))
+          .all()
+          .map(m => m.id)
+      )
+      const ordered = body.mediaIds.filter(id => validMediaIds.has(id))
+      if (ordered.length) {
+        tx.insert(noteMedia)
+          .values(ordered.map((mediaId, sort) => ({ noteId: inserted.id, mediaId, sort })))
+          .run()
+      }
+    }
+
+    return inserted
+  })
 
   if (body.isPublished) {
     broadcast({
@@ -154,49 +165,57 @@ export async function update(c: Context) {
     return c.json(fail(ErrorCode.INVALID_PARAMS, '说说不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  const body = await c.req.json<{ content?: string; isPublished?: boolean; tagIds?: number[]; mediaIds?: number[] }>()
+  const parsed = updateNoteSchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    return c.json(fail(ErrorCode.INVALID_PARAMS, parsed.error.issues[0].message), HttpStatusCodes.BAD_REQUEST)
+  }
+  const body = parsed.data
 
   const updates: Record<string, any> = {}
   if (body.content !== undefined) updates.content = body.content
   if (body.isPublished !== undefined) updates.isPublished = body.isPublished
-  if (Object.keys(updates).length > 0) {
-    db.update(notes).set(updates).where(eq(notes.id, id)).run()
-  }
-
-  if (body.tagIds !== undefined) {
-    db.delete(noteTags).where(eq(noteTags.noteId, id)).run()
-    if (body.tagIds.length) {
-      const validTagIds = db
-        .select({ id: tags.id })
-        .from(tags)
-        .where(inArray(tags.id, body.tagIds))
-        .all()
-        .map(t => t.id)
-      for (const tagId of validTagIds) {
-        db.insert(noteTags).values({ noteId: id, tagId }).run()
-      }
+  const updated = db.transaction(tx => {
+    if (Object.keys(updates).length > 0) {
+      tx.update(notes).set(updates).where(eq(notes.id, id)).run()
     }
-  }
 
-  if (body.mediaIds !== undefined) {
-    db.delete(noteMedia).where(eq(noteMedia.noteId, id)).run()
-    if (body.mediaIds.length) {
-      const validMediaIds = new Set(
-        db
-          .select({ id: media.id })
-          .from(media)
-          .where(inArray(media.id, body.mediaIds))
+    if (body.tagIds !== undefined) {
+      tx.delete(noteTags).where(eq(noteTags.noteId, id)).run()
+      if (body.tagIds.length) {
+        const validTagIds = tx
+          .select({ id: tags.id })
+          .from(tags)
+          .where(inArray(tags.id, body.tagIds))
           .all()
-          .map(m => m.id)
-      )
-      const ordered = body.mediaIds.filter(id => validMediaIds.has(id))
-      for (let i = 0; i < ordered.length; i++) {
-        db.insert(noteMedia).values({ noteId: id, mediaId: ordered[i], sort: i }).run()
+          .map(t => t.id)
+        if (validTagIds.length) {
+          tx.insert(noteTags).values(validTagIds.map(tagId => ({ noteId: id, tagId }))).run()
+        }
       }
     }
-  }
 
-  const updated = db.select().from(notes).where(eq(notes.id, id)).get()!
+    if (body.mediaIds !== undefined) {
+      tx.delete(noteMedia).where(eq(noteMedia.noteId, id)).run()
+      if (body.mediaIds.length) {
+        const validMediaIds = new Set(
+          tx
+            .select({ id: media.id })
+            .from(media)
+            .where(inArray(media.id, body.mediaIds))
+            .all()
+            .map(m => m.id)
+        )
+        const ordered = body.mediaIds.filter(id => validMediaIds.has(id))
+        if (ordered.length) {
+          tx.insert(noteMedia)
+            .values(ordered.map((mediaId, sort) => ({ noteId: id, mediaId, sort })))
+            .run()
+        }
+      }
+    }
+
+    return tx.select().from(notes).where(eq(notes.id, id)).get()!
+  })
   return c.json(ok(updated, '更新成功'), HttpStatusCodes.OK)
 }
 

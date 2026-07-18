@@ -5,6 +5,7 @@ import { successResponseSchema, errorResponseSchema } from "~/utils/response";
 // --- Request Schemas ---
 
 const POST_STATUS = ["draft", "published", "archived"] as const;
+const tagIdsSchema = z.array(z.number().int().positive()).transform(ids => Array.from(new Set(ids)));
 
 export const createPostSchema = z.object({
   title: z.string().optional(),
@@ -17,7 +18,7 @@ export const createPostSchema = z.object({
   status: z.enum(POST_STATUS).optional().default("draft"),
   isPinned: z.boolean().optional().default(false),
   categoryId: z.number().int().optional().nullable(),
-  tagIds: z.array(z.number().int()).optional().default([]),
+  tagIds: tagIdsSchema.optional().default([]),
 });
 
 export const updatePostSchema = z.object({
@@ -31,7 +32,7 @@ export const updatePostSchema = z.object({
   status: z.enum(POST_STATUS).optional(),
   isPinned: z.boolean().optional(),
   categoryId: z.number().int().optional().nullable(),
-  tagIds: z.array(z.number().int()).optional(),
+  tagIds: tagIdsSchema.optional(),
 });
 
 // --- Response Schemas ---

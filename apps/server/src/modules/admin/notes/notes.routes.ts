@@ -10,18 +10,20 @@ const noteSchema = z.object({
   updatedAt: z.string(),
 })
 
-const createNoteSchema = z.object({
+const relationIdsSchema = z.array(z.number().int().positive()).transform(ids => Array.from(new Set(ids)))
+
+export const createNoteSchema = z.object({
   content: z.string().min(1, '内容不能为空'),
   isPublished: z.boolean().optional(),
-  tagIds: z.array(z.number()).optional(),
-  mediaIds: z.array(z.number()).optional(),
+  tagIds: relationIdsSchema.optional(),
+  mediaIds: relationIdsSchema.optional(),
 }).strict()
 
-const updateNoteSchema = z.object({
+export const updateNoteSchema = z.object({
   content: z.string().min(1, '内容不能为空').optional(),
   isPublished: z.boolean().optional(),
-  tagIds: z.array(z.number()).optional(),
-  mediaIds: z.array(z.number()).optional(),
+  tagIds: relationIdsSchema.optional(),
+  mediaIds: relationIdsSchema.optional(),
 }).strict()
 
 export const listNotesRoute = createRoute({
@@ -50,6 +52,10 @@ export const createNoteRoute = createRoute({
       content: { 'application/json': { schema: successResponseSchema(noteSchema) } },
       description: '发布成功',
     },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      content: { 'application/json': { schema: errorResponseSchema } },
+      description: '请求参数有误',
+    },
   },
 })
 
@@ -70,6 +76,10 @@ export const updateNoteRoute = createRoute({
     [HttpStatusCodes.NOT_FOUND]: {
       content: { 'application/json': { schema: errorResponseSchema } },
       description: '不存在',
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      content: { 'application/json': { schema: errorResponseSchema } },
+      description: '请求参数有误',
     },
   },
 })
