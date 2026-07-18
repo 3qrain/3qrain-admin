@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { Plus, Trash2, Copy, Search, ShieldAlert } from '@lucide/vue'
 import Button from '~/components/base/Button.vue'
+import Input from '~/components/base/Input.vue'
 import ToggleGroup from '~/components/base/ToggleGroup.vue'
 import Pagination from '~/components/table/Pagination.vue'
 import MediaPreview from '~/components/media/MediaPreview.vue'
@@ -190,10 +191,10 @@ onUnmounted(() => {
         <span class="sub">{{ total }} 个文件</span>
       </div>
       <div class="head-act">
-        <label class="search-box">
+        <div class="search-box">
           <Search :size="14" />
-          <input v-model="keyword" placeholder="搜索..." @keyup.enter="search" />
-        </label>
+          <Input v-model="keyword" placeholder="搜索..." @keyup.enter="search" />
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -319,27 +320,24 @@ h1 {
   gap: 0.5rem;
 }
 .search-box {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.3125rem 0.625rem;
-  border-radius: 0.5rem;
-  background: var(--color-base-200);
-  border: 0.0625rem solid transparent;
-  input {
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 0.8125rem;
-    width: 7.5rem;
-    color: var(--color-base-content);
+  width: 9.5rem;
+
+  :deep(.base-input) {
+    height: 2rem;
+    padding-left: 1.875rem;
+    background: var(--color-base-200);
+    border-color: transparent;
   }
+
   svg {
+    position: absolute;
+    z-index: 1;
+    left: .625rem;
     opacity: 0.35;
-    flex-shrink: 0;
-  }
-  &:focus-within {
-    border-color: var(--color-base-300);
+    pointer-events: none;
   }
 }
 .warn {

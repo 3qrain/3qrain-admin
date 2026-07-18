@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Image, Trash2 } from '@lucide/vue'
+import { Image, ImagePlus, Trash2 } from '@lucide/vue'
 import Input from '~/components/base/Input.vue'
-import Select from '~/components/base/Select.vue'
+import SearchSelect from '~/components/base/SearchSelect.vue'
+import Textarea from '~/components/base/Textarea.vue'
 import Button from '~/components/base/Button.vue'
+import ToggleSwitch from '~/components/base/ToggleSwitch.vue'
 import MediaPickerModal from '~/components/media/MediaPickerModal.vue'
 import type { Category, Tag } from '~/api/tags/types'
 import type { MediaItem } from '~/api/media'
@@ -36,28 +38,52 @@ function clearCover() {
   cover.value = ''
   emit('change')
 }
+
+function toggleTag(id: number) {
+  tagIds.value = tagIds.value.includes(id)
+    ? tagIds.value.filter(tagId => tagId !== id)
+    : [...tagIds.value, id]
+  emit('change')
+}
 </script>
 
 <template>
   <div class="panel">
     <h2 class="panel-title">文章设置</h2>
     <div class="body">
-      <label class="field">
+      <div class="field">
         <span>分类</span>
-        <Select v-model="categoryId" :options="categoryOptions" placeholder="选择分类" @change="emit('change')" />
-      </label>
+        <SearchSelect
+          v-model="categoryId"
+          :options="categoryOptions"
+          full-width
+          size="md"
+          placeholder="选择分类"
+          search-placeholder="搜索分类"
+          empty-text="暂无分类"
+          @update:model-value="emit('change')"
+        />
+      </div>
 
-      <label class="field">
+      <div class="field">
         <span>标识</span>
-        <Input v-model="slug" placeholder="hello-world" @input="emit('change')" />
-      </label>
+        <Input v-model="slug" aria-label="文章标识" placeholder="hello-world" @input="emit('change')" />
+      </div>
 
-      <label class="field">
+      <div class="field">
         <span>摘要</span>
-        <textarea :value="summary" class="input area" rows="3" placeholder="文章摘要" @input="summary = ($event.target as HTMLTextAreaElement).value; emit('change')" />
-      </label>
+        <Textarea
+          v-model="summary"
+          :rows="6"
+          expandable
+          expand-title="编辑文章摘要"
+          aria-label="文章摘要"
+          placeholder="文章摘要"
+          @input="emit('change')"
+        />
+      </div>
 
-      <label class="field">
+      <div class="field">
         <span>封面</span>
         <div class="cover-box" :class="{ empty: !cover }">
           <img v-if="cover" :src="cover" alt="文章封面" />
@@ -67,18 +93,21 @@ function clearCover() {
           </div>
         </div>
         <div class="cover-actions">
-          <Button size="sm" variant="secondary" @click="showCoverPicker = true">选择图片</Button>
-          <Button v-if="cover" size="sm" variant="ghost" icon @click="clearCover">
+          <Button class="cover-picker" size="sm" variant="secondary" @click="showCoverPicker = true">
+            <ImagePlus :size="14" />
+            {{ cover ? '更换图片' : '选择图片' }}
+          </Button>
+          <Button v-if="cover" size="sm" variant="ghost" icon title="移除封面" @click="clearCover">
             <Trash2 :size="14" />
           </Button>
         </div>
         <Input v-model="cover" placeholder="也可以粘贴图片 URL" @input="emit('change')" />
-      </label>
+      </div>
 
-      <label class="field row">
-        <input :checked="isPinned" type="checkbox" class="checkbox" @change="isPinned = ($event.target as HTMLInputElement).checked; emit('change')" />
+      <div class="field row">
         <span>置顶</span>
-      </label>
+        <ToggleSwitch v-model="isPinned" aria-label="置顶" @update:model-value="emit('change')" />
+      </div>
 
       <div class="field">
         <span>标签</span>
@@ -87,7 +116,8 @@ function clearCover() {
             v-for="tag in tags"
             :key="tag.id"
             :class="['chip', tagIds.includes(tag.id) && 'on']"
-            @click="tagIds.includes(tag.id) ? tagIds = tagIds.filter(i => i !== tag.id) : tagIds.push(tag.id); emit('change')"
+            :aria-pressed="tagIds.includes(tag.id)"
+            @click="toggleTag(tag.id)"
           >{{ tag.name }}</button>
           <span v-if="tags.length === 0" class="dim">暂无标签</span>
         </div>
@@ -130,7 +160,7 @@ function clearCover() {
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: .875rem;
+  gap: 1rem;
 }
 
 .field {
@@ -142,32 +172,17 @@ function clearCover() {
   > span:first-child {
     font-size: .75rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .025rem;
-    opacity: 0.4;
+    letter-spacing: 0;
+    opacity: .48;
   }
 
   &.row {
     flex-direction: row;
     align-items: center;
-    gap: .5rem;
+    justify-content: space-between;
+    min-height: 2rem;
   }
 }
-
-.input {
-  padding: .4375rem .625rem;
-  border-radius: .5rem;
-  border: .0625rem solid var(--color-border);
-  background: var(--color-base-100);
-  font-size: .8125rem;
-  color: var(--color-base-content);
-  outline: none;
-  font-family: inherit;
-
-  &:focus { border-color: var(--color-primary); }
-}
-
-.area { resize: vertical; }
 
 .cover-box {
   position: relative;
@@ -211,29 +226,45 @@ function clearCover() {
   gap: .375rem;
 }
 
+.cover-picker {
+  flex: 1;
+}
+
 .chip-list { display: flex; flex-wrap: wrap; gap: .375rem; }
 
 .chip {
-  padding: .1875rem .5625rem;
+  padding: .25rem .5625rem;
   border-radius: .375rem;
-  border: .0625rem solid var(--color-border);
-  background: var(--color-base-100);
+  border: .0625rem solid transparent;
+  background: var(--color-base-200);
   font-size: .75rem;
+  line-height: 1.25;
   cursor: pointer;
-  color: var(--color-base-content);
-  opacity: 0.5;
-  transition: all 0.12s;
+  color: color-mix(in oklab, var(--color-base-content) 58%, transparent);
+  transition:
+    color .15s ease,
+    background-color .15s ease,
+    border-color .15s ease,
+    transform .12s ease;
 
-  &:hover { opacity: 0.8; }
+  &:hover {
+    color: var(--color-base-content);
+    background: var(--color-base-300);
+  }
+
+  &:active { transform: scale(.97); }
+
+  &:focus-visible {
+    outline: .125rem solid color-mix(in oklab, var(--color-primary) 30%, transparent);
+    outline-offset: .0625rem;
+  }
 
   &.on {
-    opacity: 1;
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: var(--color-primary-content);
+    color: var(--color-primary);
+    background: color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100));
+    border-color: color-mix(in oklab, var(--color-primary) 22%, transparent);
   }
 }
 
 .dim { font-size: .75rem; opacity: 0.35; }
-.checkbox { accent-color: var(--color-primary); }
 </style>

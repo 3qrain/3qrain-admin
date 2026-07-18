@@ -18,6 +18,8 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   placement?: Placement
   variant?: 'default' | 'ghost'
+  size?: 'sm' | 'md'
+  fullWidth?: boolean
 }>(), {
   placeholder: '请选择',
   searchPlaceholder: '搜索',
@@ -25,6 +27,8 @@ const props = withDefaults(defineProps<{
   disabled: false,
   placement: 'bottom-start',
   variant: 'default',
+  size: 'sm',
+  fullWidth: false,
 })
 
 const model = defineModel<T>()
@@ -58,60 +62,83 @@ function select(option: SelectOption<T>, close: () => void) {
 </script>
 
 <template>
-  <Popover
-    :placement="placement"
-    :show-arrow="false"
-    variant="menu"
-    @update:open="handleOpen"
-  >
-    <button
-      type="button"
-      class="search-select-trigger"
-      :class="[`is-${variant}`, { 'is-open': open }]"
-      :disabled="disabled"
-      :aria-expanded="open"
-      aria-haspopup="listbox"
+  <div :class="['search-select', { 'is-full': fullWidth }]">
+    <Popover
+      :placement="placement"
+      :show-arrow="false"
+      variant="menu"
+      @update:open="handleOpen"
     >
-      <span v-if="$slots.prefix" class="search-select-prefix"><slot name="prefix" /></span>
-      <span class="search-select-value">{{ selectedOption?.label || placeholder }}</span>
-      <ChevronDown class="search-select-chevron" :size="13" aria-hidden="true" />
-    </button>
+      <button
+        type="button"
+        class="search-select-trigger"
+        :class="[`is-${variant}`, `is-${size}`, { 'is-open': open, 'is-placeholder': !selectedOption }]"
+        :disabled="disabled"
+        :aria-expanded="open"
+        aria-haspopup="listbox"
+      >
+        <span v-if="$slots.prefix" class="search-select-prefix"><slot name="prefix" /></span>
+        <span class="search-select-value">{{ selectedOption?.label || placeholder }}</span>
+        <ChevronDown class="search-select-chevron" :size="13" aria-hidden="true" />
+      </button>
 
-    <template #content="{ close }">
-      <div class="search-select-content">
-        <label class="search-select-search">
-          <Search :size="13" aria-hidden="true" />
-          <input
-            ref="searchRef"
-            v-model="query"
-            type="text"
-            :placeholder="searchPlaceholder"
-            @keydown.esc.stop.prevent="close"
-            @keydown.stop
-          >
-        </label>
+      <template #content="{ close }">
+        <div class="search-select-content">
+          <label class="search-select-search">
+            <Search :size="13" aria-hidden="true" />
+            <input
+              ref="searchRef"
+              v-model="query"
+              type="text"
+              :placeholder="searchPlaceholder"
+              @keydown.esc.stop.prevent="close"
+              @keydown.stop
+            >
+          </label>
 
-        <div class="search-select-options" role="listbox">
-          <button
-            v-for="option in filteredOptions"
-            :key="String(option.value)"
-            type="button"
-            role="option"
-            :aria-selected="option.value === model"
-            :disabled="option.disabled"
-            @click="select(option, close)"
-          >
-            <span>{{ option.label }}</span>
-            <Check v-if="option.value === model" :size="13" aria-hidden="true" />
-          </button>
-          <p v-if="filteredOptions.length === 0" class="search-select-empty">{{ emptyText }}</p>
+          <div class="search-select-options" role="listbox">
+            <button
+              v-for="option in filteredOptions"
+              :key="String(option.value)"
+              type="button"
+              role="option"
+              :aria-selected="option.value === model"
+              :disabled="option.disabled"
+              @click="select(option, close)"
+            >
+              <span>{{ option.label }}</span>
+              <Check v-if="option.value === model" :size="13" aria-hidden="true" />
+            </button>
+            <p v-if="filteredOptions.length === 0" class="search-select-empty">{{ emptyText }}</p>
+          </div>
         </div>
-      </div>
-    </template>
-  </Popover>
+      </template>
+    </Popover>
+  </div>
 </template>
 
 <style scoped lang="less">
+.search-select {
+  display: inline-flex;
+  min-width: 0;
+
+  &.is-full {
+    display: block;
+    width: 100%;
+
+    :deep(.popover-wrapper),
+    :deep(.trigger),
+    .search-select-trigger {
+      width: 100%;
+    }
+
+    .search-select-value {
+      flex: 1;
+      text-align: left;
+    }
+  }
+}
+
 .search-select-trigger {
   min-width: 8rem;
   height: 2rem;
@@ -122,10 +149,22 @@ function select(option: SelectOption<T>, close: () => void) {
   border: 0.0625rem solid var(--color-border);
   border-radius: 0.375rem;
   background: var(--color-base-100);
-  color: color-mix(in oklab, var(--color-base-content) 72%, transparent);
-  font: inherit;
+  color: var(--color-base-content);
+  font-family: inherit;
+  font-size: .8125rem;
+  line-height: 1.25;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  outline: none;
+  transition:
+    border-color .16s ease,
+    background-color .16s ease,
+    color .16s ease,
+    box-shadow .16s ease;
+
+  &.is-md {
+    height: 2.25rem;
+    border-radius: .5rem;
+  }
 
   &.is-ghost {
     min-width: 0;
@@ -133,12 +172,26 @@ function select(option: SelectOption<T>, close: () => void) {
     padding: 0 0.25rem;
     border: 0;
     background: transparent;
+    color: color-mix(in oklab, var(--color-base-content) 72%, transparent);
   }
 
-  &:hover,
-  &.is-open {
-    border-color: color-mix(in oklab, var(--color-primary) 42%, transparent);
+  &.is-default:hover:not(:disabled) {
+    border-color: color-mix(in oklab, var(--color-base-content) 22%, transparent);
+  }
+
+  &.is-default.is-open,
+  &.is-default:focus-visible {
+    border-color: color-mix(in oklab, var(--color-primary) 42%, var(--color-border));
+    box-shadow: 0 0 0 .1875rem color-mix(in oklab, var(--color-primary) 7%, transparent);
+  }
+
+  &.is-ghost:hover,
+  &.is-ghost.is-open {
     color: color-mix(in oklab, var(--color-primary) 80%, var(--color-base-content));
+  }
+
+  &.is-placeholder.is-default {
+    color: color-mix(in oklab, var(--color-base-content) 35%, transparent);
   }
 
   &:disabled {
@@ -229,6 +282,17 @@ function select(option: SelectOption<T>, close: () => void) {
     text-align: left;
     cursor: pointer;
     transition: background 0.14s ease, color 0.14s ease;
+
+    > span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    > svg {
+      flex: 0 0 auto;
+    }
 
     &:hover {
       background: var(--color-base-200);

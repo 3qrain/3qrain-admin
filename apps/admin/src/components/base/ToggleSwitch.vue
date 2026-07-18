@@ -1,12 +1,29 @@
 <script setup lang="ts">
+defineProps<{
+  ariaLabel?: string
+}>()
+
 const model = defineModel<boolean>({ default: false })
+
+function toggle() {
+  model.value = !model.value
+}
 </script>
 
 <template>
-  <label class="toggle">
+  <span class="toggle">
     <input v-model="model" type="checkbox" />
-    <span class="track" />
-  </label>
+    <span
+      class="track"
+      role="switch"
+      tabindex="0"
+      :aria-checked="model"
+      :aria-label="ariaLabel"
+      @click.prevent="toggle"
+      @keydown.space.prevent="toggle"
+      @keydown.enter.prevent="toggle"
+    />
+  </span>
 </template>
 
 <style scoped lang="less">

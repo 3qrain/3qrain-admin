@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { Image as ImageIcon, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import Input from '~/components/base/Input.vue'
+import Textarea from '~/components/base/Textarea.vue'
 import Button from '~/components/base/Button.vue'
 import Skeleton from '~/components/base/Skeleton.vue'
 import MediaPickerModal from '~/components/media/MediaPickerModal.vue'
@@ -150,10 +151,9 @@ onMounted(load)
 
       <label class="field">
         <span>简介</span>
-        <textarea
+        <Textarea
           v-model="siteInfo.bio"
-          class="textarea"
-          rows="3"
+          :rows="3"
           placeholder="一句话介绍自己"
         />
       </label>
@@ -380,22 +380,6 @@ onMounted(load)
     font-weight: 600;
     letter-spacing: 0.025rem;
     opacity: 0.4;
-  }
-}
-
-.textarea {
-  padding: 0.4375rem 0.625rem;
-  border-radius: 0.5rem;
-  border: 0.0625rem solid var(--color-border);
-  background: var(--color-base-100);
-  font-size: 0.8125rem;
-  color: var(--color-base-content);
-  font-family: inherit;
-  outline: none;
-  resize: vertical;
-
-  &:focus {
-    border-color: var(--color-primary);
   }
 }
 

@@ -5,7 +5,8 @@ import { toast } from 'vue-sonner'
 import { Plus, Pencil, Trash2, Search, Eye, Trash, RotateCcw } from '@lucide/vue'
 import Pagination from '~/components/table/Pagination.vue'
 import ToggleGroup from '~/components/base/ToggleGroup.vue'
-import Select from '~/components/base/Select.vue'
+import Input from '~/components/base/Input.vue'
+import SearchSelect from '~/components/base/SearchSelect.vue'
 import Button from '~/components/base/Button.vue'
 import Badge from '~/components/base/Badge.vue'
 import Popover from '~/components/base/Popover.vue'
@@ -222,10 +223,12 @@ onMounted(() => {
     <div v-if="!showDeleted" class="toolbar">
       <div class="search">
         <Search style="width: 0.875rem; height: 0.875rem" />
-        <input v-model="query.keyword" placeholder="搜索标题..." @keyup.enter="search" />
+        <Input v-model="query.keyword" placeholder="搜索标题..." @keyup.enter="search" />
       </div>
-      <Select
+      <SearchSelect
         v-model="query.status"
+        size="md"
+        search-placeholder="搜索状态"
         :options="[
           { label: '全部状态', value: '' },
           { label: '草稿', value: 'draft' },
@@ -233,7 +236,12 @@ onMounted(() => {
           { label: '已归档', value: 'archived' }
         ]"
       />
-      <Select v-model="query.categoryId" :options="categoryOptions" />
+      <SearchSelect
+        v-model="query.categoryId"
+        size="md"
+        search-placeholder="搜索分类"
+        :options="categoryOptions"
+      />
       <Button size="md" @click="create"> <Plus style="width: 1rem; height: 1rem" /> 写文章 </Button>
     </div>
 
@@ -404,35 +412,24 @@ onMounted(() => {
 }
 
 .search {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.625rem;
-  border-radius: 0.375rem;
-  border: 0.0625rem solid var(--color-border);
-  background: var(--color-base-100);
-  transition: border-color 0.15s;
   flex: 1;
   min-width: 8rem;
   max-width: 14rem;
 
   svg {
+    position: absolute;
+    z-index: 1;
+    left: .625rem;
     opacity: 0.3;
-    flex-shrink: 0;
+    pointer-events: none;
   }
 
-  input {
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 0.8125rem;
-    color: var(--color-base-content);
+  :deep(.base-input) {
     width: 100%;
-    font-family: inherit;
-  }
-
-  &:focus-within {
-    border-color: var(--color-primary);
+    padding-left: 1.875rem;
   }
 }
 
