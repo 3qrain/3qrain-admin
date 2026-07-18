@@ -74,16 +74,22 @@ export async function list(c: Context) {
 
   // 补充一级评论的回复数
   const parentIds = list.filter((c: any) => !c.parentId).map((c: any) => c.id)
-  const replyCounts: Record<number, number> = {}
+  const replyCounts = new Map<number, number>()
   if (parentIds.length > 0) {
-    for (const pid of parentIds) {
-      const cnt = db.select({ count: count() }).from(comments).where(eq(comments.parentId, pid)).get()!.count
-      replyCounts[pid] = cnt
+    const counts = db
+      .select({ parentId: comments.parentId, count: count() })
+      .from(comments)
+      .where(inArray(comments.parentId, parentIds))
+      .groupBy(comments.parentId)
+      .all()
+
+    for (const row of counts) {
+      if (row.parentId !== null) replyCounts.set(row.parentId, row.count)
     }
   }
   const listWithCounts = list.map((c: any) => ({
     ...c,
-    replyCount: c.parentId ? 0 : replyCounts[c.id] || 0
+    replyCount: c.parentId ? 0 : replyCounts.get(c.id) || 0
   }))
 
   return c.json(ok({ list: listWithCounts, total, page, pageSize }, '获取成功'), HttpStatusCodes.OK)

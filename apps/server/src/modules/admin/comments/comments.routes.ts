@@ -20,6 +20,7 @@ const commentSchema = z.object({
   deletedAt: z.string().nullable(),
   ip: z.string().nullable(),
   userAgent: z.string().nullable(),
+  replyCount: z.number().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -40,11 +41,15 @@ export const listCommentsRoute = createRoute({
     query: z.object({
       page: z.string().optional(),
       pageSize: z.string().optional(),
+      offset: z.string().optional(),
+      id: z.string().optional(),
       status: z.string().optional(),
       targetType: z.string().optional(),
       targetId: z.string().optional(),
       deleted: z.string().optional(),
       keyword: z.string().optional(),
+      parentOnly: z.string().optional(),
+      t: z.string().optional(),
     }),
   },
   responses: {
