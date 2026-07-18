@@ -1,4 +1,4 @@
-import { sqliteTable, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, integer, primaryKey, index } from 'drizzle-orm/sqlite-core'
 import { notes } from './notes'
 import { tags } from './tags'
 
@@ -10,5 +10,6 @@ export const noteTags = sqliteTable(
   },
   (table) => [
     primaryKey({ columns: [table.noteId, table.tagId] }),
+    index('note_tags_tag_id_idx').on(table.tagId),
   ],
 )

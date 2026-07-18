@@ -1,4 +1,4 @@
-import { sqliteTable, integer, primaryKey } from "drizzle-orm/sqlite-core";
+import { sqliteTable, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
 import { posts } from "./posts";
 import { tags } from "./tags";
 
@@ -10,5 +10,6 @@ export const postTags = sqliteTable(
   },
   (table) => [
     primaryKey({ columns: [table.postId, table.tagId] }),
+    index("post_tags_tag_id_idx").on(table.tagId),
   ],
 );
