@@ -166,6 +166,10 @@ function select(option: SelectOption<T>, close: () => void) {
     border-radius: .5rem;
   }
 
+  &.is-default {
+    justify-content: space-between;
+  }
+
   &.is-ghost {
     min-width: 0;
     height: 1.75rem;

@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Menu, Bell } from '@lucide/vue'
+import { Menu, Bell, X } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import Drawer from '~/components/base/Drawer.vue'
+import Modal from '~/components/base/Modal.vue'
 import UppyUploader from '~/components/uppy-uploader/UppyUploader.vue'
 import UploadIndicator from '~/components/uppy-uploader/UploadIndicator.vue'
 import { apiClient } from '~/lib/axios'
@@ -16,7 +17,7 @@ import { getUnreadCount } from '~/api/notifications'
 import { getPendingFriendLinkCount } from '~/api/friend-links'
 import { getConfig, getSiteUrls } from '~/api/config'
 
-const { drawerPanel } = storeToRefs(useGlobalStore())
+const { drawerPanel, uploadModalOpen } = storeToRefs(useGlobalStore())
 const appStore = useAppStore()
 const router = useRouter()
 const { connect, disconnect } = useWebSocket()
@@ -67,7 +68,8 @@ onMounted(() => {
 
   mediaQuery.addEventListener('change', e => {
     isMobile.value = e.matches
-    if (!e.matches) drawerPanel.value = null
+    if (e.matches) uploadModalOpen.value = false
+    else drawerPanel.value = null
   })
 })
 
@@ -81,14 +83,33 @@ onUnmounted(() => {
   <div class="layout">
     <!-- Desktop Sidebar -->
     <aside class="sidebar">
-      <AppSidebar />
+      <AppSidebar @upload="uploadModalOpen = true" />
     </aside>
 
     <!-- Mobile Bottom Drawer -->
     <Drawer :open="drawerPanel !== null" @update:open="v => !v && (drawerPanel = null)">
-      <AppSidebar v-if="drawerPanel === 'menu'" mobile @close="drawerPanel = null" />
+      <AppSidebar
+        v-if="drawerPanel === 'menu'"
+        mobile
+        @close="drawerPanel = null"
+        @upload="openPanel('upload')"
+      />
       <UppyUploader v-else-if="drawerPanel === 'upload'" />
     </Drawer>
+
+    <Modal v-model:open="uploadModalOpen">
+      <section class="upload-modal">
+        <header class="upload-modal-head">
+          <h2>上传文件</h2>
+          <button type="button" title="关闭" aria-label="关闭" @click="uploadModalOpen = false">
+            <X :size="17" />
+          </button>
+        </header>
+        <div class="upload-modal-content">
+          <UppyUploader class="modal-uploader" />
+        </div>
+      </section>
+    </Modal>
 
     <!-- Main -->
     <div class="main-wrapper">
@@ -214,6 +235,60 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem 1.5rem 1.5rem;
+}
+
+.upload-modal {
+  width: min(52rem, calc(100vw - 2rem));
+  height: min(42rem, calc(100vh - 10rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: .0625rem solid var(--color-border);
+  border-radius: .5rem;
+  background: var(--color-base-100);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / .16);
+}
+
+.upload-modal-head {
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: 0 1.25rem 0 1.5rem;
+
+  h2 {
+    margin: 0;
+    font-size: .9375rem;
+    font-weight: 650;
+  }
+
+  button {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+    cursor: pointer;
+    transition: color .15s ease;
+
+    &:hover {
+      color: var(--color-base-content);
+    }
+  }
+}
+
+.upload-modal-content {
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-uploader {
+  box-sizing: border-box;
 }
 
 /* --- Responsive --- */

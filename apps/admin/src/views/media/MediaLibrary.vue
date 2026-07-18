@@ -22,7 +22,7 @@ const appStore = useAppStore()
 const uppyStore = useUppyStore()
 
 const globalStore = useGlobalStore()
-const { drawerPanel } = storeToRefs(globalStore)
+const { drawerPanel, uploadModalOpen } = storeToRefs(globalStore)
 
 interface fileItem extends MediaItem {
   _loaded: boolean
@@ -68,6 +68,14 @@ const filesGroupsByDate = computed<FilesGroupsByDate[]>(() => {
 function openPreview(item: fileItem) {
   previewIndex.value = files.value.indexOf(item)
   previewOpen.value = true
+}
+
+function openUpload() {
+  if (window.matchMedia('(width <= 768px)').matches) {
+    drawerPanel.value = 'upload'
+  } else {
+    uploadModalOpen.value = true
+  }
 }
 
 const showUpload = ref(false)
@@ -215,7 +223,7 @@ onUnmounted(() => {
           ]"
           size="sm"
         />
-        <Button variant="primary" size="sm" @click="drawerPanel = 'upload'"> <Plus :size="15" /> {{ '上传' }} </Button>
+        <Button variant="primary" size="sm" @click="openUpload"> <Plus :size="15" /> {{ '上传' }} </Button>
       </div>
     </div>
 

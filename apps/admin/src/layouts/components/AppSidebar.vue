@@ -3,10 +3,8 @@ import { menuRoutes } from '~/router/routes'
 import ThemeToggle from '~/components/theme/ThemeToggle.vue'
 import UploadIndicator from '~/components/uppy-uploader/UploadIndicator.vue'
 import { useAppStore } from '~/stores/app'
-import { useGlobalStore } from '~/stores/global'
 
 const appStore = useAppStore()
-const globalStore = useGlobalStore()
 
 defineProps<{
   mobile?: boolean
@@ -14,6 +12,7 @@ defineProps<{
 
 const emit = defineEmits<{
   close: []
+  upload: []
 }>()
 
 function handleClick() {
@@ -21,7 +20,7 @@ function handleClick() {
 }
 
 function openUpload() {
-  globalStore.drawerPanel = 'upload'
+  emit('upload')
 }
 </script>
 
