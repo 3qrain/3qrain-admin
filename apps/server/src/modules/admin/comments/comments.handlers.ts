@@ -116,7 +116,7 @@ export async function create(c: Context) {
       parentId: body.parentId || null,
       replyToId: body.replyToId || null,
       replyToUserId: body.replyToUserId || null,
-      content: body.content,
+      content: body.content.trim(),
       status: 'published'
     })
     .returning()
@@ -135,7 +135,7 @@ export async function update(c: Context) {
     return c.json(fail(ErrorCode.INVALID_PARAMS, '评论不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  db.update(comments).set({ content: body.content }).where(eq(comments.id, id)).run()
+  db.update(comments).set({ content: body.content.trim() }).where(eq(comments.id, id)).run()
 
   const updated = db.select().from(comments).where(eq(comments.id, id)).get()!
   const [enriched] = enrichComments([updated])

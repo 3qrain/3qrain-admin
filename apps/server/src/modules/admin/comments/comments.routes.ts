@@ -72,7 +72,7 @@ export const createCommentRoute = createRoute({
           schema: z.object({
             targetType: z.enum(['post', 'note']),
             targetId: z.number().int().positive(),
-            content: z.string().min(1),
+            content: z.string().trim().min(1).max(500),
             parentId: z.number().int().positive().optional(),
             replyToId: z.number().int().positive().optional(),
             replyToUserId: z.number().int().positive().optional(),
@@ -103,7 +103,7 @@ export const updateCommentRoute = createRoute({
     body: {
       content: {
         'application/json': {
-          schema: z.object({ content: z.string().min(1) }),
+          schema: z.object({ content: z.string().trim().min(1).max(500) }),
         },
       },
     },

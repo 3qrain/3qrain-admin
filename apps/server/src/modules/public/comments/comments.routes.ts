@@ -6,7 +6,7 @@ import { authGuardPublic } from '~/middleware/auth-guard-public'
 export const createCommentSchema = z.object({
   targetType: z.enum(['post', 'note']),
   targetId: z.number().int().positive(),
-  content: z.string().min(1).max(500),
+  content: z.string().trim().min(1).max(500),
   parentId: z.number().int().positive().optional(),
   replyToId: z.number().int().positive().optional(),
   replyToUserId: z.number().int().positive().optional(),
