@@ -188,13 +188,14 @@ onBeforeUnmount(() => {
       <MenuButton :active="props.editor.isActive('strike')" @mousedown.prevent @click="props.editor.chain().focus().toggleStrike().run()">
         <Strikethrough :size="15" />
       </MenuButton>
+      <span class="sep" />
       <MenuButton :active="props.editor.isActive('code')" @mousedown.prevent @click="props.editor.chain().focus().toggleCode().run()">
         <Code :size="15" />
       </MenuButton>
-      <span class="sep" />
       <MenuButton :active="props.editor.isActive('link')" @mousedown.prevent @click="emit('addLink')">
         <LinkIcon :size="15" />
       </MenuButton>
+      <span class="sep" />
       <MenuButton
         :active="props.editor.isActive('heading', { level: 2 })"
         @mousedown.prevent

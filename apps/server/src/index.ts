@@ -71,5 +71,5 @@ export default {
   fetch: app.fetch,
   websocket,
   // 邮件测试接口可能耗时较长，避免 Bun idle timeout 过短导致请求中断
-  idleTimeout: 30,
+  idleTimeout: 60,
 }
