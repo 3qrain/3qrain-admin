@@ -15,7 +15,14 @@ export const getDefaultConfig = (): FullConfig => ({
     port: 465,
     user: '',
     pass: '',
-  }
+  },
+  comments: {
+    enabled: true,
+    reviewEnabled: false,
+  },
+  friendLinks: {
+    applicationEnabled: true,
+  },
 })
 
 export async function initConfigs() {

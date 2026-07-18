@@ -19,6 +19,18 @@ export const AppearanceSchema = z.object({
 })
 export type Appearance = z.infer<typeof AppearanceSchema>
 
+// ==================== Features ====================
+export const CommentsConfigSchema = z.object({
+  enabled: z.boolean(),
+  reviewEnabled: z.boolean(),
+})
+export type CommentsConfig = z.infer<typeof CommentsConfigSchema>
+
+export const FriendLinksConfigSchema = z.object({
+  applicationEnabled: z.boolean(),
+})
+export type FriendLinksConfig = z.infer<typeof FriendLinksConfigSchema>
+
 // ==================== Schema Mapping ====================
 export const EmailSchema = z.object({
   enabled: z.boolean(),
@@ -32,6 +44,8 @@ export const configSchemaMapping = {
   siteInfo: SiteInfoSchema,
   appearance: AppearanceSchema,
   email: EmailSchema,
+  comments: CommentsConfigSchema,
+  friendLinks: FriendLinksConfigSchema,
 } as const
 
 export type ConfigKey = keyof typeof configSchemaMapping

@@ -10,6 +10,15 @@ const siteSchema = z.object({
   copyright: z.string(),
   filingNumber: z.string(),
   filingUrl: z.string(),
+  features: z.object({
+    comments: z.object({
+      enabled: z.boolean(),
+      reviewEnabled: z.boolean(),
+    }),
+    friendLinks: z.object({
+      applicationEnabled: z.boolean(),
+    }),
+  }),
 })
 
 export const siteRoute = createRoute({

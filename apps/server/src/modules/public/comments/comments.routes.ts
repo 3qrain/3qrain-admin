@@ -30,6 +30,7 @@ const commentSchema = z.object({
   replyToUser: commentUserSchema.nullable(),
   content: z.string(),
   isPinned: z.union([z.boolean(), z.number()]),
+  status: z.string(),
   createdAt: z.string().nullable(),
 })
 
@@ -77,6 +78,10 @@ export const createCommentRoute = createRoute({
     [HttpStatusCodes.BAD_REQUEST]: {
       content: { 'application/json': { schema: errorResponseSchema } },
       description: '参数校验失败',
+    },
+    [HttpStatusCodes.FORBIDDEN]: {
+      content: { 'application/json': { schema: errorResponseSchema } },
+      description: '评论功能暂时停用',
     },
   },
 })

@@ -8,6 +8,7 @@ import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { createCommentSchema } from './comments.routes'
 import { getClientIp } from '~/utils/getClientIp'
+import { getConfigValue } from '~/services/config'
 
 function enrichComments(rows: any[]) {
   if (rows.length === 0) return []
@@ -34,6 +35,7 @@ function enrichComments(rows: any[]) {
     replyToUser: c.replyToUserId ? (userMap.get(c.replyToUserId) || null) : null,
     content: c.content,
     isPinned: c.isPinned,
+    status: c.status,
     createdAt: c.createdAt,
   }))
 }
@@ -113,6 +115,11 @@ export async function list(c: Context) {
 
 export async function create(c: Context) {
   const user = c.get('user')
+  const commentsConfig = getConfigValue('comments')
+
+  if (!commentsConfig.enabled) {
+    return c.json(fail(ErrorCode.FEATURE_DISABLED, '评论功能暂时停用'), HttpStatusCodes.FORBIDDEN)
+  }
 
   const parsed = createCommentSchema.safeParse(await c.req.json())
   if (!parsed.success) {
@@ -120,6 +127,7 @@ export async function create(c: Context) {
   }
 
   const body = parsed.data
+  const pendingReview = commentsConfig.reviewEnabled && user.role === 'visitor'
   const result = db
     .insert(comments)
     .values({
@@ -130,7 +138,7 @@ export async function create(c: Context) {
       replyToId: body.replyToId || null,
       replyToUserId: body.replyToUserId || null,
       content: body.content,
-      status: 'published',
+      status: pendingReview ? 'pending' : 'published',
       ip: getClientIp(c),
       userAgent: c.req.header('user-agent') || null,
     })
@@ -177,5 +185,5 @@ export async function create(c: Context) {
     // console.error('[notify] failed:', e)
   }
 
-  return c.json(ok(enriched, '评论成功'), HttpStatusCodes.CREATED)
+  return c.json(ok(enriched, pendingReview ? '评论已提交，等待审核' : '评论成功'), HttpStatusCodes.CREATED)
 }

@@ -48,5 +48,9 @@ export const createFriendLinkRoute = createRoute({
       content: { 'application/json': { schema: errorResponseSchema } },
       description: '参数校验失败',
     },
+    [HttpStatusCodes.FORBIDDEN]: {
+      content: { 'application/json': { schema: errorResponseSchema } },
+      description: '友链申请暂时停用',
+    },
   },
 })

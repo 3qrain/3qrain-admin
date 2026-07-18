@@ -5,6 +5,7 @@ import { users, configs } from '~/db/schema'
 import { DEFAULT_SITE_INFO } from '~/constants/site-info'
 import { ok } from '~/utils/response'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
+import { getConfigValue } from '~/services/config'
 
 export async function get(c: Context) {
   const systemUser = db.select({
@@ -40,5 +41,9 @@ export async function get(c: Context) {
     name: systemUser?.username || '',
     avatar,
     ...siteInfo,
+    features: {
+      comments: getConfigValue('comments'),
+      friendLinks: getConfigValue('friendLinks'),
+    },
   }, '获取成功'), HttpStatusCodes.OK)
 }

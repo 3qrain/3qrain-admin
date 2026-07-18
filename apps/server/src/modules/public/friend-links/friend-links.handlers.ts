@@ -7,6 +7,7 @@ import { ErrorCode } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { createFriendLinkSchema } from './friend-links.routes'
 import { eq } from 'drizzle-orm'
+import { getConfigValue } from '~/services/config'
 
 export async function listApproved(c: Context) {
   const rows = db.select({
@@ -21,6 +22,10 @@ export async function listApproved(c: Context) {
 }
 
 export async function create(c: Context) {
+  if (!getConfigValue('friendLinks').applicationEnabled) {
+    return c.json(fail(ErrorCode.FEATURE_DISABLED, '友链申请暂时停用'), HttpStatusCodes.FORBIDDEN)
+  }
+
   const parsed = createFriendLinkSchema.safeParse(await c.req.json())
   if (!parsed.success) {
     return c.json(fail(ErrorCode.INVALID_PARAMS, parsed.error.issues[0].message), HttpStatusCodes.BAD_REQUEST)
