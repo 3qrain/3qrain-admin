@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { Search, Trash } from '@lucide/vue'
@@ -42,8 +42,11 @@ const pageSize = 10
 const t = +new Date()
 const tab = ref('')
 const keyword = ref('')
+const activeKeyword = ref('')
 const showDeleted = ref(false)
 const expanded = ref<Set<number>>(new Set())
+// 待审核和搜索需要直接展示命中的回复，不按主评论分组。
+const flatResultView = computed(() => !showDeleted.value && (tab.value === 'pending' || !!activeKeyword.value))
 
 async function toggleExpand(c: Comment) {
   if (expanded.value.has(c.id)) {
@@ -79,9 +82,10 @@ async function load(append = false) {
       t,
       pageSize,
       status: showDeleted.value ? undefined : tab.value || undefined,
-      keyword: keyword.value || undefined,
+      keyword: activeKeyword.value || undefined,
       deleted: showDeleted.value ? 'true' : undefined,
-      parentOnly: showDeleted.value ? false : true
+      // 普通列表只查主评论；待审核、搜索和回收站查询全部评论。
+      parentOnly: showDeleted.value ? false : !flatResultView.value
     }
     if (paginationMode.value === 'scroll') {
       params.offset = append ? comments.value.length : 0
@@ -166,6 +170,15 @@ async function emptyTrash() {
   }
 }
 
+function search() {
+  activeKeyword.value = keyword.value.trim()
+  page.value = 1
+  if (paginationMode.value === 'button') {
+    router.replace({ query: { ...route.query, page: '1' } })
+  }
+  load()
+}
+
 function goPage(p: number) {
   page.value = p
   if (paginationMode.value === 'button') {
@@ -228,7 +241,7 @@ onMounted(() => {
 
     <div v-if="!showDeleted" class="toolbar">
       <ToggleGroup size="sm" v-model="tab" :options="tabOptions" />
-      <Input v-model="keyword" placeholder="搜索..." class="search" @keyup.enter="load()">
+      <Input v-model="keyword" placeholder="搜索..." class="search" @keyup.enter="search">
         <Search style="width: 0.875rem; height: 0.875rem; opacity: 0.4" />
       </Input>
     </div>

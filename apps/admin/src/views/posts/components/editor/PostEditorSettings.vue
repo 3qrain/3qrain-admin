@@ -74,7 +74,7 @@ function toggleTag(id: number) {
         <span>摘要</span>
         <Textarea
           v-model="summary"
-          :rows="6"
+          :rows="3"
           expandable
           expand-title="编辑文章摘要"
           aria-label="文章摘要"
