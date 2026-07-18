@@ -33,6 +33,7 @@ async function submit() {
     })
     if (res.success) {
       content.value = ''
+      toast.success(res.message)
       emit('done')
     } else {
       toast.error(res.message)

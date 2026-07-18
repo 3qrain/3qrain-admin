@@ -17,7 +17,16 @@ export const useAppStore = defineStore('app', {
       motto: '四时轮转，且惜流年',
       copyright: '© 2026 · 3qrain',
       filingNumber: '',
-      filingUrl: ''
+      filingUrl: '',
+      features: {
+        comments: {
+          enabled: true,
+          reviewEnabled: false
+        },
+        friendLinks: {
+          applicationEnabled: true
+        }
+      }
     },
     user: null as { id: number; username: string; email: string; avatarUrl: string; role: string } | null
   }),

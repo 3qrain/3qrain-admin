@@ -6,6 +6,7 @@ const props = defineProps<{ targetType: string; targetId: number }>()
 
 const commentApi = useCommentApi()
 const store = useAppStore()
+const commentsEnabled = computed(() => store.site.features.comments.enabled)
 
 const comments = ref<any[]>([])
 const total = ref(0)
@@ -46,6 +47,7 @@ onMounted(load)
   <div class="section">
     <ClientOnly>
       <CommentComposer
+        v-if="commentsEnabled"
         :target-type="targetType"
         :target-id="targetId"
         @done="
@@ -73,7 +75,7 @@ onMounted(load)
             </div>
             <p class="text">{{ c.content }}</p>
             <div class="act-group">
-              <button v-if="store.user" class="act" @click="toggleReply(c.id)">回复</button>
+              <button v-if="store.user && commentsEnabled" class="act" @click="toggleReply(c.id)">回复</button>
             </div>
             <CommentComposer
               v-show="showReply.has(c.id)"
@@ -107,7 +109,7 @@ onMounted(load)
               </div>
               <p class="text">{{ r.content }}</p>
               <div class="act-group">
-                <button v-if="store.user" class="act" @click="toggleReply(r.id)">回复</button>
+                <button v-if="store.user && commentsEnabled" class="act" @click="toggleReply(r.id)">回复</button>
               </div>
 
               <CommentComposer

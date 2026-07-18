@@ -98,9 +98,12 @@ useHead({ title: computed(() => `友链 - ${store.site.name || '3qrain'}`) })
       <aside class="apply">
         <span class="eyebrow">Apply</span>
         <h2>申请加入</h2>
-        <p>如果你也在写博客，可以把站点留在这里。审核通过后会出现在左侧列表。</p>
+        <p v-if="store.site.features.friendLinks.applicationEnabled">
+          如果你也在写博客，可以把站点留在这里。审核通过后会出现在左侧列表。
+        </p>
+        <p v-else>申请通道暂时关闭，已经公开的友链仍会正常展示。</p>
 
-        <form class="form" @submit.prevent="submit">
+        <form v-if="store.site.features.friendLinks.applicationEnabled" class="form" @submit.prevent="submit">
           <label>
             <span>站点名称</span>
             <input v-model="form.siteName" type="text" maxlength="64" placeholder="你的博客名称" />

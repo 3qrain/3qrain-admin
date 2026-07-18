@@ -8,6 +8,15 @@ export interface SiteInfo {
   copyright: string
   filingNumber: string
   filingUrl: string
+  features: {
+    comments: {
+      enabled: boolean
+      reviewEnabled: boolean
+    }
+    friendLinks: {
+      applicationEnabled: boolean
+    }
+  }
 }
 
 export function useSiteApi() {

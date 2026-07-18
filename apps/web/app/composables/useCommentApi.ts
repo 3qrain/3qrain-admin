@@ -19,6 +19,7 @@ export interface CommentItem {
   replyToUser: CommentUser | null
   content: string
   isPinned: boolean
+  status: string
   createdAt: string
 }
 
