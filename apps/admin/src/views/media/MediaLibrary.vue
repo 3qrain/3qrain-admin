@@ -237,7 +237,7 @@ onUnmounted(() => {
     <!-- Grid -->
     <div v-if="!loading && files.length === 0" class="dim">暂无文件</div>
 
-    <template v-else-if="files.length > 0">
+    <div v-else-if="files.length" class="media-list list-body">
       <div class="group" v-for="group in filesGroupsByDate">
         <div class="group-date">{{ group.date }}</div>
         <div class="grid">
@@ -280,7 +280,7 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-    </template>
+    </div>
 
     <div class="media-pagination">
       <Pagination
@@ -359,6 +359,20 @@ h1 {
   border-radius: 0.5rem;
   margin-left: 0.125rem;
   font-weight: 600;
+}
+
+.list-body {
+  animation: list-enter 0.3s ease-in-out;
+}
+
+@keyframes list-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* Upload */

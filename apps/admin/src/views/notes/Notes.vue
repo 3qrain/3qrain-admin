@@ -227,7 +227,7 @@ onMounted(() => {
 
     <!-- 时间线 -->
     <div v-if="!loading && notes.length === 0" class="empty">{{ showDeleted ? '回收站为空' : '还没有说说' }}</div>
-    <div v-else-if="notes.length > 0" class="timeline">
+    <div v-else-if="notes.length" class="timeline list-body">
       <div v-for="note in notes" :key="note.id" class="note">
         <Badge v-if="!note.isPublished" variant="neutral" class="pin-badge">隐藏</Badge>
         <div class="note-header">
@@ -398,6 +398,20 @@ onMounted(() => {
   flex-direction: column;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.list-body {
+  animation: list-enter 0.3s ease-in-out;
+}
+
+@keyframes list-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .note {

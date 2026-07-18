@@ -249,7 +249,7 @@ onMounted(() => {
       {{ showDeleted ? '回收站为空' : '暂无文章，点击「写文章」开始创作' }}
     </div>
 
-    <div v-else class="list">
+    <div v-else-if="posts.length" class="list list-body">
       <article v-for="post in posts" :key="post.id" class="row" @click="!showDeleted && edit(post)">
         <div class="row-main">
           <h2 class="row-title">{{ post.title || '新文章' }}</h2>
@@ -437,6 +437,20 @@ onMounted(() => {
 .list {
   display: flex;
   flex-direction: column;
+}
+
+.list-body {
+  animation: list-enter 0.3s ease-in-out;
+}
+
+@keyframes list-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .row {

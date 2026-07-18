@@ -72,7 +72,7 @@ function targetLabel() {
       <div class="actions">
         <Button
           v-if="comment.status === 'pending'"
-          variant="success"
+          variant="neutral"
           size="sm"
           @click="emit('approve', comment)"
         >

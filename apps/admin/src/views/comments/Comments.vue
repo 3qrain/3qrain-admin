@@ -248,7 +248,7 @@ onMounted(() => {
 
     <div v-if="!loading && !comments.length" class="empty">暂无数据</div>
 
-    <div v-else class="list">
+    <div v-else-if="comments.length" class="list list-body">
       <template v-for="c in comments" :key="c.id">
         <CommentItem
           :comment="c"
@@ -351,10 +351,25 @@ onMounted(() => {
   font-size: 0.9375rem;
   opacity: 0.35;
 }
+
 .list {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
+}
+
+.list-body {
+  animation: list-enter 0.3s ease-in-out;
+}
+
+@keyframes list-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .children-panel {
