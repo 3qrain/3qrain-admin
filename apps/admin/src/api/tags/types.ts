@@ -3,6 +3,8 @@ export interface Tag {
   name: string;
   slug: string;
   postCount: number;
+  noteCount: number;
+  usageCount: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,21 +1,29 @@
 import type { Context } from "hono";
-import { eq, count, getTableColumns } from "drizzle-orm";
+import { eq, countDistinct, getTableColumns } from "drizzle-orm";
 import { db } from "~/db";
-import { tags, postTags } from "~/db/schema";
+import { tags, postTags, noteTags } from "~/db/schema";
 import { ok, fail } from "~/utils/response";
 import { ErrorCode } from "@3qrain/shared";
 import * as HttpStatusCodes from "~/constants/http-status-codes";
 
 export async function list(c: Context) {
-  const result = db
+  const rows = db
     .select({
       ...getTableColumns(tags),
-      postCount: count(postTags.postId),
+      postCount: countDistinct(postTags.postId),
+      noteCount: countDistinct(noteTags.noteId),
     })
     .from(tags)
     .leftJoin(postTags, eq(postTags.tagId, tags.id))
+    .leftJoin(noteTags, eq(noteTags.tagId, tags.id))
     .groupBy(tags.id)
     .all();
+  const result = rows.map(tag => ({
+    ...tag,
+    createdAt: tag.createdAt.toISOString(),
+    updatedAt: tag.updatedAt.toISOString(),
+    usageCount: tag.postCount + tag.noteCount,
+  }));
   return c.json(ok(result, "获取成功"), HttpStatusCodes.OK);
 }
 
@@ -32,7 +40,12 @@ export async function create(c: Context) {
     return c.json(fail(ErrorCode.TAG_SLUG_EXISTS, "标签标识已存在"), HttpStatusCodes.CONFLICT);
   }
 
-  const result = db.insert(tags).values({ name, slug }).returning().get();
+  const inserted = db.insert(tags).values({ name, slug }).returning().get();
+  const result = {
+    ...inserted,
+    createdAt: inserted.createdAt.toISOString(),
+    updatedAt: inserted.updatedAt.toISOString(),
+  };
   return c.json(ok(result, "创建成功"), HttpStatusCodes.CREATED);
 }
 
@@ -59,7 +72,12 @@ export async function update(c: Context) {
     }
   }
 
-  const result = db.update(tags).set(body).where(eq(tags.id, id)).returning().get();
+  const updated = db.update(tags).set(body).where(eq(tags.id, id)).returning().get();
+  const result = {
+    ...updated,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+  };
   return c.json(ok(result, "更新成功"), HttpStatusCodes.OK);
 }
 

@@ -20,9 +20,17 @@ const tagSchema = z.object({
   id: z.number(),
   name: z.string(),
   slug: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
-export const tagListSchema = z.array(tagSchema);
+const tagListItemSchema = tagSchema.extend({
+  postCount: z.number(),
+  noteCount: z.number(),
+  usageCount: z.number(),
+});
+
+export const tagListSchema = z.array(tagListItemSchema);
 export const tagResponseSchema = tagSchema;
 
 // --- Routes ---
