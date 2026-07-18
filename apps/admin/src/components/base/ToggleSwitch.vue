@@ -1,24 +1,27 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   ariaLabel?: string
+  disabled?: boolean
 }>()
 
 const model = defineModel<boolean>({ default: false })
 
 function toggle() {
+  if (props.disabled) return
   model.value = !model.value
 }
 </script>
 
 <template>
-  <span class="toggle">
-    <input v-model="model" type="checkbox" />
+  <span :class="['toggle', { disabled }]">
+    <input v-model="model" type="checkbox" :disabled="disabled" />
     <span
       class="track"
       role="switch"
-      tabindex="0"
+      :tabindex="disabled ? -1 : 0"
       :aria-checked="model"
       :aria-label="ariaLabel"
+      :aria-disabled="disabled"
       @click.prevent="toggle"
       @keydown.space.prevent="toggle"
       @keydown.enter.prevent="toggle"
@@ -39,6 +42,11 @@ function toggle() {
     width: 0;
     height: 0;
   }
+}
+
+.toggle.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .track {

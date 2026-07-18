@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, markRaw, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { User, Palette, Lock, Mail } from '@lucide/vue'
+import { User, Palette, Lock, Mail, SlidersHorizontal } from '@lucide/vue'
 import ProfileSection from './sections/ProfileSection.vue'
 import AppearanceSection from './sections/AppearanceSection.vue'
 import SecuritySection from './sections/SecuritySection.vue'
 import EmailSection from './sections/EmailSection.vue'
+import FeaturesSection from './sections/FeaturesSection.vue'
 
 interface Section {
   key: string
@@ -19,6 +20,7 @@ const sections: Section[] = [
   { key: 'appearance', title: '外观', icon: markRaw(Palette), component: markRaw(AppearanceSection) },
   { key: 'security', title: '安全', icon: markRaw(Lock), component: markRaw(SecuritySection) },
   { key: 'email', title: '邮件', icon: markRaw(Mail), component: markRaw(EmailSection) },
+  { key: 'features', title: '功能', icon: markRaw(SlidersHorizontal), component: markRaw(FeaturesSection) },
 ]
 
 const route = useRoute()

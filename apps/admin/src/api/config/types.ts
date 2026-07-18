@@ -18,8 +18,19 @@ export interface EmailConfig {
   pass: string
 }
 
+export interface CommentsConfig {
+  enabled: boolean
+  reviewEnabled: boolean
+}
+
+export interface FriendLinksConfig {
+  applicationEnabled: boolean
+}
+
 export interface FullConfig {
   siteInfo: SiteInfo
   appearance: Appearance
   email: EmailConfig
+  comments: CommentsConfig
+  friendLinks: FriendLinksConfig
 }
