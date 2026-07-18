@@ -1,10 +1,12 @@
 import type { Context } from 'hono'
-import { eq, and, desc, count, inArray, isNull, isNotNull, like, lt } from 'drizzle-orm'
+import { eq, and, desc, count, inArray, isNull, isNotNull, like, lt, sql } from 'drizzle-orm'
 import { db } from '~/db'
-import { comments, users } from '~/db/schema'
+import { comments, notifications, users } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
+import type { NotificationType } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
+import { dispatchEmail } from '~/services/email/dispatch'
 
 function buildFilters(query: Record<string, string | undefined>) {
   const conditions = []
@@ -151,7 +153,31 @@ export async function review(c: Context) {
     return c.json(fail(ErrorCode.INVALID_PARAMS, '评论不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  db.update(comments).set({ status: 'published' }).where(eq(comments.id, id)).run()
+  // 通知 meta 保存 commentId，审核通过后继续派发之前挂起的邮件。
+  const notification = db
+    .select()
+    .from(notifications)
+    .where(and(
+      inArray(notifications.type, ['new_comment', 'new_reply']),
+      eq(notifications.emailStatus, 'pending_review'),
+      sql`json_extract(${notifications.meta}, '$.commentId') = ${id}`,
+    ))
+    .orderBy(desc(notifications.id))
+    .get()
+
+  db.transaction(tx => {
+    tx.update(comments).set({ status: 'published' }).where(eq(comments.id, id)).run()
+    if (notification?.meta) {
+      tx.update(notifications)
+        .set({ emailStatus: 'pending', emailError: null })
+        .where(eq(notifications.id, notification.id))
+        .run()
+    }
+  })
+
+  if (notification?.meta) {
+    dispatchEmail(notification.type as NotificationType, notification.meta, notification.id)
+  }
 
   const updated = db.select().from(comments).where(eq(comments.id, id)).get()!
   const [enriched] = enrichComments([updated])

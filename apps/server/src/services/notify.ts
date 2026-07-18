@@ -15,9 +15,8 @@ interface NotifyInput {
   emailStatus?: EmailStatus
 }
 
-export async function notify(input: NotifyInput) {  
+export async function notify(input: NotifyInput) {
   if (!input.emailStatus) {
-    // 如果邮件通知开启，那就预先设置改通知邮件状态为pending
     input.emailStatus = getEmailConfig().enabled ? 'pending' : 'failed'
   }
   const record = db.insert(notifications).values(input).returning().get()
@@ -28,14 +27,15 @@ export async function notify(input: NotifyInput) {
     title: record.title,
     content: record.content ?? undefined,
     meta: record.meta ?? undefined,
-    createdAt: new Date(record.createdAt!).toISOString(),
+    createdAt: new Date(record.createdAt!).toISOString()
   }
 
   const msg: WsChannelMessage = { scope: input.scope, payload }
   await redis.publish(CHANNEL, JSON.stringify(msg))
 
-  // 如果传入的emailStatus是not_required，就不需要发送邮件了（管理员发评论）
-  if (input.meta && record.emailStatus !== 'not_required') dispatchEmail(input.type, input.meta, record.id)
+  // failed 仍会派发，由发送器回写具体错误；只有无需发送和待审核需要中断。
+  const shouldDispatchEmail = record.emailStatus !== 'not_required' && record.emailStatus !== 'pending_review'
+  if (input.meta && shouldDispatchEmail) dispatchEmail(input.type, input.meta, record.id)
 
   return record
 }
@@ -48,7 +48,7 @@ export async function broadcast(input: Omit<NotifyInput, 'scope'>) {
     title: input.title,
     content: input.content ?? undefined,
     meta: input.meta ?? undefined,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
   }
 
   const msg: WsChannelMessage = { scope: 'public', payload }

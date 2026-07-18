@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { CircleCheckBig, CircleX, ChevronDown, ChevronUp, CircleOff } from '@lucide/vue'
+import { CircleCheckBig, CircleX, ChevronDown, ChevronUp, CircleOff, Clock3 } from '@lucide/vue'
 import type { NotificationItem } from '~/api/notifications/types'
 import type { Comment } from '~/api/comments/types'
 import { formatDate } from '~/utils/date'
@@ -132,7 +132,12 @@ function togglePreview() {
       <span>{{ notRequiredMsg(item.type) }}</span>
     </div>
 
-    <div v-if="item.emailStatus === 'pending'" class="email-status pending">
+    <div v-else-if="item.emailStatus === 'pending_review'" class="email-status pending_review">
+      <Clock3 style="height: 1.125rem; width: 1.125rem" />
+      <span>等待评论审核</span>
+    </div>
+
+    <div v-else-if="item.emailStatus === 'pending'" class="email-status pending">
       <span class="email-spinner" />
       <span>邮件发送中...</span>
     </div>
@@ -204,7 +209,8 @@ function togglePreview() {
     color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
   }
 
-  &.pending {
+  &.pending,
+  &.pending_review {
     background: color-mix(in oklab, #f59e0b 12%, transparent);
     color: #d97706;
   }

@@ -87,14 +87,12 @@ export async function sendEmail(options: { to: string; subject: string; html: st
   if (!config.enabled) throw new Error('邮件服务未启用')
 
   const transport = getTransporter()
-  try {
-    await transport.sendMail({
-      from: config.user,
-      to: options.to,
-      subject: options.subject,
-      html: options.html
-    })
-  } catch (e: any) {}
+  await transport.sendMail({
+    from: config.user,
+    to: options.to,
+    subject: options.subject,
+    html: options.html
+  })
 }
 
 export async function sendTestEmail(

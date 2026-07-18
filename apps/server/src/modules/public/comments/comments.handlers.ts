@@ -162,7 +162,10 @@ export async function create(c: Context) {
       postTitle = '说说#' + body.targetId
     }
 
-   
+    const emailNotRequired = isReply
+      ? user.id === body.replyToUserId
+      : user.role === 'system' || user.role === 'admin'
+
     await notify({
       scope: 'admin',
       type: isReply ? 'new_reply' : 'new_comment',
@@ -170,9 +173,7 @@ export async function create(c: Context) {
       content: summary,
       // 新评论（一级评论）如果是管理员，则不发邮件
       // 新回复（二级评论）如果评论人id和被回复人id相同，则不发邮件
-      emailStatus: isReply
-        ? (user.id === body.replyToUserId ? 'not_required' : undefined)
-        : (user.role === 'system' || user.role === 'admin' ? 'not_required' : undefined),
+      emailStatus: emailNotRequired ? 'not_required' : pendingReview ? 'pending_review' : undefined,
       meta: JSON.stringify({
         targetType: body.targetType,
         targetId: body.targetId,
