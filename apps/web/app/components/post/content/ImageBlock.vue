@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { X } from '@lucide/vue'
 import type { CSSProperties } from 'vue'
 import type { TiptapNode } from '@3qrain/shared'
@@ -7,12 +7,10 @@ import type { TiptapNode } from '@3qrain/shared'
 const props = defineProps<{ node: TiptapNode }>()
 
 const imageRef = ref<HTMLImageElement | null>(null)
-const currentSrc = ref('')
 const loaded = ref(false)
 const previewOpen = ref(false)
 
 const attrs = computed(() => props.node.attrs || {})
-const thumbnailUrl = computed(() => String(attrs.value.thumbnailUrl || ''))
 const previewUrl = computed(() => String(attrs.value.previewUrl || ''))
 const originalUrl = computed(() => String(attrs.value.url || ''))
 const placeholder = computed(() => String(attrs.value.placeholder || ''))
@@ -36,34 +34,17 @@ const stageStyle = computed<CSSProperties>(() => {
     : {}
 })
 
-const previewSource = computed(() => previewUrl.value || originalUrl.value || currentSrc.value)
-
-function loadPreview() {
-  const nextSource = previewUrl.value || originalUrl.value
-  if (!nextSource || nextSource === currentSrc.value) return
-
-  const image = new Image()
-  image.onload = async () => {
-    currentSrc.value = nextSource
-    await nextTick()
-    loaded.value = true
-  }
-  image.src = nextSource
-}
+const imageSource = computed(() => previewUrl.value || originalUrl.value)
 
 function handleLoad() {
   loaded.value = true
-  loadPreview()
 }
 
 onMounted(() => {
-  currentSrc.value = thumbnailUrl.value || previewUrl.value || originalUrl.value
   if (imageRef.value?.complete && imageRef.value.naturalWidth) {
     handleLoad()
   }
 })
-
-currentSrc.value = thumbnailUrl.value || previewUrl.value || originalUrl.value
 </script>
 
 <template>
@@ -83,7 +64,7 @@ currentSrc.value = thumbnailUrl.value || previewUrl.value || originalUrl.value
       />
       <img
         ref="imageRef"
-        :src="currentSrc"
+        :src="imageSource"
         :alt="alt"
         :width="Number(attrs.intrinsicWidth) || undefined"
         :height="Number(attrs.intrinsicHeight) || undefined"
@@ -96,7 +77,7 @@ currentSrc.value = thumbnailUrl.value || previewUrl.value || originalUrl.value
 
     <BaseModal v-model:open="previewOpen">
       <div class="image-preview">
-        <img :src="previewSource" :alt="alt" />
+        <img :src="imageSource" :alt="alt" />
         <button type="button" title="关闭预览" @click="previewOpen = false">
           <X :size="18" />
         </button>
