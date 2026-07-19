@@ -55,10 +55,8 @@ function getTransporter() {
       secure: config.port === 465,
       auth: { user: config.user, pass: config.pass },
 
-      // 复用连接，避免同时发送多封邮件时，每次都要创建一个新的连接。
-      // 默认连接池，连接数是5
-      // 空闲连接默认10分钟后关闭
-      pool: true,
+      // 博客邮件量很低，暂不使用连接池，避免复用被 SMTP 服务端提前回收的空闲连接。
+      // pool: true,
       // maxConnections: 5,
       // socketTimeout: 600000
 
