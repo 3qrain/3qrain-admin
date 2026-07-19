@@ -56,7 +56,11 @@ padding:32px;
 ">
 
 ${body}
-<a href="${href}" style="display:block;width:fit-content;background:#000000;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;margin: 20px 0 0;;font-weight:500" target="_blank">${buttonLabel}</a>
+${
+  href && buttonLabel
+    ? `<a href="${href}" style="display:block;width:fit-content;background:#000000;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;margin:20px 0 0;font-weight:500" target="_blank">${buttonLabel}</a>`
+    : ''
+}
 
 </div>
 
