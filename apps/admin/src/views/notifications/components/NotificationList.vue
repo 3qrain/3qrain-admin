@@ -548,12 +548,12 @@ onMounted(() => load(false))
 
   &.pending,
   &.pending_review {
-    color: #d97706;
+    color: var(--color-warning);
     opacity: 0.85;
   }
 
   &.failed {
-    color: #dc2626;
+    color: var(--color-error);
     opacity: 0.9;
   }
 
