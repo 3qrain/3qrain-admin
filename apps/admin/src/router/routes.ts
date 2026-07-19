@@ -1,5 +1,17 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { Gauge, PenLine, MessageCircle, MessagesSquare, FolderTree, Tags, Folder, Users, Settings, Bell, Panda } from '@lucide/vue'
+import {
+  Gauge,
+  PenLine,
+  MessageCircle,
+  MessagesSquare,
+  FolderTree,
+  Tags,
+  Folder,
+  Users,
+  Settings,
+  Bell,
+  Panda
+} from '@lucide/vue'
 import AppLayout from '~/layouts/AppLayout.vue'
 
 export const menuRoutes: RouteRecordRaw[] = [
@@ -93,6 +105,15 @@ export const menuRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/friend-links',
+    name: 'friendLinks',
+    component: () => import('~/views/friend-links/FriendLinks.vue'),
+    meta: {
+      title: '友链',
+      icon: Panda
+    }
+  },
+  {
     path: '/comments',
     meta: {
       title: '评论',
@@ -105,15 +126,6 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import('~/views/comments/Comments.vue')
       }
     ]
-  },
-   {
-    path: '/friend-links',
-    name: 'friendLinks',
-    component: () => import('~/views/friend-links/FriendLinks.vue'),
-    meta: {
-      title: '友链',
-      icon: Panda
-    }
   },
   {
     path: '/notifications',
@@ -128,7 +140,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     path: '/media',
     meta: {
       title: '媒体库',
-      icon: Folder,
+      icon: Folder
     },
     children: [
       {
