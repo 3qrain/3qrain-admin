@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
-import { ShieldCheck, Ban } from '@lucide/vue'
+import { BadgeCheck, Ban } from '@lucide/vue'
 import { getVisitors, updateVisitor } from '~/api/visitors'
 import type { Visitor } from '~/api/visitors/types'
 
@@ -64,7 +64,7 @@ onMounted(load)
             :title="v.role === 'admin' ? '取消管理员' : '设为管理员'"
             @click="toggleAdmin(v)"
           >
-            <ShieldCheck style="width: 0.875rem; height: 0.875rem;" />
+            <BadgeCheck style="width: 0.875rem; height: 0.875rem;" />
           </button>
           <button
             :class="['toggle danger', v.isBanned && 'on']"
