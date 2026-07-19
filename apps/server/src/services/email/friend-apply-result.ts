@@ -4,10 +4,10 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { sendEmail } from '~/services/email'
 import { renderFriendApplyResultEmail } from '@3qrain/shared'
+import type { FriendApplyResultNotificationMeta } from '@3qrain/shared'
 
-export async function sendFriendApplyResultEmail(meta: Record<string, any>) {
-  const email = meta.applicantEmail
-  const result = z.email().safeParse(email)
+export async function sendFriendApplyResultEmail(meta: FriendApplyResultNotificationMeta) {
+  const result = z.email().safeParse(meta.applicantEmail)
   if(!result.success) {
     throw new Error('无效的邮箱地址')
   }
@@ -23,7 +23,7 @@ export async function sendFriendApplyResultEmail(meta: Record<string, any>) {
   const siteUrl = process.env.WEB_URL || ''
 
   await sendEmail({
-    to: email,
+    to: result.data,
     subject: `[${siteName}] 友链申请${meta.approved ? '已通过' : '未通过'}`,
     html: renderFriendApplyResultEmail({
       siteName,

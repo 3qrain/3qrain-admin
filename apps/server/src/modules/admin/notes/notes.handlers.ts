@@ -151,7 +151,7 @@ export async function create(c: Context) {
       type: 'new_note',
       title: '一条说说到来~',
       content: body.content.slice(0, 50),
-      meta: JSON.stringify({ noteId: note.id })
+      meta: { noteId: note.id }
     }).catch(() => {})
   }
 

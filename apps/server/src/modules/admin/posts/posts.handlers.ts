@@ -226,12 +226,12 @@ export async function create(c: Context) {
 
   const post = await getPostWithRelations(result.id)
 
-  if (body.status === 'published') {
+  if (body.status === 'published' && body.slug) {
     broadcast({
       type: 'new_post',
       title: `飘来一篇文章「${body.title}」`,
       // content: body.summary || '',
-      meta: JSON.stringify({ slug: body.slug })
+      meta: { slug: body.slug }
     }).catch(() => {})
   }
 
@@ -295,12 +295,12 @@ export async function update(c: Context) {
 
   const post = await getPostWithRelations(id)
 
-  if (existing.status !== 'published' && post?.status === 'published') {
+  if (existing.status !== 'published' && post?.status === 'published' && post.slug) {
     broadcast({
       type: 'new_post',
       title: `飘来一篇文章「${post.title}」`,
       // content: post.summary || '',
-      meta: JSON.stringify({ slug: post.slug })
+      meta: { slug: post.slug }
     }).catch(() => {})
   }
 

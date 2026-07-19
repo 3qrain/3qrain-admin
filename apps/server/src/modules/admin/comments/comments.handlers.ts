@@ -4,7 +4,7 @@ import { db } from '~/db'
 import { comments, notifications, users } from '~/db/schema'
 import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
-import type { NotificationType } from '@3qrain/shared'
+import type { CommentNotificationMeta } from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { dispatchEmail } from '~/services/email/dispatch'
 
@@ -153,21 +153,34 @@ export async function review(c: Context) {
     return c.json(fail(ErrorCode.INVALID_PARAMS, '评论不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  // 通知 meta 保存 commentId，审核通过后继续派发之前挂起的邮件。
-  const notification = db
-    .select()
-    .from(notifications)
-    .where(and(
-      inArray(notifications.type, ['new_comment', 'new_reply']),
-      eq(notifications.emailStatus, 'pending_review'),
-      sql`json_extract(${notifications.meta}, '$.commentId') = ${id}`,
-    ))
-    .orderBy(desc(notifications.id))
-    .get()
+  const replyRecipient = existing.replyToUserId
+    ? db.select({ role: users.role }).from(users).where(eq(users.id, existing.replyToUserId)).get()
+    : null
+  const repliesToAdmin = replyRecipient?.role === 'system' || replyRecipient?.role === 'admin'
+  const isSelfReply = existing.userId === existing.replyToUserId
+
+  // 只有回复普通访客的邮件需要等审核通过后发送；根评论、回复管理员和自己回复自己都没有延迟邮件。
+  const hasDeferredReplyEmail = existing.status === 'pending'
+    && !!existing.parentId
+    && !isSelfReply
+    && !repliesToAdmin
+
+  const notification = hasDeferredReplyEmail
+    ? db
+        .select({ id: notifications.id })
+        .from(notifications)
+        .where(and(
+          eq(notifications.type, 'new_reply'),
+          eq(notifications.emailStatus, 'pending_review'),
+          sql`json_extract(${notifications.meta}, '$.commentId') = ${id}`,
+        ))
+        .orderBy(desc(notifications.id))
+        .get()
+    : undefined
 
   db.transaction(tx => {
     tx.update(comments).set({ status: 'published' }).where(eq(comments.id, id)).run()
-    if (notification?.meta) {
+    if (notification) {
       tx.update(notifications)
         .set({ emailStatus: 'pending', emailError: null })
         .where(eq(notifications.id, notification.id))
@@ -175,8 +188,17 @@ export async function review(c: Context) {
     }
   })
 
-  if (notification?.meta) {
-    dispatchEmail(notification.type as NotificationType, notification.meta, notification.id)
+  if (hasDeferredReplyEmail) {
+    const meta: CommentNotificationMeta = {
+      targetType: existing.targetType as CommentNotificationMeta['targetType'],
+      targetId: existing.targetId,
+      commentId: existing.id,
+      parentId: existing.parentId,
+      replyToId: existing.replyToId,
+    }
+
+    // 通知可能已被删除；此时仍可由评论记录重建 meta，只是不再回写邮件状态。
+    dispatchEmail({ type: 'new_reply', meta }, notification?.id)
   }
 
   const updated = db.select().from(comments).where(eq(comments.id, id)).get()!

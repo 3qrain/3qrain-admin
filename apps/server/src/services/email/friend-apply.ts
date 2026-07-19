@@ -4,8 +4,9 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { sendEmail } from '~/services/email'
 import { renderFriendApplyEmail } from '@3qrain/shared'
+import type { FriendApplyNotificationMeta } from '@3qrain/shared'
 
-export async function sendFriendApplyEmail(meta: Record<string, any>) {
+export async function sendFriendApplyEmail(meta: FriendApplyNotificationMeta) {
   const admin = db
     .select({ username: users.username, email: users.email })
     .from(users)
@@ -29,8 +30,7 @@ export async function sendFriendApplyEmail(meta: Record<string, any>) {
       siteUrl,
       adminUrl,
       applicantName: meta.siteName,
-      applicantUrl: meta.siteUrl,
-      description: meta.description
+      applicantUrl: meta.siteUrl
     })
   })
 }

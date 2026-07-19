@@ -6,6 +6,11 @@ export {
 } from './admin/new-comment'
 
 export {
+  renderCommentReviewEmail,
+  type CommentReviewData,
+} from './admin/comment-review'
+
+export {
   renderFriendApplyEmail,
   type FriendApplyData,
 } from './admin/friend-apply'

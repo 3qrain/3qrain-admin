@@ -5,10 +5,16 @@ import { comments, users, posts, notes } from '~/db/schema'
 import { notify } from '~/services/notify'
 import { ok, fail } from '~/utils/response'
 import { ErrorCode } from '@3qrain/shared'
+import type {
+  CommentEmailNotRequiredReason,
+  CommentNotificationMeta,
+  EmailStatus,
+} from '@3qrain/shared'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { createCommentSchema } from './comments.routes'
 import { getClientIp } from '~/utils/getClientIp'
 import { getConfigValue } from '~/services/config'
+import { dispatchCommentReviewEmail } from '~/services/email/dispatch'
 
 function enrichComments(rows: any[]) {
   if (rows.length === 0) return []
@@ -162,25 +168,59 @@ export async function create(c: Context) {
       postTitle = '说说#' + body.targetId
     }
 
-    const emailNotRequired = isReply
-      ? user.id === body.replyToUserId
-      : user.role === 'system' || user.role === 'admin'
+    const replyRecipient = result.replyToUserId
+      ? db.select({ role: users.role }).from(users).where(eq(users.id, result.replyToUserId)).get()
+      : null
+    const isSelfReply = isReply && user.id === result.replyToUserId
+    const repliesToAdmin = replyRecipient?.role === 'system' || replyRecipient?.role === 'admin'
+    const isAdminComment = !isReply && (user.role === 'system' || user.role === 'admin')
+
+    let emailStatus: EmailStatus | undefined
+    let emailNotRequiredReason: CommentEmailNotRequiredReason | undefined
+
+    if (pendingReview) {
+      if (isReply && !isSelfReply && !repliesToAdmin) {
+        // 回复普通访客时，正常的回复邮件要等评论审核通过后再发送。
+        emailStatus = 'pending_review'
+      } else {
+        // 根评论、回复管理员和自己回复自己只发独立的审核提醒，不再安排常规通知邮件。
+        emailStatus = 'not_required'
+        emailNotRequiredReason = isSelfReply ? 'self_reply' : 'review_notice_only'
+      }
+    } else if (isSelfReply) {
+      // 自己回复自己没有实际邮件接收者。
+      emailStatus = 'not_required'
+      emailNotRequiredReason = 'self_reply'
+    } else if (isAdminComment) {
+      // 管理员发表根评论时，不需要再给管理员自己发送新评论邮件。
+      emailStatus = 'not_required'
+      emailNotRequiredReason = 'admin_comment'
+    }
+
+    // emailStatus 未设置时，由 notify() 根据邮件配置生成状态并立即派发常规通知邮件。
+
+    const meta: CommentNotificationMeta = {
+      targetType: body.targetType,
+      targetId: body.targetId,
+      commentId: result.id,
+      parentId: body.parentId || null,
+      replyToId: body.replyToId || null,
+      emailNotRequiredReason,
+    }
+
+    // 审核提醒独立于通知邮件状态，发送失败也不会影响评论提交。
+    if (pendingReview) {
+      dispatchCommentReviewEmail(meta)
+    }
 
     await notify({
       scope: 'admin',
       type: isReply ? 'new_reply' : 'new_comment',
       title: postTitle + (isReply ? ' 有新回复' : ' 有新评论'),
       content: summary,
-      // 新评论（一级评论）如果是管理员，则不发邮件
-      // 新回复（二级评论）如果评论人id和被回复人id相同，则不发邮件
-      emailStatus: emailNotRequired ? 'not_required' : pendingReview ? 'pending_review' : undefined,
-      meta: JSON.stringify({
-        targetType: body.targetType,
-        targetId: body.targetId,
-        commentId: result.id,
-        parentId: body.parentId || null,
-        replyToId: body.replyToId || null,
-      }),
+      // pending_review 只表示确实有一封给普通访客的回复邮件需要等待审核。
+      emailStatus,
+      meta,
     })
   } catch (e) {
     // console.error('[notify] failed:', e)

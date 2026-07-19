@@ -10,7 +10,7 @@ import {
   renderFriendApplyEmail,
   renderFriendApplyResultEmail
 } from '@3qrain/shared'
-import type { NotificationType } from '@3qrain/shared'
+import type { CommentNotificationMeta } from '@3qrain/shared'
 import { useAppStore } from '~/stores/app'
 
 const props = defineProps<{
@@ -100,12 +100,30 @@ function buildPreviewHtml() {
   }
 }
 
-function notRequiredMsg(emailStatus: NotificationType) {
-  switch (emailStatus) {
-    case 'new_comment':
-      return '无需发送邮件（管理员评论）'
-    case 'new_reply':
-      return '无需发送邮件（回复者与评论者为同一用户）'
+function notRequiredMsg(item: NotificationItem) {
+  if (item.type === 'new_comment' || item.type === 'new_reply') {
+    let reason: CommentNotificationMeta['emailNotRequiredReason']
+    try {
+      reason = item.meta
+        ? (JSON.parse(item.meta) as CommentNotificationMeta).emailNotRequiredReason
+        : undefined
+    } catch {
+      reason = undefined
+    }
+
+    switch (reason) {
+      case 'admin_comment':
+        return '评论由管理员发表，无需邮件通知'
+      case 'self_reply':
+        return '回复者与接收者相同，无需邮件通知'
+      case 'review_notice_only':
+        return '待审核评论仅提醒管理员，无需发送常规通知邮件'
+      default:
+        return '无需发送邮件通知'
+    }
+  }
+
+  switch (item.type) {
     case 'friend_apply':
     case 'friend_approve':
     case 'friend_reject':
@@ -130,7 +148,7 @@ function togglePreview() {
 
     <div v-if="item.emailStatus === 'not_required'" class="email-status not_required">
       <CircleOff style="height: 1.125rem; width: 1.125rem" />
-      <span>{{ notRequiredMsg(item.type) }}</span>
+      <span>{{ notRequiredMsg(item) }}</span>
     </div>
 
     <div v-else-if="item.emailStatus === 'pending_review'" class="email-status pending_review">

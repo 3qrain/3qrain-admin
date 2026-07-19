@@ -3,8 +3,9 @@ import { comments, users, posts } from '~/db/schema'
 import { eq } from 'drizzle-orm'
 import { sendEmail } from '~/services/email'
 import { renderReplyEmail } from '@3qrain/shared'
+import type { CommentNotificationMeta } from '@3qrain/shared'
 
-export async function sendNewReplyEmail(meta: Record<string, any>) {
+export async function sendNewReplyEmail(meta: CommentNotificationMeta) {
   const comment = db.select({
     content: comments.content,
     userId: comments.userId,
@@ -13,6 +14,7 @@ export async function sendNewReplyEmail(meta: Record<string, any>) {
   if (!comment?.replyToUserId) return
 
   const repliedCommentId = meta.replyToId || meta.parentId
+  if (!repliedCommentId) return
   const repliedComment = db.select({ content: comments.content }).from(comments).where(eq(comments.id, repliedCommentId)).get()
   const replier = db.select({ username: users.username }).from(users).where(eq(users.id, comment.userId)).get()
   const repliedTo = db.select({ username: users.username, email: users.email }).from(users).where(eq(users.id, comment.replyToUserId)).get()

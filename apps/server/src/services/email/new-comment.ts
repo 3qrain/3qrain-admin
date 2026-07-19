@@ -3,8 +3,9 @@ import { comments, users, posts } from '~/db/schema'
 import { eq } from 'drizzle-orm'
 import { sendEmail } from '~/services/email'
 import { renderNewCommentEmail } from '@3qrain/shared'
+import type { CommentNotificationMeta } from '@3qrain/shared'
 
-export async function sendNewCommentEmail(meta: Record<string, any>) {
+export async function sendNewCommentEmail(meta: CommentNotificationMeta) {
   const admin = db.select({ username: users.username, email: users.email }).from(users).where(eq(users.role, 'system')).get()
   if (!admin?.email) return
 

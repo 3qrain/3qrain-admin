@@ -1,4 +1,4 @@
-import type { NotificationPayload } from './notification'
+import type { NotificationPayload } from '../notification'
 
 export interface WsConnected {
   type: 'connected'

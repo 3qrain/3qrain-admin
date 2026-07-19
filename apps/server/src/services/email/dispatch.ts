@@ -1,4 +1,4 @@
-import type { NotificationType } from '@3qrain/shared'
+import type { CommentNotificationMeta, NotificationMetaMap } from '@3qrain/shared'
 import { db } from '~/db'
 import { notifications } from '~/db/schema'
 import { eq } from 'drizzle-orm'
@@ -7,23 +7,31 @@ import { sendNewCommentEmail } from './new-comment'
 import { sendNewReplyEmail } from './new-reply'
 import { sendFriendApplyEmail } from './friend-apply'
 import { sendFriendApplyResultEmail } from './friend-apply-result'
+import { sendCommentReviewEmail } from './comment-review'
 
-export function dispatchEmail(type: NotificationType, meta: string, notificationId: number) {
-  let parsed: Record<string, any>
-  try { parsed = JSON.parse(meta) } catch { return }
+type EmailNotificationType = 'new_comment' | 'new_reply' | 'friend_apply' | 'friend_approve' | 'friend_reject'
 
+export type EmailDispatchInput = {
+  [T in EmailNotificationType]: {
+    type: T
+    meta: NotificationMetaMap[T]
+  }
+}[EmailNotificationType]
+
+export function dispatchEmail(input: EmailDispatchInput, notificationId?: number) {
   const markStatus = async (status: 'sent' | 'failed', error?: string) => {
+    if (notificationId === undefined) return
     db.update(notifications)
       .set({ emailStatus: status, emailError: error || null, emailSentAt: status === 'sent' ? new Date() : null })
       .where(eq(notifications.id, notificationId))
       .run()
   }
 
-  switch (type) {
+  switch (input.type) {
     case 'new_comment':
       enqueue(async () => {
         try {
-          await sendNewCommentEmail(parsed)
+          await sendNewCommentEmail(input.meta)
           await markStatus('sent')
         } catch (e: any) {
           await markStatus('failed', e.message)
@@ -33,7 +41,7 @@ export function dispatchEmail(type: NotificationType, meta: string, notification
     case 'new_reply':
       enqueue(async () => {
         try {
-          await sendNewReplyEmail(parsed)
+          await sendNewReplyEmail(input.meta)
           await markStatus('sent')
         } catch (e: any) {
           await markStatus('failed', e.message)
@@ -43,7 +51,7 @@ export function dispatchEmail(type: NotificationType, meta: string, notification
     case 'friend_apply':
       enqueue(async () => {
         try {
-          await sendFriendApplyEmail(parsed)
+          await sendFriendApplyEmail(input.meta)
           await markStatus('sent')
         } catch (e: any) {
           await markStatus('failed', e.message)
@@ -54,7 +62,7 @@ export function dispatchEmail(type: NotificationType, meta: string, notification
     case 'friend_reject':
       enqueue(async () => {
         try {
-          await sendFriendApplyResultEmail(parsed)
+          await sendFriendApplyResultEmail(input.meta)
           await markStatus('sent')
         } catch (e: any) {
           await markStatus('failed', e.message)
@@ -62,4 +70,14 @@ export function dispatchEmail(type: NotificationType, meta: string, notification
       })
       break
   }
+}
+
+export function dispatchCommentReviewEmail(meta: CommentNotificationMeta) {
+  enqueue(async () => {
+    try {
+      await sendCommentReviewEmail(meta)
+    } catch {
+      // 审核提醒不关联通知记录，发送失败不影响评论提交。
+    }
+  })
 }

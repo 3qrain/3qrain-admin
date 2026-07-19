@@ -62,13 +62,13 @@ export async function approve(c: Context) {
     title: `${existing.siteName} 友链已通过`,
     // 友链有申请邮箱就发邮件
     emailStatus: existing.applicantEmail ? undefined : 'not_required',
-    meta: JSON.stringify({
+    meta: {
       id,
       siteName: existing.siteName,
       siteUrl: existing.siteUrl,
       applicantEmail: existing.applicantEmail,
       approved: true
-    })
+    }
   }).catch(() => {})
 
   return c.json(ok({}, '已通过'), HttpStatusCodes.OK)
@@ -94,14 +94,14 @@ export async function reject(c: Context) {
     title: `${existing.siteName} 友链已拒绝`,
     emailStatus: existing.applicantEmail ? undefined : 'not_required',
     // content: reason,
-    meta: JSON.stringify({
+    meta: {
       id,
       siteName: existing.siteName,
       siteUrl: existing.siteUrl,
       applicantEmail: existing.applicantEmail,
       approved: false,
       reason
-    })
+    }
   }).catch(() => {})
 
   return c.json(ok({}, '已拒绝'), HttpStatusCodes.OK)

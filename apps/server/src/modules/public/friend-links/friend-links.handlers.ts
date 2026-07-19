@@ -10,13 +10,17 @@ import { eq } from 'drizzle-orm'
 import { getConfigValue } from '~/services/config'
 
 export async function listApproved(c: Context) {
-  const rows = db.select({
-    id: friendLinks.id,
-    siteName: friendLinks.siteName,
-    siteUrl: friendLinks.siteUrl,
-    avatarUrl: friendLinks.avatarUrl,
-    description: friendLinks.description,
-  }).from(friendLinks).where(eq(friendLinks.status, 'approved')).all()
+  const rows = db
+    .select({
+      id: friendLinks.id,
+      siteName: friendLinks.siteName,
+      siteUrl: friendLinks.siteUrl,
+      avatarUrl: friendLinks.avatarUrl,
+      description: friendLinks.description
+    })
+    .from(friendLinks)
+    .where(eq(friendLinks.status, 'approved'))
+    .all()
 
   return c.json(ok(rows, '获取成功'), HttpStatusCodes.OK)
 }
@@ -42,12 +46,12 @@ export async function create(c: Context) {
     type: 'friend_apply',
     title: `${parsed.data.siteName} 申请友链`,
     emailStatus: result.applicantEmail ? undefined : 'not_required',
-    meta: JSON.stringify({
+    meta: {
       id: result.id,
       siteName: result.siteName,
       siteUrl: result.siteUrl,
       applicantEmail: result.applicantEmail
-    })
+    }
   }).catch(() => {})
 
   return c.json(ok({}, '申请成功'), HttpStatusCodes.CREATED)
