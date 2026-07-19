@@ -2,7 +2,12 @@ import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from '~/constants/http-status-codes'
 import { successResponseSchema, errorResponseSchema } from '~/utils/response'
 
-const userSchema = z.object({ id: z.number(), username: z.string(), avatarUrl: z.string() })
+const userSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  avatarUrl: z.string(),
+  role: z.enum(['system', 'admin', 'visitor']),
+})
 
 const commentSchema = z.object({
   id: z.number(),

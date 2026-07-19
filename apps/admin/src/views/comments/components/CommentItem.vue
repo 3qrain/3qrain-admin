@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Pin, PinOff, RotateCcw, Trash2, ChevronDown, ChevronRight } from '@lucide/vue'
+import { BadgeCheck, Check, Pin, PinOff, RotateCcw, Trash2, ChevronDown, ChevronRight } from '@lucide/vue'
 import Badge from '~/components/base/Badge.vue'
 import Button from '~/components/base/Button.vue'
 import Popover from '~/components/base/Popover.vue'
@@ -41,12 +41,22 @@ function targetLabel() {
         <span v-if="!comment.parentId" class="root-tag">主</span>
         <span v-else class="reply-tag">回</span>
         <img :src="comment.user.avatarUrl" alt="" :class="['avatar', { sm: compact }]" />
-        <span class="name">{{ comment.user.username }}<span class="uid">#{{ comment.userId }}</span></span>
+        <span class="name">
+          {{ comment.user.username }}<span class="uid">#{{ comment.userId }}</span>
+          <BadgeCheck
+            v-if="comment.user.role === 'system' || comment.user.role === 'admin'"
+            class="admin-check"
+          />
+        </span>
         <template v-if="comment.replyToUser">
           <span class="reply-arrow">→</span>
           <img :src="comment.replyToUser.avatarUrl" alt="" class="avatar sm" />
           <span class="name">
             {{ comment.replyToUser.username }}<span class="uid">#{{ comment.replyToUserId }}</span>
+            <BadgeCheck
+              v-if="comment.replyToUser.role === 'system' || comment.replyToUser.role === 'admin'"
+              class="admin-check"
+            />
           </span>
         </template>
       </div>
@@ -221,6 +231,9 @@ function targetLabel() {
 }
 
 .name {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
   font-size: 0.8125rem;
   font-weight: 600;
 }
@@ -230,6 +243,14 @@ function targetLabel() {
   font-size: 0.625rem;
   font-weight: 400;
   opacity: 0.35;
+}
+
+.admin-check {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-left: 0.1875rem;
+  flex-shrink: 0;
+  color: var(--color-neutral);
 }
 
 .reply-arrow {

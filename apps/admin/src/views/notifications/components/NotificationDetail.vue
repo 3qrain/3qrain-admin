@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Mail, Panda, ArrowUpRight } from '@lucide/vue'
+import { Mail, Panda, ArrowUpRight, BadgeCheck } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import Skeleton from '~/components/base/Skeleton.vue'
 import EmailStatus from './EmailStatus.vue'
@@ -99,11 +99,25 @@ watch(
           <div v-if="comment" class="comment-card comment-card-link" @click="router.push({ name: 'comments' })">
             <div class="comment-author">
               <img v-if="comment.user.avatarUrl" :src="comment.user.avatarUrl" class="comment-avatar" />
-              <span class="comment-username">{{ comment.user.username }}</span>
+              <span class="comment-user">
+                <span class="comment-username" :title="comment.user.username">{{ comment.user.username }}</span>
+                <BadgeCheck
+                  v-if="comment.user.role === 'system' || comment.user.role === 'admin'"
+                  class="admin-check"
+                />
+              </span>
               <template v-if="comment.replyToUser">
                 <span style="opacity: 0.5; font-size: 0.875rem">@</span>
                 <img :src="comment.replyToUser?.avatarUrl" class="comment-avatar" />
-                <span class="comment-username">{{ comment.replyToUser?.username }}</span>
+                <span class="comment-user">
+                  <span class="comment-username" :title="comment.replyToUser.username">
+                    {{ comment.replyToUser.username }}
+                  </span>
+                  <BadgeCheck
+                    v-if="comment.replyToUser.role === 'system' || comment.replyToUser.role === 'admin'"
+                    class="admin-check"
+                  />
+                </span>
               </template>
             </div>
             <div v-if="beRepliedContent" class="comment-beRepliedContent">> {{ beRepliedContent }}</div>
@@ -272,6 +286,20 @@ watch(
   white-space: nowrap;
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+.comment-user {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-check {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-left: 0.1875rem;
+  flex-shrink: 0;
+  color: var(--color-neutral);
 }
 
 .comment-beRepliedContent {

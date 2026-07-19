@@ -16,6 +16,7 @@ const commentUserSchema = z.object({
   id: z.number(),
   username: z.string(),
   avatarUrl: z.string(),
+  role: z.enum(['system', 'admin', 'visitor']),
 })
 
 const commentSchema = z.object({

@@ -4,6 +4,7 @@ export interface CommentUser {
   id: number
   username: string
   avatarUrl: string
+  role: 'system' | 'admin' | 'visitor'
 }
 
 export interface CommentItem {

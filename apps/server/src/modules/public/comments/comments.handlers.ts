@@ -24,7 +24,7 @@ function enrichComments(rows: any[]) {
 
   const userMap = new Map(
     userIds.length > 0
-      ? db.select({ id: users.id, username: users.username, avatarUrl: users.avatarUrl })
+      ? db.select({ id: users.id, username: users.username, avatarUrl: users.avatarUrl, role: users.role })
         .from(users).where(inArray(users.id, userIds)).all().map(u => [u.id, u])
       : [],
   )
@@ -34,7 +34,7 @@ function enrichComments(rows: any[]) {
     targetType: c.targetType,
     targetId: c.targetId,
     userId: c.userId,
-    user: userMap.get(c.userId) || { id: c.userId, username: '', avatarUrl: '' },
+    user: userMap.get(c.userId) || { id: c.userId, username: '', avatarUrl: '', role: 'visitor' },
     parentId: c.parentId,
     replyToId: c.replyToId,
     replyToUserId: c.replyToUserId,
