@@ -12,7 +12,8 @@ export async function sendNewReplyEmail(meta: Record<string, any>) {
   }).from(comments).where(eq(comments.id, meta.commentId)).get()
   if (!comment?.replyToUserId) return
 
-  const parent = db.select({ content: comments.content }).from(comments).where(eq(comments.id, meta.parentId)).get()
+  const repliedCommentId = meta.replyToId || meta.parentId
+  const repliedComment = db.select({ content: comments.content }).from(comments).where(eq(comments.id, repliedCommentId)).get()
   const replier = db.select({ username: users.username }).from(users).where(eq(users.id, comment.userId)).get()
   const repliedTo = db.select({ username: users.username, email: users.email }).from(users).where(eq(users.id, comment.replyToUserId)).get()
   if (!repliedTo?.email) return
@@ -31,10 +32,10 @@ export async function sendNewReplyEmail(meta: Record<string, any>) {
       siteName, siteUrl,
       userName: repliedTo.username,
       replierName: replier?.username || '',
-      postTitle: post?.title || `说说#${meta.targetId}`,
-      postSlug: post?.slug || '',
+      postTitle: meta.targetType === 'note' ? `说说#${meta.targetId}` : post?.title || '',
+      targetPath: meta.targetType === 'note' ? `/notes?id=${meta.targetId}` : `/posts/${post?.slug || ''}`,
       replyContent: comment.content,
-      yourComment: parent?.content || '',
+      yourComment: repliedComment?.content || '',
     }),
   })
 }

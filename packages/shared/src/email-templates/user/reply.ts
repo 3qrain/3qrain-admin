@@ -6,7 +6,7 @@ export interface ReplyData {
   userName: string
   replierName: string
   postTitle: string
-  postSlug: string
+  targetPath: string
   replyContent: string
   yourComment: string
 }
@@ -15,7 +15,7 @@ export function renderReplyEmail(data: ReplyData): string {
   return emailLayout({
     siteName: data.siteName,
     siteUrl: data.siteUrl,
-    href: `${data.siteUrl}/posts/${data.postSlug}`,
+    href: `${data.siteUrl}${data.targetPath}`,
     buttonLabel: '查看回复',
     body: `
       <p style="margin:0 0 10px;color:#555">Hi，<strong>${data.userName}</strong>：</p>

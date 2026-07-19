@@ -57,7 +57,7 @@ watch(
 
       const [res, post, replied] = await Promise.all([tasks.comment, tasks.post, tasks.replied])
       comment.value = res.list[0] || undefined
-      postTitle.value = (post as any)?.title || ''
+      postTitle.value = (post as any)?.title || (meta?.targetType === 'note' ? `说说#${meta.targetId}` : '')
       postSlug.value = (post as any)?.slug || ''
       beRepliedContent.value = replied?.list?.[0]?.content || ''
     } catch {

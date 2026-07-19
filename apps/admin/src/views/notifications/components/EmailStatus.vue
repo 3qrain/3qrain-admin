@@ -60,12 +60,13 @@ function buildPreviewHtml() {
 
     case 'new_reply': {
       if (!props.comment) return
+      const meta = props.item.meta ? JSON.parse(props.item.meta) : null
       previewHtml.value = renderReplyEmail({
         ...common,
         userName: props.comment.replyToUser?.username || '',
         replierName: props.comment.user.username,
         postTitle: props.postTitle,
-        postSlug: props.postSlug,
+        targetPath: meta?.targetType === 'note' ? `/notes?id=${meta.targetId}` : `/posts/${props.postSlug}`,
         replyContent: props.comment.content,
         yourComment: props.beRepliedContent
       })
