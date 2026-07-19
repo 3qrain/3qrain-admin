@@ -55,6 +55,9 @@ function openUpload() {
         <span v-if="route.name === 'friendLinks' && appStore.pendingFriendLinkCount > 0" class="notify-badge">
           {{ appStore.pendingFriendLinkCount > 99 ? '99+' : appStore.pendingFriendLinkCount }}
         </span>
+        <span v-if="route.name === 'comments' && appStore.pendingCommentCount > 0" class="notify-badge">
+          {{ appStore.pendingCommentCount > 99 ? '99+' : appStore.pendingCommentCount }}
+        </span>
       </router-link>
     </nav>
 

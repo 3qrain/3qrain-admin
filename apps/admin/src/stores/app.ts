@@ -29,6 +29,7 @@ interface AppState {
   webUrl: string
   adminUrl: string
   pendingFriendLinkCount: number
+  pendingCommentCount: number
 }
 
 export const useAppStore = defineStore('app', {
@@ -45,6 +46,7 @@ export const useAppStore = defineStore('app', {
     webUrl: '',
     adminUrl: '',
     pendingFriendLinkCount: 0,
+    pendingCommentCount: 0,
   }),
   persist: { key: '3qrain:admin-app' },
 })

@@ -20,6 +20,11 @@ export async function getComments(query: CommentQuery = {}) {
   return data.data
 }
 
+export async function getPendingCommentCount() {
+  const { data } = await apiClient.get<{ data: { count: number } }>('/admin/comments/pending-count')
+  return data.data.count
+}
+
 export async function createComment(body: { targetType: string; targetId: number; content: string; parentId?: number; replyToId?: number; replyToUserId?: number }) {
   const { data } = await apiClient.post<{ data: Comment }>('/admin/comments', body)
   return data.data

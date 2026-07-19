@@ -65,6 +65,19 @@ export const listCommentsRoute = createRoute({
   },
 })
 
+export const pendingCountRoute = createRoute({
+  tags: ['Admin/Comments'],
+  summary: '待审核评论数量',
+  method: 'get',
+  path: '/comments/pending-count',
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: { 'application/json': { schema: successResponseSchema(z.object({ count: z.number() })) } },
+      description: '获取成功',
+    },
+  },
+})
+
 export const createCommentRoute = createRoute({
   tags: ['Admin/Comments'],
   summary: '管理员发表评论',

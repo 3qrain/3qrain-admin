@@ -205,6 +205,7 @@ export async function create(c: Context) {
       commentId: result.id,
       parentId: body.parentId || null,
       replyToId: body.replyToId || null,
+      pendingReview,
       emailNotRequiredReason,
     }
 

@@ -2,7 +2,7 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Search, Trash } from '@lucide/vue'
+import { RotateCw, Search, Trash } from '@lucide/vue'
 import ToggleGroup from '~/components/base/ToggleGroup.vue'
 import Button from '~/components/base/Button.vue'
 import Input from '~/components/base/Input.vue'
@@ -29,7 +29,8 @@ const tabOptions = [
   { label: '全部', value: '' }
 ]
 
-const { commentsPaginationMode: paginationMode } = storeToRefs(useAppStore())
+const appStore = useAppStore()
+const { commentsPaginationMode: paginationMode } = storeToRefs(appStore)
 
 const comments = ref<Comment[]>([])
 const total = ref(0)
@@ -39,14 +40,22 @@ const route = useRoute()
 const page = ref(1)
 const totalPages = ref(1)
 const pageSize = 10
-const t = +new Date()
+const t = ref(Date.now())
 const tab = ref('pending')
 const keyword = ref('')
 const activeKeyword = ref('')
 const showDeleted = ref(false)
 const expanded = ref<Set<number>>(new Set())
+const hasNew = ref(false)
 // 待审核和搜索需要直接展示命中的回复，不按主评论分组。
 const flatResultView = computed(() => !showDeleted.value && (tab.value === 'pending' || !!activeKeyword.value))
+
+watch(
+  () => appStore.pendingCommentCount,
+  (newCount, oldCount) => {
+    if (newCount > oldCount) hasNew.value = true
+  }
+)
 
 async function toggleExpand(c: Comment) {
   if (expanded.value.has(c.id)) {
@@ -79,7 +88,7 @@ async function load(append = false) {
   !append && (comments.value = [])
   try {
     const params: CommentQuery = {
-      t,
+      t: t.value,
       pageSize,
       status: showDeleted.value ? undefined : tab.value || undefined,
       keyword: activeKeyword.value || undefined,
@@ -101,12 +110,26 @@ async function load(append = false) {
     toast.error(e?.response?.data?.message || '加载失败')
   } finally {
     loading.value = false
+    if (!append) hasNew.value = false
   }
+}
+
+function refresh() {
+  t.value = Date.now()
+  page.value = 1
+  if (paginationMode.value === 'button') {
+    router.replace({ query: { ...route.query, page: '1' } })
+  }
+  load()
 }
 
 async function approve(c: Comment) {
   try {
+    const wasPending = c.status === 'pending'
     Object.assign(c, await approveComment(c.id))
+    if (wasPending) {
+      appStore.pendingCommentCount = Math.max(0, appStore.pendingCommentCount - 1)
+    }
     toast.success('已通过')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
@@ -124,9 +147,13 @@ async function togglePin(c: Comment) {
 
 async function doDelete(c: Comment) {
   try {
+    const wasPending = c.status === 'pending' && !c.deletedAt
     await deleteComment([c.id])
     c.deletedAt = new Date().toISOString()
     c.status = 'published'
+    if (wasPending) {
+      appStore.pendingCommentCount = Math.max(0, appStore.pendingCommentCount - 1)
+    }
     toast.success('已移入回收站')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
@@ -136,6 +163,7 @@ async function doDelete(c: Comment) {
 async function doRestore(c: Comment) {
   try {
     Object.assign(c, await restoreComment(c.id))
+    if (c.status === 'pending') appStore.pendingCommentCount++
     toast.success('已恢复')
   } catch (e: any) {
     toast.error(e?.response?.data?.message || '操作失败')
@@ -214,6 +242,15 @@ onMounted(() => {
         <span class="sub">共 {{ total }} 条</span>
       </div>
       <div class="head-right">
+        <button
+          v-if="hasNew"
+          class="refresh-btn"
+          title="有新评论"
+          :disabled="loading"
+          @click="refresh"
+        >
+          <RotateCw class="refresh-btn-icon" :class="{ spinning: loading }" :size="14" :stroke-width="2" />
+        </button>
         <Button v-if="showDeleted" variant="danger" size="sm" @click="emptyTrash">清空回收站</Button>
         <button
           :class="['trash-toggle', showDeleted && 'active']"
@@ -314,6 +351,47 @@ onMounted(() => {
 .sub {
   font-size: 0.8125rem;
   opacity: 0.4;
+}
+.refresh-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-base-content);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in oklab, var(--color-base-content) 6%, transparent);
+  }
+
+  &:disabled {
+    pointer-events: none;
+  }
+}
+.refresh-btn-icon {
+  animation: pulse-icon 1.5s infinite;
+
+  &.spinning {
+    animation: spin 0.5s linear infinite;
+  }
+}
+@keyframes pulse-icon {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .trash-toggle {
   display: flex;

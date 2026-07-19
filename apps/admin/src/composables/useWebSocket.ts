@@ -1,7 +1,7 @@
 import { ref, onUnmounted } from 'vue'
 import { toast } from 'vue-sonner'
 import { useAppStore } from '~/stores/app'
-import type { WsPing, WsServerMessage } from '@3qrain/shared'
+import type { CommentNotificationMeta, WsPing, WsServerMessage } from '@3qrain/shared'
 import router from '~/router'
 
 export function useWebSocket() {
@@ -48,6 +48,14 @@ export function useWebSocket() {
         if (msg.type === 'notification') {
           store.unreadCount++
           if (msg.data.type === 'friend_apply') store.pendingFriendLinkCount++
+          if ((msg.data.type === 'new_comment' || msg.data.type === 'new_reply') && msg.data.meta) {
+            try {
+              const meta = JSON.parse(msg.data.meta) as CommentNotificationMeta
+              if (meta.pendingReview) store.pendingCommentCount++
+            } catch {
+              /* ignore invalid notification meta */
+            }
+          }
           // 页面通知
           toast(msg.data.title, {
             position: 'top-right',

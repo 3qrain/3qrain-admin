@@ -19,6 +19,7 @@ export interface CommentNotificationMeta {
   commentId: number
   parentId: number | null
   replyToId: number | null
+  pendingReview: boolean
   emailNotRequiredReason?: CommentEmailNotRequiredReason
 }
 

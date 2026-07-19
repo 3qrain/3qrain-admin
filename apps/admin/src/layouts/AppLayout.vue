@@ -15,6 +15,7 @@ import { applyTheme } from '~/css/themes/index'
 import { useWebSocket } from '~/composables/useWebSocket'
 import { getUnreadCount } from '~/api/notifications'
 import { getPendingFriendLinkCount } from '~/api/friend-links'
+import { getPendingCommentCount } from '~/api/comments'
 import { getConfig, getSiteUrls } from '~/api/config'
 
 const { drawerPanel, uploadModalOpen } = storeToRefs(useGlobalStore())
@@ -53,6 +54,7 @@ onMounted(() => {
   fetchAdminInfo()
   fetchUnreadCount()
   getPendingFriendLinkCount().then(c => { appStore.pendingFriendLinkCount = c }).catch(() => {})
+  getPendingCommentCount().then(c => { appStore.pendingCommentCount = c }).catch(() => {})
   getSiteUrls().then(u => { appStore.webUrl = u.webUrl; appStore.adminUrl = u.adminUrl }).catch(() => {})
   getConfig(['appearance', 'email']).then(config => {
     if (config.appearance) {

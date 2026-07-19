@@ -97,6 +97,16 @@ export async function list(c: Context) {
   return c.json(ok({ list: listWithCounts, total, page, pageSize }, '获取成功'), HttpStatusCodes.OK)
 }
 
+export async function pendingCount(c: Context) {
+  const result = db
+    .select({ count: count() })
+    .from(comments)
+    .where(and(eq(comments.status, 'pending'), isNull(comments.deletedAt)))
+    .get()!
+
+  return c.json(ok({ count: result.count }, '获取成功'), HttpStatusCodes.OK)
+}
+
 export async function create(c: Context) {
   const body = (await c.req.json()) as {
     targetType: string
@@ -195,6 +205,7 @@ export async function review(c: Context) {
       commentId: existing.id,
       parentId: existing.parentId,
       replyToId: existing.replyToId,
+      pendingReview: true,
     }
 
     // 通知可能已被删除；此时仍可由评论记录重建 meta，只是不再回写邮件状态。

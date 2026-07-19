@@ -152,6 +152,7 @@ async function load() {
     dashboard.value = await getDashboard()
     appStore.unreadCount = dashboard.value.overview.unreadNotifications
     appStore.pendingFriendLinkCount = dashboard.value.overview.friendLinks.pending
+    appStore.pendingCommentCount = dashboard.value.overview.comments.pending
   } catch {
     error.value = true
   } finally {
