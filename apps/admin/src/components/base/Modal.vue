@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 const props = withDefaults(
   defineProps<{
     borderRadius?: string
@@ -9,6 +10,14 @@ const props = withDefaults(
 )
 
 const open = defineModel<boolean>('open', { default: false })
+
+watch(open, value => {
+  if (value) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
 </script>
 
 <template>
