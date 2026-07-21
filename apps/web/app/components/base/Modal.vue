@@ -1,4 +1,13 @@
 <script setup lang="ts">
+const props = withDefaults(
+  defineProps<{
+    borderRadius?: string
+  }>(),
+  {
+    borderRadius: '0.5rem'
+  }
+)
+
 const open = defineModel<boolean>('open', { default: false })
 </script>
 
@@ -6,7 +15,7 @@ const open = defineModel<boolean>('open', { default: false })
   <Teleport to="body">
     <Transition name="modal">
       <div v-if="open" class="overlay" @click.self="open = false">
-        <div class="modal-inner" @click.stop>
+        <div class="modal-inner" :style="{ '--modal-border-radius': borderRadius }" @click.stop>
           <slot />
         </div>
       </div>
@@ -28,8 +37,12 @@ const open = defineModel<boolean>('open', { default: false })
 
 .modal-inner {
   max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 2rem);
+  max-height: calc(100vh - 10rem);
   overflow-y: auto;
+  border-radius: var(--modal-border-radius);
+  > :first-child {
+    border-radius: var(--modal-border-radius);
+  }
 }
 
 .modal-enter-active,

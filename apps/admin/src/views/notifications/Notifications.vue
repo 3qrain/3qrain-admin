@@ -54,6 +54,8 @@ function handleSelect(item: NotificationItem | null) {
 .modal-card {
   padding: 1.25rem 2rem;
   background: var(--color-base-200);
+  // max-width: 40rem;
+  width: min(calc(100vw - 2rem), 40rem);
 }
 
 @media (width <= 1024px) {
