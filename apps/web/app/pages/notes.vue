@@ -1,595 +1,713 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronUp, MessageCircle, Send, UserRound } from '@lucide/vue'
-import type { NoteMedia } from '~/composables/useNoteApi'
-import { formatDateOnly } from '~/utils/date'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Grid3X3,
+  List,
+  LocateFixed,
+  Minus,
+  Move,
+  Plus,
+} from '@lucide/vue'
+import type { NoteItem } from '~/composables/useNoteApi'
 
-interface PreviewComment {
-  id: number
-  content: string
-  username: string
+type ViewMode = 'canvas' | 'list'
+
+interface Point {
+  x: number
+  y: number
 }
 
-const route = useRoute()
-const router = useRouter()
 const store = useAppStore()
-
-const page = computed(() => Number(route.query.page) || 1)
-const pageSize = 12
-const expandedMedia = reactive(new Set<number>())
-const openComments = reactive(new Set<number>())
-const commentDrafts = reactive<Record<number, string>>({})
-const previewComments = reactive<Record<number, PreviewComment[]>>({})
-
 const noteApi = useNoteApi()
+const pageSize = 100
+
 const { data: res, status } = await useAsyncData(
-  'notes-list',
-  () => noteApi.getList({ page: page.value, pageSize }),
-  { watch: [page] }
+  'notes-spatial-list',
+  () => noteApi.getList({ page: 1, pageSize })
 )
 
 const notes = computed(() => res.value?.data?.list ?? [])
 const total = computed(() => res.value?.data?.total ?? 0)
-const totalPages = computed(() => Math.ceil(total.value / pageSize))
+const mode = ref<ViewMode>('canvas')
+const ready = ref(false)
+const focusedIndex = ref(0)
+const detailNote = ref<NoteItem | null>(null)
+const detailShowsComments = ref(false)
+const camera = reactive({ x: 0, y: 0, scale: 1 })
+const dragging = ref(false)
+const movedDuringDrag = ref(false)
+let revealTimer: ReturnType<typeof setTimeout> | undefined
 
-function isImage(media: NoteMedia) {
-  return media.type === 'image' || media.mimeType.startsWith('image/')
+const drag = reactive({
+  pointerId: -1,
+  cardIndex: -1,
+  startX: 0,
+  startY: 0,
+  cameraX: 0,
+  cameraY: 0,
+})
+
+const pointers = new Map<number, Point>()
+const pinch = reactive({
+  distance: 0,
+  scale: 1,
+  worldX: 0,
+  worldY: 0,
+})
+
+// 固定螺旋格保证服务端与客户端得到完全一致的坐标，也给不同高度的卡片留出稳定间距。
+const positions = computed<Point[]>(() => notes.value.map((_, index) => spiralPoint(index)))
+
+const worldStyle = computed(() => ({
+  transform: `translate3d(${camera.x}px, ${camera.y}px, 0) scale(${camera.scale})`,
+}))
+
+function spiralPoint(index: number): Point {
+  if (index === 0) return { x: 0, y: 0 }
+
+  let x = 0
+  let y = 0
+  let dx = 1
+  let dy = 0
+  let segmentLength = 1
+  let segmentPassed = 0
+  let turns = 0
+
+  for (let step = 0; step < index; step += 1) {
+    x += dx
+    y += dy
+    segmentPassed += 1
+
+    if (segmentPassed === segmentLength) {
+      segmentPassed = 0
+      const nextDx = -dy
+      dy = dx
+      dx = nextDx
+      turns += 1
+      if (turns % 2 === 0) segmentLength += 1
+    }
+  }
+
+  return { x: x * 400, y: y * 460 }
 }
 
-function compactMedia(media: NoteMedia[]) {
-  return media.slice(0, 4)
+function setMode(nextMode: ViewMode) {
+  if (mode.value === nextMode) return
+  mode.value = nextMode
+  if (nextMode === 'canvas') focusNote(focusedIndex.value, false)
 }
 
-function mediaStyle(media: NoteMedia) {
-  return media.placeholder ? { backgroundImage: `url(${media.placeholder})` } : undefined
+function focusNote(index: number, animated = true) {
+  const point = positions.value[index]
+  if (!point) return
+
+  focusedIndex.value = index
+  if (!animated) ready.value = false
+  camera.x = -point.x * camera.scale
+  camera.y = -point.y * camera.scale
+
+  if (!animated) {
+    clearTimeout(revealTimer)
+    revealTimer = setTimeout(() => { ready.value = true }, 30)
+  }
 }
 
-function toggleMedia(noteId: number) {
-  if (expandedMedia.has(noteId)) expandedMedia.delete(noteId)
-  else expandedMedia.add(noteId)
+function focusPrevious() {
+  if (focusedIndex.value <= 0) return
+  focusNote(focusedIndex.value - 1)
 }
 
-function toggleComments(noteId: number) {
-  if (openComments.has(noteId)) openComments.delete(noteId)
-  else openComments.add(noteId)
+function focusFollowing() {
+  if (focusedIndex.value >= notes.value.length - 1) return
+  focusNote(focusedIndex.value + 1)
 }
 
-function submitPreviewComment(noteId: number) {
-  const content = commentDrafts[noteId]?.trim()
-  if (!content) return
-
-  previewComments[noteId] ??= []
-  previewComments[noteId].push({
-    id: Date.now(),
-    content,
-    username: store.user?.username || '访客'
-  })
-  commentDrafts[noteId] = ''
+function openDetail(note: NoteItem, comments = false) {
+  detailNote.value = note
+  detailShowsComments.value = comments
 }
+
+function closeDetail() {
+  detailNote.value = null
+  detailShowsComments.value = false
+}
+
+function adjustZoom(change: number) {
+  camera.scale = Math.min(1.2, Math.max(0.68, Number((camera.scale + change).toFixed(2))))
+  focusNote(focusedIndex.value)
+}
+
+function clampScale(scale: number) {
+  return Math.min(1.2, Math.max(0.68, scale))
+}
+
+function startPinch(viewport: HTMLElement) {
+  const [first, second] = Array.from(pointers.values())
+  if (!first || !second) return
+
+  const rect = viewport.getBoundingClientRect()
+  const centerX = (first.x + second.x) / 2 - rect.left - rect.width / 2
+  const centerY = (first.y + second.y) / 2 - rect.top - rect.height / 2
+  pinch.distance = Math.hypot(second.x - first.x, second.y - first.y)
+  pinch.scale = camera.scale
+  pinch.worldX = (centerX - camera.x) / camera.scale
+  pinch.worldY = (centerY - camera.y) / camera.scale
+}
+
+function onPointerDown(event: PointerEvent) {
+  if (event.button !== 0 || (event.target as HTMLElement).closest('button, a')) return
+
+  const viewport = event.currentTarget as HTMLElement
+  viewport.setPointerCapture(event.pointerId)
+  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  drag.pointerId = event.pointerId
+  drag.cardIndex = Number((event.target as HTMLElement).closest<HTMLElement>('.canvas-node')?.dataset.nodeIndex ?? -1)
+  drag.startX = event.clientX
+  drag.startY = event.clientY
+  drag.cameraX = camera.x
+  drag.cameraY = camera.y
+  dragging.value = true
+  movedDuringDrag.value = false
+
+  if (pointers.size === 2) startPinch(viewport)
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (!dragging.value || !pointers.has(event.pointerId)) return
+
+  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+  if (pointers.size >= 2) {
+    const viewport = event.currentTarget as HTMLElement
+    const [first, second] = Array.from(pointers.values())
+    if (!first || !second || !pinch.distance) return
+
+    const rect = viewport.getBoundingClientRect()
+    const centerX = (first.x + second.x) / 2 - rect.left - rect.width / 2
+    const centerY = (first.y + second.y) / 2 - rect.top - rect.height / 2
+    const distance = Math.hypot(second.x - first.x, second.y - first.y)
+    const nextScale = clampScale(pinch.scale * distance / pinch.distance)
+    camera.scale = nextScale
+    camera.x = centerX - pinch.worldX * nextScale
+    camera.y = centerY - pinch.worldY * nextScale
+    movedDuringDrag.value = true
+    return
+  }
+
+  if (event.pointerId !== drag.pointerId) return
+
+  const deltaX = event.clientX - drag.startX
+  const deltaY = event.clientY - drag.startY
+  if (Math.abs(deltaX) + Math.abs(deltaY) > 4) movedDuringDrag.value = true
+  camera.x = drag.cameraX + deltaX
+  camera.y = drag.cameraY + deltaY
+}
+
+function onPointerUp(event: PointerEvent) {
+  if (!pointers.has(event.pointerId)) return
+
+  pointers.delete(event.pointerId)
+  if (!movedDuringDrag.value && drag.cardIndex >= 0) focusNote(drag.cardIndex)
+
+  const remaining = Array.from(pointers.entries())[0]
+  if (remaining) {
+    const [pointerId, point] = remaining
+    drag.pointerId = pointerId
+    drag.cardIndex = -1
+    drag.startX = point.x
+    drag.startY = point.y
+    drag.cameraX = camera.x
+    drag.cameraY = camera.y
+    movedDuringDrag.value = true
+    return
+  }
+
+  dragging.value = false
+  movedDuringDrag.value = false
+  drag.pointerId = -1
+  drag.cardIndex = -1
+}
+
+function onCardFocus(index: number) {
+  if (movedDuringDrag.value) {
+    movedDuringDrag.value = false
+    return
+  }
+  focusNote(index)
+}
+
+function onWheel(event: WheelEvent) {
+  const viewport = event.currentTarget as HTMLElement
+  const rect = viewport.getBoundingClientRect()
+  const cursorX = event.clientX - rect.left - rect.width / 2
+  const cursorY = event.clientY - rect.top - rect.height / 2
+  const worldX = (cursorX - camera.x) / camera.scale
+  const worldY = (cursorY - camera.y) / camera.scale
+  const nextScale = clampScale(camera.scale * Math.exp(-event.deltaY * 0.0012))
+
+  camera.scale = nextScale
+  camera.x = cursorX - worldX * nextScale
+  camera.y = cursorY - worldY * nextScale
+}
+
+onMounted(() => {
+  // 后台标签页可能暂停 requestAnimationFrame，短定时器能保证节点最终解除隐藏状态。
+  revealTimer = setTimeout(() => { ready.value = true }, 30)
+})
+
+onBeforeUnmount(() => clearTimeout(revealTimer))
 
 useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
 </script>
 
 <template>
-  <div class="notes page-shell">
-    <header class="page-intro">
-      <span class="eyebrow">Moments</span>
-      <h1>说说</h1>
-      <p>一些短句、照片和当时的心情，共 {{ total }} 条。</p>
-    </header>
-
-    <BaseLoading v-if="status === 'pending'" />
+  <section class="notes-page">
+    <BaseLoading v-if="status === 'pending'" class="notes-loading" />
 
     <template v-else-if="notes.length">
-      <div class="note-list">
-        <article v-for="note in notes" :key="note.id" class="note">
-          <header class="note-meta">
-            <time>{{ formatDateOnly(note.createdAt) }}</time>
-            <div v-if="note.tags.length" class="tags">
-              <span v-for="tagItem in note.tags" :key="tagItem.id">#{{ tagItem.name }}</span>
-            </div>
-          </header>
+      <div class="notes-toolbar page-shell">
+        <div class="toolbar-copy">
+          <strong>说说</strong>
+          <span>{{ total }} 个散落的片刻</span>
+        </div>
 
-          <p class="content">{{ note.content }}</p>
-
-          <div v-if="note.media.length" class="media-wrap">
-            <Transition name="media-swap" mode="out-in">
-              <div v-if="expandedMedia.has(note.id)" key="expanded" class="expanded-media">
-                <div class="expanded-grid">
-                  <a
-                    v-for="media in note.media"
-                    :key="media.id"
-                    :href="media.url || media.thumbnailUrl || undefined"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="media-item"
-                    :style="mediaStyle(media)"
-                  >
-                    <img
-                      v-if="isImage(media)"
-                      :src="media.thumbnailUrl || media.url || ''"
-                      :alt="note.content.slice(0, 24)"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <span v-else>{{ media.type }}</span>
-                  </a>
-                </div>
-
-                <button type="button" class="fold-button" @click="toggleMedia(note.id)">
-                  <ChevronUp :size="14" :stroke-width="1.8" />
-                  收起图片
-                </button>
-              </div>
-
-              <div
-                v-else
-                key="compact"
-                :class="['compact-media', `count-${Math.min(note.media.length, 4)}`]"
-              >
-                <a
-                  v-for="media in compactMedia(note.media)"
-                  :key="media.id"
-                  :href="media.url || media.thumbnailUrl || undefined"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="media-item"
-                  :style="mediaStyle(media)"
-                >
-                  <img
-                    v-if="isImage(media)"
-                    :src="media.thumbnailUrl || media.url || ''"
-                    :alt="note.content.slice(0, 24)"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <span v-else>{{ media.type }}</span>
-                </a>
-
-                <button
-                  v-if="note.media.length > 4"
-                  type="button"
-                  class="more-media"
-                  :aria-label="`展开其余 ${note.media.length - 4} 张图片`"
-                  :aria-expanded="false"
-                  @click="toggleMedia(note.id)"
-                >
-                  <strong>+{{ note.media.length - 4 }}</strong>
-                  <span>查看全部</span>
-                  <ChevronDown :size="14" :stroke-width="1.8" />
-                </button>
-              </div>
-            </Transition>
-          </div>
-
-          <div class="note-actions">
-            <button
-              type="button"
-              class="comment-trigger"
-              :aria-expanded="openComments.has(note.id)"
-              @click="toggleComments(note.id)"
-            >
-              <MessageCircle :size="15" :stroke-width="1.7" />
-              评论
-              <span v-if="previewComments[note.id]?.length">{{ previewComments[note.id].length }}</span>
+        <div class="toolbar-actions">
+          <div v-if="mode === 'canvas'" class="canvas-tools" aria-label="画布工具">
+            <button type="button" title="缩小" aria-label="缩小" @click="adjustZoom(-0.08)">
+              <Minus :size="16" :stroke-width="1.7" />
+            </button>
+            <span>{{ Math.round(camera.scale * 100) }}%</span>
+            <button type="button" title="放大" aria-label="放大" @click="adjustZoom(0.08)">
+              <Plus :size="16" :stroke-width="1.7" />
+            </button>
+            <button type="button" title="回到当前说说" aria-label="回到当前说说" @click="focusNote(focusedIndex)">
+              <LocateFixed :size="16" :stroke-width="1.7" />
             </button>
           </div>
 
-          <Transition name="comments-reveal">
-            <section v-if="openComments.has(note.id)" class="comments" aria-label="评论区">
-              <div v-if="previewComments[note.id]?.length" class="comment-list">
-                <div v-for="comment in previewComments[note.id]" :key="comment.id" class="comment-row">
-                  <span class="comment-avatar">
-                    <UserRound :size="14" :stroke-width="1.7" />
-                  </span>
-                  <div>
-                    <strong>{{ comment.username }}</strong>
-                    <p>{{ comment.content }}</p>
-                  </div>
-                </div>
-              </div>
-              <p v-else class="comment-empty">还没有评论。</p>
-
-              <form class="comment-composer" @submit.prevent="submitPreviewComment(note.id)">
-                <img v-if="store.user?.avatarUrl" :src="store.user.avatarUrl" alt="" />
-                <span v-else class="composer-avatar">
-                  <UserRound :size="15" :stroke-width="1.7" />
-                </span>
-                <textarea
-                  v-model="commentDrafts[note.id]"
-                  rows="1"
-                  maxlength="500"
-                  placeholder="写下评论..."
-                  aria-label="评论内容"
-                />
-                <button
-                  type="submit"
-                  title="发送评论"
-                  :disabled="!commentDrafts[note.id]?.trim()"
-                >
-                  <Send :size="16" :stroke-width="1.8" />
-                </button>
-              </form>
-            </section>
-          </Transition>
-        </article>
+          <div class="view-switch" aria-label="浏览方式">
+            <button
+              type="button"
+              :class="{ active: mode === 'canvas' }"
+              title="画布模式"
+              aria-label="画布模式"
+              @click="setMode('canvas')"
+            >
+              <Grid3X3 :size="16" :stroke-width="1.7" />
+            </button>
+            <button
+              type="button"
+              :class="{ active: mode === 'list' }"
+              title="列表模式"
+              aria-label="列表模式"
+              @click="setMode('list')"
+            >
+              <List :size="17" :stroke-width="1.7" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <BasePagination
-        class="pagination"
-        :current-page="page"
-        :total-pages="totalPages"
-        @change="p => router.push({ query: { ...route.query, page: p > 1 ? p : undefined } })"
-      />
+      <Transition name="view" mode="out-in">
+        <div
+          v-if="mode === 'canvas'"
+          key="canvas"
+          :class="['canvas-viewport', { ready, dragging }]"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerUp"
+          @wheel.prevent="onWheel"
+        >
+          <div class="canvas-origin" aria-hidden="true">
+            <span />
+          </div>
+
+          <div class="canvas-world" :style="worldStyle">
+            <div
+              v-for="(note, index) in notes"
+              :key="note.id"
+              class="canvas-node"
+              :data-node-index="index"
+              :style="{
+                '--node-x': `${positions[index]?.x ?? 0}px`,
+                '--node-y': `${positions[index]?.y ?? 0}px`,
+                '--node-delay': `${Math.min(index, 12) * 45}ms`,
+              }"
+            >
+              <NoteCard
+                :note="note"
+                :index="index"
+                mode="canvas"
+                :active="focusedIndex === index"
+                @focus="onCardFocus(index)"
+                @detail="openDetail(note)"
+                @comments="openDetail(note, true)"
+              />
+            </div>
+          </div>
+
+          <div class="canvas-navigation" aria-label="说说导航">
+            <button
+              type="button"
+              title="上一篇说说"
+              aria-label="上一篇说说"
+              :disabled="focusedIndex <= 0"
+              @click="focusPrevious"
+            >
+              <ChevronLeft :size="17" :stroke-width="1.8" />
+            </button>
+            <span>
+              <strong>{{ String(focusedIndex + 1).padStart(2, '0') }}</strong>
+              / {{ String(notes.length).padStart(2, '0') }}
+            </span>
+            <button
+              type="button"
+              title="下一篇说说"
+              aria-label="下一篇说说"
+              :disabled="focusedIndex >= notes.length - 1"
+              @click="focusFollowing"
+            >
+              <ChevronRight :size="17" :stroke-width="1.8" />
+            </button>
+          </div>
+
+          <div class="canvas-hint">
+            <Move :size="14" :stroke-width="1.7" />
+            拖动画布探索
+          </div>
+        </div>
+
+        <div v-else key="list" class="list-view page-shell">
+          <TransitionGroup name="list-note" tag="div" class="list-notes" appear>
+            <NoteCard
+              v-for="(note, index) in notes"
+              :key="note.id"
+              :note="note"
+              :index="index"
+              mode="list"
+              :style="{ '--list-delay': `${Math.min(index, 10) * 35}ms` }"
+              @focus="focusedIndex = index"
+              @detail="openDetail(note)"
+              @comments="openDetail(note, true)"
+            />
+          </TransitionGroup>
+        </div>
+      </Transition>
+
     </template>
 
-    <p v-else class="empty">最近很安静。</p>
-  </div>
+    <p v-else class="empty">这里还没有落下新的片刻。</p>
+
+    <BaseModal :open="!!detailNote" @update:open="value => { if (!value) closeDetail() }">
+      <NoteDetail
+        v-if="detailNote"
+        :note="detailNote"
+        :show-comments="detailShowsComments"
+        @close="closeDetail"
+      />
+    </BaseModal>
+  </section>
 </template>
 
 <style scoped lang="less">
-.notes {
-  max-width: 46rem;
-  padding: 4rem 0;
+.notes-page {
+  position: relative;
+  min-height: calc(100vh - var(--header-height));
+  // padding-top: 1rem;
 }
 
-.page-intro {
-  padding-bottom: 4rem;
-
-  h1 {
-    margin-top: 0.75rem;
-    font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
-    font-size: clamp(2.75rem, 7vw, 4.75rem);
-    line-height: 1;
-    letter-spacing: 0;
-  }
-
-  p {
-    margin-top: 1rem;
-    color: var(--color-muted);
-    font-size: 0.875rem;
-    line-height: 1.75;
-  }
+.notes-loading,
+.empty {
+  min-height: 34rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.note + .note {
-  margin-top: 4rem;
+.empty {
+  color: var(--color-subtle);
+  font-size: 0.875rem;
 }
 
-.note-meta {
+.notes-toolbar {
+  position: relative;
+  z-index: 3;
+  height: 3.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  color: var(--color-subtle);
-  font-size: 0.72rem;
 }
 
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.625rem;
-  color: var(--color-primary);
-  font-weight: 700;
-}
-
-.content {
-  margin-top: 0.85rem;
-  font-size: 1.0625rem;
-  line-height: 1.9;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.media-wrap {
-  margin-top: 1.25rem;
-}
-
-.compact-media {
-  position: relative;
-  height: 9rem;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.375rem;
-
-  &.count-1 {
-    width: min(28rem, 100%);
-    height: 17rem;
-    grid-template-columns: 1fr;
-  }
-
-  &.count-2 {
-    width: min(36rem, 100%);
-    height: 13rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  &.count-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.media-item {
+.toolbar-copy {
   min-width: 0;
-  min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: 0.3125rem;
-  background-color: var(--color-base-200);
-  background-position: center;
-  background-size: cover;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.25s ease;
-  }
-
-  &:hover img {
-    transform: scale(1.025);
-  }
-}
-
-.more-media {
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: calc((100% - 1.125rem) / 4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 0.2rem;
-  border: none;
-  border-radius: 0.3125rem;
-  background: var(--color-overlay);
-  color: var(--color-overlay-content);
-  backdrop-filter: blur(0.25rem);
-  cursor: pointer;
+  align-items: baseline;
+  gap: 0.75rem;
 
   strong {
-    font-size: 1.15rem;
+    font-family: 'Iowan Old Style', 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 1.25rem;
+    font-weight: 650;
   }
 
   span {
-    font-size: 0.65rem;
+    overflow: hidden;
+    color: var(--color-subtle);
+    font-size: 0.6875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-.expanded-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.toolbar-actions,
+.canvas-tools,
+.view-switch {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-actions {
   gap: 0.5rem;
-
-  .media-item {
-    aspect-ratio: 4 / 3;
-  }
 }
 
-.fold-button {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin: 0.75rem auto 0;
-  padding: 0;
-  border: none;
-  background: transparent;
+.canvas-tools,
+.view-switch {
+  height: 2.25rem;
+  padding: 0.1875rem;
+  border-radius: 0.375rem;
+  background: var(--color-surface-muted);
+  backdrop-filter: blur(0.75rem);
+}
+
+.canvas-tools span {
+  width: 2.75rem;
   color: var(--color-subtle);
-  font-size: 0.7rem;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--color-primary);
-  }
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
-.media-swap-enter-active,
-.media-swap-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.media-swap-enter-from,
-.media-swap-leave-to {
-  opacity: 0;
-  transform: translateY(0.3rem);
-}
-
-.note-actions {
-  margin-top: 1rem;
-}
-
-.comment-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-subtle);
-  font-size: 0.72rem;
-  cursor: pointer;
-
-  &:hover,
-  &[aria-expanded='true'] {
-    color: var(--color-primary);
-  }
-
-  > span {
-    font-variant-numeric: tabular-nums;
-  }
-}
-
-.comments {
-  margin-top: 1.25rem;
-}
-
-.comment-empty {
-  color: var(--color-subtle);
-  font-size: 0.78rem;
-}
-
-.comment-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.comment-row {
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
-  gap: 0.65rem;
-
-  strong {
-    display: block;
-    font-size: 0.75rem;
-  }
-
-  p {
-    margin-top: 0.2rem;
-    color: var(--color-muted);
-    font-size: 0.85rem;
-    line-height: 1.7;
-  }
-}
-
-.comment-avatar,
-.composer-avatar {
+.toolbar-actions button {
+  width: 1.875rem;
+  height: 1.875rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--color-accent-soft);
-  color: var(--color-primary);
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--color-base-content);
+  opacity: 0.42;
+  cursor: pointer;
+  transition: color 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
+
+  &:hover,
+  &.active {
+    background: var(--color-base-100);
+    color: var(--color-primary);
+    opacity: 1;
+  }
 }
 
-.comment-avatar {
-  width: 1.75rem;
-  height: 1.75rem;
+.canvas-viewport {
+  position: relative;
+  height: max(38rem, calc(100vh - var(--header-height) - 5.5rem));
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  background-image: radial-gradient(circle, var(--color-border) 0.75px, transparent 0.75px);
+  background-size: 1.5rem 1.5rem;
+  mask-image: linear-gradient(to bottom, transparent, #000 2.5rem calc(100% - 2.5rem), transparent);
+
+  &.dragging {
+    cursor: grabbing;
+  }
 }
 
-.comment-composer {
+.canvas-world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.dragging .canvas-world {
+  transition: none;
+}
+
+.canvas-node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%) translate3d(0, 0, 0) scale(0.88);
+  opacity: 0;
+  transition:
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--node-delay),
+    opacity 0.4s ease var(--node-delay);
+  will-change: transform;
+}
+
+.ready .canvas-node {
+  transform: translate(-50%, -50%) translate3d(var(--node-x), var(--node-y), 0) scale(1);
+  opacity: 1;
+}
+
+.canvas-origin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  transform: translate(-50%, -50%);
   display: grid;
-  grid-template-columns: 1.875rem minmax(0, 1fr) 2rem;
-  gap: 0.625rem;
-  align-items: center;
-  margin-top: 0.9rem;
+  place-items: center;
+  pointer-events: none;
 
-  > img,
-  .composer-avatar {
-    width: 1.875rem;
-    height: 1.875rem;
+  span {
+    width: 0.375rem;
+    height: 0.375rem;
     border-radius: 50%;
-    object-fit: cover;
+    background: var(--color-primary);
+    box-shadow: 0 0 0 0.5rem color-mix(in oklab, var(--color-primary) 9%, transparent);
+    opacity: 0.32;
   }
+}
 
-  textarea {
-    width: 100%;
-    min-height: 2.35rem;
-    max-height: 8rem;
-    padding: 0.55rem 0.7rem;
-    resize: vertical;
-    border: none;
-    border-radius: 0.3125rem;
-    outline: none;
-    background: var(--color-surface-muted);
-    color: var(--color-base-content);
-    font-size: 0.8rem;
-    line-height: 1.5;
+.canvas-hint {
+  position: absolute;
+  left: 1.5rem;
+  bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--color-subtle);
+  font-size: 0.6875rem;
+  pointer-events: none;
+}
 
-    &::placeholder {
-      color: var(--color-subtle);
-    }
+.canvas-navigation {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 2rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(1rem);
 
-    &:focus {
-      box-shadow: inset 0 0 0 1px var(--color-primary);
-    }
-  }
-
-  > button {
+  button {
     width: 2rem;
     height: 2rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: none;
+    border: 0;
     border-radius: 50%;
-    background: var(--color-base-content);
-    color: var(--color-base-100);
+    background: transparent;
+    color: var(--color-base-content);
+    opacity: 0.52;
     cursor: pointer;
+    transition: color 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
+
+    &:hover:not(:disabled) {
+      background: var(--color-base-200);
+      color: var(--color-primary);
+      opacity: 1;
+    }
 
     &:disabled {
+      opacity: 0.16;
       cursor: default;
-      opacity: 0.2;
+    }
+  }
+
+  span {
+    min-width: 3.75rem;
+    color: var(--color-subtle);
+    font-size: 0.625rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+
+    strong {
+      color: var(--color-base-content);
+      font-size: 0.75rem;
     }
   }
 }
 
-.comments-reveal-enter-active,
-.comments-reveal-leave-active {
-  overflow: hidden;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.list-view {
+  width: min(46rem, calc(100vw - 2rem));
+  padding: 1rem 0 5rem;
 }
 
-.comments-reveal-enter-from,
-.comments-reveal-leave-to {
+.list-notes {
+  position: relative;
+}
+
+.list-note-enter-active {
+  transition:
+    opacity 0.45s ease var(--list-delay),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) var(--list-delay);
+}
+
+.list-note-enter-from {
   opacity: 0;
-  transform: translateY(-0.35rem);
+  transform: translateY(1.25rem);
 }
 
-.pagination {
-  margin-top: 4rem;
+.view-enter-active,
+.view-leave-active {
+  transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.empty {
-  padding: 5rem 0;
-  text-align: center;
-  color: var(--color-subtle);
+.view-enter-from {
+  opacity: 0;
+  transform: translateY(0.75rem) scale(0.99);
+}
+
+.view-leave-to {
+  opacity: 0;
+  transform: translateY(-0.375rem) scale(0.995);
 }
 
 @media (max-width: 768px) {
-  .notes {
-    padding-top: 2.5rem;
+  .notes-page {
+    padding-top: 0.5rem;
   }
 
-  .page-intro {
-    padding-bottom: 3rem;
+  .notes-toolbar {
+    height: 3.25rem;
   }
 
-  .note + .note {
-    margin-top: 3.25rem;
+  .toolbar-copy span,
+  .canvas-tools span {
+    display: none;
   }
 
-  .note-meta {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
+  .canvas-viewport {
+    height: max(34rem, calc(100vh - var(--header-height) - 4.25rem));
+    background-size: 1.25rem 1.25rem;
   }
 
-  .tags {
-    justify-content: flex-start;
+  .canvas-tools {
+    display: none;
   }
 
-  .compact-media,
-  .compact-media.count-2,
-  .compact-media.count-3 {
-    width: 100%;
-    height: 11rem;
-  }
-
-  .compact-media.count-1 {
-    width: 100%;
-    height: 15rem;
-  }
-
-  .expanded-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .canvas-hint {
+    display: none;
   }
 }
 </style>
