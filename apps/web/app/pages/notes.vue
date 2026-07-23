@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Grid3X3,
   List,
+  LoaderCircle,
   LocateFixed,
   Minus,
   Move,
@@ -20,15 +21,17 @@ interface Point {
 
 const store = useAppStore()
 const noteApi = useNoteApi()
-const pageSize = 100
+const pageSize = 2
 
-const { data: res, status } = await useAsyncData(
+const { data: initialRes, status } = await useAsyncData(
   'notes-spatial-list',
   () => noteApi.getList({ page: 1, pageSize })
 )
 
-const notes = computed(() => res.value?.data?.list ?? [])
-const total = computed(() => res.value?.data?.total ?? 0)
+const notes = ref<NoteItem[]>(initialRes.value?.data?.list ?? [])
+const total = ref(initialRes.value?.data?.total ?? 0)
+const page = ref(initialRes.value?.data?.page ?? 1)
+const loadingMore = ref(false)
 const mode = ref<ViewMode>('canvas')
 const ready = ref(false)
 const focusedIndex = ref(0)
@@ -55,6 +58,9 @@ const pinch = reactive({
   worldX: 0,
   worldY: 0,
 })
+
+const hasMore = computed(() => notes.value.length < total.value)
+const totalPages = computed(() => Math.ceil(total.value / pageSize))
 
 // 固定螺旋格保证服务端与客户端得到完全一致的坐标，也给不同高度的卡片留出稳定间距。
 const positions = computed<Point[]>(() => notes.value.map((_, index) => spiralPoint(index)))
@@ -111,6 +117,8 @@ function focusNote(index: number, animated = true) {
     clearTimeout(revealTimer)
     revealTimer = setTimeout(() => { ready.value = true }, 30)
   }
+
+  if (notes.value.length - index <= 4) void loadMore()
 }
 
 function focusPrevious() {
@@ -118,9 +126,52 @@ function focusPrevious() {
   focusNote(focusedIndex.value - 1)
 }
 
-function focusFollowing() {
-  if (focusedIndex.value >= notes.value.length - 1) return
-  focusNote(focusedIndex.value + 1)
+async function focusFollowing() {
+  const nextIndex = focusedIndex.value + 1
+  if (nextIndex < notes.value.length) {
+    focusNote(nextIndex)
+    return
+  }
+
+  await loadMore()
+  if (nextIndex < notes.value.length) focusNote(nextIndex)
+}
+
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+
+  loadingMore.value = true
+  try {
+    const response = await noteApi.getList({ page: page.value + 1, pageSize })
+    if (!response.success) return
+
+    const existingIds = new Set(notes.value.map(note => note.id))
+    const incoming = response.data.list.filter(note => !existingIds.has(note.id))
+    notes.value.push(...incoming)
+    total.value = response.data.total
+    page.value = response.data.page
+  } catch {
+    // 下一次接近末尾或点击导航时会自然重试。
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+function loadMoreAtCanvasEdge(viewport: HTMLElement) {
+  if (!hasMore.value || loadingMore.value) return
+
+  const nextPoint = spiralPoint(notes.value.length)
+  const rect = viewport.getBoundingClientRect()
+  const screenX = nextPoint.x * camera.scale + camera.x
+  const screenY = nextPoint.y * camera.scale + camera.y
+  const margin = 160
+
+  if (
+    Math.abs(screenX) <= rect.width / 2 + margin &&
+    Math.abs(screenY) <= rect.height / 2 + margin
+  ) {
+    void loadMore()
+  }
 }
 
 function openDetail(note: NoteItem, comments = false) {
@@ -192,6 +243,7 @@ function onPointerMove(event: PointerEvent) {
     camera.x = centerX - pinch.worldX * nextScale
     camera.y = centerY - pinch.worldY * nextScale
     movedDuringDrag.value = true
+    loadMoreAtCanvasEdge(viewport)
     return
   }
 
@@ -202,6 +254,7 @@ function onPointerMove(event: PointerEvent) {
   if (Math.abs(deltaX) + Math.abs(deltaY) > 4) movedDuringDrag.value = true
   camera.x = drag.cameraX + deltaX
   camera.y = drag.cameraY + deltaY
+  if (movedDuringDrag.value) loadMoreAtCanvasEdge(event.currentTarget as HTMLElement)
 }
 
 function onPointerUp(event: PointerEvent) {
@@ -320,9 +373,7 @@ useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
           @pointercancel="onPointerUp"
           @wheel.prevent="onWheel"
         >
-          <div class="canvas-origin" aria-hidden="true">
-            <span />
-          </div>
+          <div class="canvas-center-glow" aria-hidden="true" />
 
           <div class="canvas-world" :style="worldStyle">
             <div
@@ -360,16 +411,17 @@ useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
             </button>
             <span>
               <strong>{{ String(focusedIndex + 1).padStart(2, '0') }}</strong>
-              / {{ String(notes.length).padStart(2, '0') }}
+              / {{ String(total).padStart(2, '0') }}
             </span>
             <button
               type="button"
               title="下一篇说说"
               aria-label="下一篇说说"
-              :disabled="focusedIndex >= notes.length - 1"
+              :disabled="loadingMore || (!hasMore && focusedIndex >= notes.length - 1)"
               @click="focusFollowing"
             >
-              <ChevronRight :size="17" :stroke-width="1.8" />
+              <LoaderCircle v-if="loadingMore" class="loading-icon" :size="16" :stroke-width="1.8" />
+              <ChevronRight v-else :size="17" :stroke-width="1.8" />
             </button>
           </div>
 
@@ -393,6 +445,14 @@ useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
               @comments="openDetail(note, true)"
             />
           </TransitionGroup>
+
+          <BasePagination
+            mode="scroll"
+            :current-page="page"
+            :total-pages="totalPages"
+            :loading="loadingMore"
+            @change="loadMore()"
+          />
         </div>
       </Transition>
 
@@ -560,25 +620,22 @@ useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
   opacity: 1;
 }
 
-.canvas-origin {
+.canvas-center-glow {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 8rem;
+  height: 8rem;
   transform: translate(-50%, -50%);
-  display: grid;
-  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--color-primary) 18%, transparent) 0%,
+    color-mix(in oklab, var(--color-primary) 8%, transparent) 38%,
+    transparent 72%
+  );
+  filter: blur(0.625rem);
   pointer-events: none;
-
-  span {
-    width: 0.375rem;
-    height: 0.375rem;
-    border-radius: 50%;
-    background: var(--color-primary);
-    box-shadow: 0 0 0 0.5rem color-mix(in oklab, var(--color-primary) 9%, transparent);
-    opacity: 0.32;
-  }
 }
 
 .canvas-hint {
@@ -648,6 +705,10 @@ useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
   }
 }
 
+.loading-icon {
+  animation: spin 0.8s linear infinite;
+}
+
 .list-view {
   width: min(46rem, calc(100vw - 2rem));
   padding: 1rem 0 5rem;
@@ -681,6 +742,12 @@ useHead({ title: computed(() => `说说 - ${store.site.name || '3qrain'}`) })
 .view-leave-to {
   opacity: 0;
   transform: translateY(-0.375rem) scale(0.995);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 @media (max-width: 768px) {
